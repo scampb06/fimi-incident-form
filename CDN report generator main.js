@@ -247,854 +247,111 @@ evidenceurlinput.addEventListener('input', () => {
     }, 500); // wait 500ms after typing stops
     });
 
-function downloadAsDocx() {
-    console.log("Starting the DOCX generation process...");
+// Data collection function - extracts all form values
+function collectFormData() {
+    return {
+        incidentNumber: document.getElementById("incidentNumber").value || "0000",
+        tlpLevel: document.getElementById("tlpLevel").value || "TLP:CLEAR",
+        selectedCountries: document.getElementById('country').selectedOptions,
+        country: Array.from(document.getElementById('country').selectedOptions).map(option => option.value).join(', ') || "",
+        title: document.getElementById("title").value || "",
+        date: document.getElementById("date").value || "",
+        summaryIncident: document.getElementById("summary-incident").value || "",
+        summaryNarrative: document.getElementById("summary-narrative").value || "",
+        summaryImpact: document.getElementById("summary-impact").value || "",
+        summaryTTPs: document.getElementById("summary-ttps").value || "",
+        summaryRecommendations: document.getElementById("summary-recommendations").value || "",
+        incident: document.getElementById("incident").value || "",
+        metaNarrative: document.getElementById("metaNarrative").value || "",
+        reach: document.getElementById("reach").value || "",
+        outcome: document.getElementById("outcome").value || "",
+        actionsTaken: document.getElementById("actionsTaken").value || ""
+    };
+}
 
-    try {
-        // Get values from form fields
-        const incidentNumber = document.getElementById("incidentNumber").value || "0000";
-        const tlpLevel = document.getElementById("tlpLevel").value || "TLP:CLEAR";
-        const selectedCountries = document.getElementById('country').selectedOptions;
-        const country = Array.from(selectedCountries).map(option => option.value).join(', ') || "";
-        //const country = document.getElementById("country").value || "";
-        const title = document.getElementById("title").value || "";
-        const date = document.getElementById("date").value || "";
-        const summaryIncident = document.getElementById("summary-incident").value || "";
-        const summaryNarrative = document.getElementById("summary-narrative").value || "";
-        const summaryImpact = document.getElementById("summary-impact").value || "";
-        const summaryTTPs = document.getElementById("summary-ttps").value || "";
-        const summaryRecommendations = document.getElementById("summary-recommendations").value || "";
-        const incident = document.getElementById("incident").value || "";
-        const metaNarrative = document.getElementById("metaNarrative").value || "";
-        const subNarrativeEntries = document.querySelectorAll(".sub-narrative-text");
-        let subNarratives = Array.from(subNarrativeEntries)
-            .map((entry, index) => `Sub-Narrative ${index + 1}: ${entry.value || ""}`)
-            .join("\n");
+// Process narratives and recommendations into docx paragraphs
+function processNarratives() {
+    const subNarrativeEntries = document.querySelectorAll(".sub-narrative-text");
+    let subNarratives = Array.from(subNarrativeEntries)
+        .map((entry, index) => `Sub-Narrative ${index + 1}: ${entry.value || ""}`)
+        .join("\n");
 
-        const subNarrativeTextRuns = subNarratives.split("\n").map(line => 
-            new docx.TextRun({ 
-                break: 1, 
-                text: line, 
-                font: "Times New Roman", 
-                size: 22 
-            })
-        );
-        const subNarrativeParagraph = new docx.Paragraph({ children: subNarrativeTextRuns });
+    const subNarrativeTextRuns = subNarratives.split("\n").map(line => 
+        new docx.TextRun({ 
+            break: 1, 
+            text: line, 
+            font: "Times New Roman", 
+            size: 22 
+        })
+    );
+    const subNarrativeParagraph = new docx.Paragraph({ children: subNarrativeTextRuns });
 
-        const reach = document.getElementById("reach").value || "";
-        const outcome = document.getElementById("outcome").value || "";
-        const actionsTaken = document.getElementById("actionsTaken").value || "";
-        const recommendationEntries = document.querySelectorAll(".recommendation-text");
-        let recommendations = Array.from(recommendationEntries)
-            .map((entry, index) => `Recommendation ${index + 1}: ${entry.value || ""}`)
-            .join("\n");
+    const recommendationEntries = document.querySelectorAll(".recommendation-text");
+    let recommendations = Array.from(recommendationEntries)
+        .map((entry, index) => `Recommendation ${index + 1}: ${entry.value || ""}`)
+        .join("\n");
 
-        const recommendationTextRuns = recommendations.split("\n").map(line => 
-            new docx.TextRun({ 
-                break: 1, 
-                text: line, 
-                font: "Times New Roman", 
-                size: 22 
-            })
-        );
-        const recommendationParagraph = new docx.Paragraph({ children: recommendationTextRuns });
+    const recommendationTextRuns = recommendations.split("\n").map(line => 
+        new docx.TextRun({ 
+            break: 1, 
+            text: line, 
+            font: "Times New Roman", 
+            size: 22 
+        })
+    );
+    const recommendationParagraph = new docx.Paragraph({ children: recommendationTextRuns });
 
-        console.log("Form values collected successfully.");
+    return {
+        subNarratives,
+        subNarrativeParagraph,
+        recommendations,
+        recommendationParagraph
+    };
+}
 
-        if (!navigatorFileUploaded) {
-            // Get objectives and TTPs
-            const objectiveEntries = document.querySelectorAll('.objective-entry');
-            objectivesList = [];
-            objectiveEntries.forEach((entry) => {
-                const objTitle = entry.querySelector('.objective-title').value || '';
-                const objJust = entry.querySelector('.objective-justification').value || '';
-                if (objTitle.trim() !== '') {
-                    if (objJust.trim() !== '') {
-                        objectivesList.push(`Objective: ${objTitle} - ${objJust}`);
-                    } else {
-                        objectivesList.push(`Objective: ${objTitle}`);
-                    }
+// Process objectives and TTPs if navigator file wasn't uploaded
+function processObjectivesAndTTPs() {
+    if (!navigatorFileUploaded) {
+        // Get objectives and TTPs
+        const objectiveEntries = document.querySelectorAll('.objective-entry');
+        objectivesList = [];
+        objectiveEntries.forEach((entry) => {
+            const objTitle = entry.querySelector('.objective-title').value || '';
+            const objJust = entry.querySelector('.objective-justification').value || '';
+            if (objTitle.trim() !== '') {
+                if (objJust.trim() !== '') {
+                    objectivesList.push(`Objective: ${objTitle} - ${objJust}`);
+                } else {
+                    objectivesList.push(`Objective: ${objTitle}`);
                 }
-            });
-
-            const ttpEntries = document.querySelectorAll('.ttp-entry');
-            ttpsList = [];
-            ttpEntries.forEach((entry) => {
-                const ttpTitle = entry.querySelector('.ttp-title').value || '';
-                const ttpExpl = entry.querySelector('.ttp-explanation').value || '';
-                if (ttpTitle.trim() !== '' || ttpExpl.trim() !== '') {
-                    ttpsList.push(`TTP: ${ttpTitle}${ttpExpl ? ' - ' + ttpExpl : ''}`);
-                }
-            });
-
-            console.log("Objectives and TTPs collected successfully.");
-        }
-
-        // Set border style to none for all tables
-        const noBorders = {
-            top: { style: docx.BorderStyle.NONE },
-            bottom: { style: docx.BorderStyle.NONE },
-            left: { style: docx.BorderStyle.NONE },
-            right: { style: docx.BorderStyle.NONE },
-            insideHorizontal: { style: docx.BorderStyle.NONE },
-            insideVertical: { style: docx.BorderStyle.NONE }
-        };
-
-        // Split the headerGroupTable into two separate tables
-        const headerTopTable = new docx.Table({
-            width: { size: 100, type: docx.WidthType.PERCENTAGE },
-            borders: noBorders,
-            rows: [
-                new docx.TableRow({
-                    children: [
-                        new docx.TableCell({
-                            shading: { fill: "8EAADB" },
-                            borders: noBorders,
-                            columnSpan: 3,
-                            width: { size: 30, type: docx.WidthType.PERCENTAGE },
-                            margins: { top: 0, bottom: 0, left: 0, right: 0 },
-                            children: [
-                                new docx.Paragraph({
-                                    children: [
-                                        new docx.TextRun({
-                                            text: `CDN Incident Alert: ${incidentNumber}`,
-                                            bold: true,
-                                            font: "Times New Roman",
-                                            size: 22,
-                                        }),
-                                    ],
-                                }),
-                            ],
-                        }),
-                        new docx.TableCell({
-                            shading: { fill: "8EAADB" },
-                            borders: noBorders,
-                            columnSpan: 2,
-                            margins: { top: 0, bottom: 0, left: 0, right: 0 },
-                            children: [
-                                new docx.Paragraph({
-                                    children: [
-                                        new docx.TextRun({
-                                            text: `${tlpLevel}`, 
-                                            bold: false,
-                                            font: "Times New Roman",
-                                            size: 22,
-                                        }),
-                                    ],
-                                }),
-                            ],
-                        }),
-                        new docx.TableCell({
-                            shading: { fill: "8EAADB" },
-                            borders: noBorders,
-                            margins: { top: 0, bottom: 0, left: 0, right: 0 },
-                            columnSpan: 2,
-                            width: { size: 15, type: docx.WidthType.PERCENTAGE },
-                            children: [
-                                new docx.Paragraph({
-                                    alignment: docx.AlignmentType.RIGHT,
-                                    children: [
-                                        new docx.TextRun({
-                                            text: "Date", 
-                                            bold: false,
-                                            font: "Times New Roman",
-                                            size: 22,
-                                        }),
-                                    ],
-                                }),
-                            ],
-                        }),
-                    ],
-                }),
-            ],
+            }
         });
 
-        console.log("First Header Group Table processed successfully.");
-
-        const blankPara = new docx.Paragraph({ text: "", spacing: { after: 0, before: 0 } });
-        const blankRow = new docx.TableRow({
-            children: [new docx.TableCell({ columnSpan: 8, children: [blankPara], borders: noBorders })],
+        const ttpEntries = document.querySelectorAll('.ttp-entry');
+        ttpsList = [];
+        ttpEntries.forEach((entry) => {
+            const ttpTitle = entry.querySelector('.ttp-title').value || '';
+            const ttpExpl = entry.querySelector('.ttp-explanation').value || '';
+            if (ttpTitle.trim() !== '' || ttpExpl.trim() !== '') {
+                ttpsList.push(`TTP: ${ttpTitle}${ttpExpl ? ' - ' + ttpExpl : ''}`);
+            }
         });
 
-        const headerBottomTable = new docx.Table({
-            width: { size: 100, type: docx.WidthType.PERCENTAGE },
-            borders: noBorders,
-            rows: [
-                new docx.TableRow({
-                    children: [
-                        new docx.TableCell({
-                            columnSpan: 1,
-                            width: { size: 10, type: docx.WidthType.PERCENTAGE },
-                            shading: { fill: "8EAADB" },
-                            borders: noBorders,
-                            margins: { top: 0, bottom: 0, left: 0, right: 0 },
-                            verticalAlign: docx.VerticalAlign.BOTTOM,
-                            children: [
-                                new docx.Paragraph({
-                                    children: [
-                                        new docx.TextRun({
-                                            text: "Title",
-                                            bold: true,
-                                            font: "Times New Roman",
-                                            size: 22,
-                                        }),
-                                    ],
-                                }),
-                            ],
-                        }),
-                        new docx.TableCell({
-                            columnSpan: 1,
-                            width: { size: 10, type: docx.WidthType.PERCENTAGE },
-                            borders: noBorders,
-                            margins: { top: 0, bottom: 0, left: 0, right: 0 },
-                            verticalAlign: docx.VerticalAlign.BOTTOM,
-                            children: [
-                                new docx.Paragraph({
-                                    children: [
-                                        new docx.TextRun({
-                                            text: " " + country,
-                                            bold: false,
-                                            font: "Times New Roman",
-                                            size: 22,
-                                        }),
-                                    ],
-                                }),
-                            ],
-                        }),
-                        new docx.TableCell({
-                            columnSpan: 3,
-                            width: { size: 65, type: docx.WidthType.PERCENTAGE },
-                            borders: noBorders,
-                            margins: { top: 0, bottom: 0, left: 0, right: 0 },
-                            verticalAlign: docx.VerticalAlign.BOTTOM,
-                            children: [
-                                new docx.Paragraph({
-                                    children: [
-                                        new docx.TextRun({
-                                            text: title,
-                                            bold: false,
-                                            font: "Times New Roman",
-                                            size: 22,
-                                        }),
-                                    ],
-                                }),
-                            ],
-                        }),
-                        new docx.TableCell({
-                            columnSpan: 3,
-                            width: { size: 15, type: docx.WidthType.PERCENTAGE },
-                            borders: noBorders,
-                            margins: { top: 0, bottom: 0, left: 0, right: 0 },
-                            verticalAlign: docx.VerticalAlign.BOTTOM,
-                            children: [
-                                new docx.Paragraph({
-                                    alignment: docx.AlignmentType.RIGHT,
-                                    children: [
-                                        new docx.TextRun({
-                                            text: date,
-                                            bold: false,
-                                            font: "Times New Roman",
-                                            size: 22,
-                                        }),
-                                    ],
-                                }),
-                            ],
-                        }),
-                    ],
-                }),
-                blankRow,
-            ],
-        });
+        console.log("Objectives and TTPs collected successfully.");
+    }
+    
+    return { objectivesList, ttpsList };
+}
 
-        console.log("Second Header Group Table processed successfully.");
-
-        // 2. Summary table
-        const summaryTable = new docx.Table({
-            width: { size: 100, type: docx.WidthType.PERCENTAGE },
-            borders: noBorders,
-            rows: [
-                new docx.TableRow({
-                    children: [
-                        new docx.TableCell({
-                            columnSpan: 8,
-                            shading: { fill: "8EAADB" },
-                            borders: noBorders,
-                            margins: { top: 0, bottom: 0, left: 0, right: 0 },
-                            children: [
-                                new docx.Paragraph({
-                                    children: [
-                                        new docx.TextRun({
-                                            text: "Summary",
-                                            bold: true,
-                                            font: "Times New Roman",
-                                            size: 22,
-                                        }),
-                                    ],
-                                }),
-                            ],
-                        }),
-                    ],
-                }),
-                new docx.TableRow({
-                    children: [
-                        new docx.TableCell({
-                            columnSpan: 2,
-                            width: { size: 22, type: docx.WidthType.PERCENTAGE },
-                            shading: { fill: "8EAADB" },
-                            borders: noBorders,
-                            margins: { top: 0, bottom: 0, left: 0, right: 0 },
-                            verticalAlign: docx.VerticalAlign.BOTTOM,
-                            children: [
-                                new docx.Paragraph({
-                                    children: [
-                                        new docx.TextRun({
-                                            text: "Incident",
-                                            bold: true,
-                                            font: "Times New Roman",
-                                            size: 22,
-                                        }),
-                                    ],
-                                }),
-                            ],
-                        }),
-                        new docx.TableCell({
-                            columnSpan: 6,
-                            width: { size: 78, type: docx.WidthType.PERCENTAGE },
-                            borders: noBorders,
-                            margins: { top: 0, bottom: 0, left: 0, right: 0 },
-                            verticalAlign: docx.VerticalAlign.BOTTOM,
-                            children: [
-                                new docx.Paragraph({
-                                    children: [
-                                        new docx.TextRun({
-                                            text: " " + summaryIncident,
-                                            bold: false,
-                                            font: "Times New Roman",
-                                            size: 22,
-                                        }),
-                                    ],
-                                }),
-                            ],
-                        }),
-                    ],
-                }),
-                new docx.TableRow({
-                    children: [
-                        new docx.TableCell({
-                            columnSpan: 2,
-                            width: { size: 22, type: docx.WidthType.PERCENTAGE },
-                            shading: { fill: "8EAADB" },
-                            borders: noBorders,
-                            margins: { top: 0, bottom: 0, left: 0, right: 0 },
-                            verticalAlign: docx.VerticalAlign.BOTTOM,
-                            children: [
-                                new docx.Paragraph({
-                                    children: [
-                                        new docx.TextRun({
-                                            text: "Narrative",
-                                            bold: true,
-                                            font: "Times New Roman",
-                                            size: 22,
-                                        }),
-                                    ],
-                                }),
-                            ],
-                        }),
-                        new docx.TableCell({
-                            columnSpan: 6,
-                            width: { size: 78, type: docx.WidthType.PERCENTAGE },
-                            borders: noBorders,
-                            margins: { top: 0, bottom: 0, left: 0, right: 0 },
-                            verticalAlign: docx.VerticalAlign.BOTTOM,
-                            children: [
-                                new docx.Paragraph({
-                                    children: [
-                                        new docx.TextRun({
-                                            text: " " + summaryNarrative,
-                                            bold: false,
-                                            font: "Times New Roman",
-                                            size: 22,
-                                        }),
-                                    ],
-                                }),
-                            ],
-                        }),
-                    ],
-                }),
-                new docx.TableRow({
-                    children: [
-                        new docx.TableCell({
-                            columnSpan: 2,
-                            width: { size: 22, type: docx.WidthType.PERCENTAGE },
-                            shading: { fill: "8EAADB" },
-                            borders: noBorders,
-                            margins: { top: 0, bottom: 0, left: 0, right: 0 },
-                            verticalAlign: docx.VerticalAlign.BOTTOM,
-                            children: [
-                                new docx.Paragraph({
-                                    children: [
-                                        new docx.TextRun({
-                                            text: "Impact",
-                                            bold: true,
-                                            font: "Times New Roman",
-                                            size: 22,
-                                        }),
-                                    ],
-                                }),
-                            ],
-                        }),
-                        new docx.TableCell({
-                            columnSpan: 6,
-                            width: { size: 78, type: docx.WidthType.PERCENTAGE },
-                            borders: noBorders,
-                            margins: { top: 0, bottom: 0, left: 0, right: 0 },
-                            verticalAlign: docx.VerticalAlign.BOTTOM,
-                            children: [
-                                new docx.Paragraph({
-                                    children: [
-                                        new docx.TextRun({
-                                            text: " " + summaryImpact,
-                                            bold: false,
-                                            font: "Times New Roman",
-                                            size: 22,
-                                        }),
-                                    ],
-                                }),
-                            ],
-                        }),
-                    ],
-                }),
-                new docx.TableRow({
-                    children: [
-                        new docx.TableCell({
-                            columnSpan: 2,
-                            width: { size: 22, type: docx.WidthType.PERCENTAGE },
-                            shading: { fill: "8EAADB" },
-                            borders: noBorders,
-                            margins: { top: 0, bottom: 0, left: 0, right: 0 },
-                            verticalAlign: docx.VerticalAlign.BOTTOM,
-                            children: [
-                                new docx.Paragraph({
-                                    children: [
-                                        new docx.TextRun({
-                                            text: "DISARM TTPs",
-                                            bold: true,
-                                            font: "Times New Roman",
-                                            size: 22,
-                                        }),
-                                    ],
-                                }),
-                            ],
-                        }),
-                        new docx.TableCell({
-                            columnSpan: 6,
-                            width: { size: 78, type: docx.WidthType.PERCENTAGE },
-                            borders: noBorders,
-                            margins: { top: 0, bottom: 0, left: 0, right: 0 },
-                            verticalAlign: docx.VerticalAlign.BOTTOM,
-                            children: [
-                                new docx.Paragraph({
-                                    children: [
-                                        new docx.TextRun({
-                                            text: " " + summaryTTPs,
-                                            bold: false,
-                                            font: "Times New Roman",
-                                            size: 22,
-                                        }),
-                                    ],
-                                }),
-                            ],
-                        }),
-                    ],
-                }),
-                new docx.TableRow({
-                    children: [
-                        new docx.TableCell({
-                            columnSpan: 2,
-                            width: { size: 22, type: docx.WidthType.PERCENTAGE },
-                            shading: { fill: "8EAADB" },
-                            borders: noBorders,
-                            margins: { top: 0, bottom: 0, left: 0, right: 0 },
-                            verticalAlign: docx.VerticalAlign.BOTTOM,
-                            children: [
-                                new docx.Paragraph({
-                                    children: [
-                                        new docx.TextRun({
-                                            text: "Recommendations",
-                                            bold: true,
-                                            font: "Times New Roman",
-                                            size: 22,
-                                        }),
-                                    ],
-                                }),
-                            ],
-                        }),
-                        new docx.TableCell({
-                            columnSpan: 6,
-                            width: { size: 78, type: docx.WidthType.PERCENTAGE },
-                            borders: noBorders,
-                            margins: { top: 0, bottom: 0, left: 0, right: 0 },
-                            verticalAlign: docx.VerticalAlign.BOTTOM,
-                            children: [
-                                new docx.Paragraph({
-                                    children: [
-                                        new docx.TextRun({
-                                            text: " " + summaryRecommendations,
-                                            bold: false,
-                                            font: "Times New Roman",
-                                            size: 22,
-                                        }),
-                                    ],
-                                }),
-                            ],
-                        }),
-                    ],
-                }),              
-            ],
-        });
-
-        console.log("Summary Table processed successfully.");
-
-        // Incident table
-        const incidentTable = new docx.Table({
-            width: { size: 100, type: docx.WidthType.PERCENTAGE },
-            borders: noBorders,
-            rows: [
-                new docx.TableRow({
-                    children: [
-                        new docx.TableCell({
-                            columnSpan: 3,
-                            shading: { fill: "8EAADB" },
-                            borders: noBorders,
-                            margins: { top: 0, bottom: 0, left: 0, right: 0 },
-                            children: [
-                                new docx.Paragraph({
-                                    children: [
-                                        new docx.TextRun({
-                                            text: "Incident",
-                                            bold: true,
-                                            font: "Times New Roman",
-                                            size: 22,
-                                        }),
-                                    ],
-                                }),
-                            ],
-                        }),
-                    ],
-                }),
-                new docx.TableRow({
-                    children: [
-                        new docx.TableCell({
-                            columnSpan: 3,
-                            borders: noBorders,
-                            margins: { top: 0, bottom: 0, left: 0, right: 0 },
-                            children: [
-                                new docx.Paragraph({
-                                    children: [
-                                        new docx.TextRun({
-                                            text: incident,
-                                            font: "Times New Roman",
-                                            size: 22,
-                                        }),
-                                    ],
-                                }),
-                            ],
-                        }),
-                    ],
-                }),
-            ],
-        });
-
-        console.log("Incident Table processed successfully.");
-
-        // Narrative table
-        const narrativeTable = new docx.Table({
-            width: { size: 100, type: docx.WidthType.PERCENTAGE },
-            borders: noBorders,
-            rows: [
-                new docx.TableRow({
-                    children: [
-                        new docx.TableCell({
-                            columnSpan: 3,
-                            shading: { fill: "8EAADB" },
-                            borders: noBorders,
-                            margins: { top: 0, bottom: 0, left: 0, right: 0 },
-                            children: [
-                                new docx.Paragraph({
-                                    children: [
-                                        new docx.TextRun({
-                                            text: "Narrative",
-                                            bold: true,
-                                            font: "Times New Roman",
-                                            size: 22,
-                                        }),
-                                    ],
-                                }),
-                            ],
-                        }),
-                    ],
-                }),
-                new docx.TableRow({
-                    children: [
-                        new docx.TableCell({
-                            columnSpan: 3,
-                            borders: noBorders,
-                            margins: { top: 0, bottom: 0, left: 0, right: 0 },
-                            children: [
-                                new docx.Paragraph({
-                                    children: [
-                                        new docx.TextRun({
-                                            text: `Meta-narrative: ${metaNarrative}`,
-                                            font: "Times New Roman",
-                                            size: 22,
-                                        }),
-                                    ],
-                                }),
-                                subNarrativeParagraph,
-                            ],
-                        }),
-                    ],
-                }),
-            ],
-        });
-
-        console.log("Narrative Table processed successfully.");
-
-        // Impact table
-        const impactTable = new docx.Table({
-            width: { size: 100, type: docx.WidthType.PERCENTAGE },
-            borders: noBorders,
-            rows: [
-                new docx.TableRow({
-                    children: [
-                        new docx.TableCell({
-                            columnSpan: 3,
-                            shading: { fill: "8EAADB" },
-                            borders: noBorders,
-                            margins: { top: 0, bottom: 0, left: 0, right: 0 },
-                            children: [
-                                new docx.Paragraph({
-                                    children: [
-                                        new docx.TextRun({
-                                            text: "Impact and Outcome",
-                                            bold: true,
-                                            font: "Times New Roman",
-                                            size: 22,
-                                        }),
-                                    ],
-                                }),
-                            ],
-                        }),
-                    ],
-                }),
-                new docx.TableRow({
-                    children: [
-                        new docx.TableCell({
-                            columnSpan: 3,
-                            borders: noBorders,
-                            margins: { top: 0, bottom: 0, left: 0, right: 0 },
-                            children: [
-                                new docx.Paragraph({
-                                    children: [
-                                        new docx.TextRun({
-                                            text: `Reach: ${reach}`,
-                                            font: "Times New Roman",
-                                            size: 22,
-                                        }),
-                                    ],
-                                }),
-                                new docx.Paragraph({
-                                    children: [
-                                        new docx.TextRun({
-                                            text: `Outcome: ${outcome}`,
-                                            font: "Times New Roman",
-                                            size: 22,
-                                        }),
-                                    ],
-                                }),
-                            ],
-                        }),
-                    ],
-                }),
-            ],
-        });
-
-        console.log("Impact Table processed successfully.");
-
-        // Key Objectives table
-        const objectivesTable = new docx.Table({
-            width: { size: 100, type: docx.WidthType.PERCENTAGE },
-            borders: noBorders,
-            rows: [
-                new docx.TableRow({
-                    children: [
-                        new docx.TableCell({
-                            columnSpan: 3,
-                            shading: { fill: "8EAADB" },
-                            borders: noBorders,
-                            margins: { top: 0, bottom: 0, left: 0, right: 0 },
-                            children: [
-                                new docx.Paragraph({
-                                    children: [
-                                        new docx.TextRun({
-                                            text: "Key Objectives and Behaviours",
-                                            bold: true,
-                                            font: "Times New Roman",
-                                            size: 22,
-                                        }),
-                                    ],
-                                }),
-                            ],
-                        }),
-                    ],
-                }),
-                ...objectivesList.map(obj => new docx.TableRow({
-                    children: [
-                        new docx.TableCell({
-                            columnSpan: 3,
-                            borders: noBorders,
-                            margins: { top: 0, bottom: 0, left: 0, right: 0 },
-                            children: [
-                                new docx.Paragraph({
-                                    children: [
-                                        new docx.TextRun({
-                                            text: obj,
-                                            font: "Times New Roman",
-                                            size: 22,
-                                        }),
-                                    ],
-                                }),
-                            ],
-                        }),
-                    ],
-                })),
-                ...ttpsList.map(ttp => new docx.TableRow({
-                    children: [
-                        new docx.TableCell({
-                            columnSpan: 3,
-                            borders: noBorders,
-                            margins: { top: 0, bottom: 0, left: 0, right: 0 },
-                            children: [
-                                new docx.Paragraph({
-                                    children: [
-                                        new docx.TextRun({
-                                            text: ttp,
-                                            font: "Times New Roman",
-                                            size: 22,
-                                        }),
-                                    ],
-                                }),
-                            ],
-                        }),
-                    ],
-                })),
-            ],
-        });
-
-        console.log("Key Objectives Table processed successfully.");
-
-        // Recommendations table
-        const recommendationsTable = new docx.Table({
-            width: { size: 100, type: docx.WidthType.PERCENTAGE },
-            borders: noBorders,
-            rows: [
-                new docx.TableRow({
-                    children: [
-                        new docx.TableCell({
-                            columnSpan: 3,
-                            shading: { fill: "8EAADB" },
-                            borders: noBorders,
-                            margins: { top: 0, bottom: 0, left: 0, right: 0 },
-                            children: [
-                                new docx.Paragraph({
-                                    children: [
-                                        new docx.TextRun({
-                                            text: "Recommendations and Actions Taken",
-                                            bold: true,
-                                            font: "Times New Roman",
-                                            size: 22,
-                                        }),
-                                    ],
-                                }),
-                            ],
-                        }),
-                    ],
-                }),
-                new docx.TableRow({
-                    children: [
-                        new docx.TableCell({
-                            columnSpan: 3,
-                            borders: noBorders,
-                            margins: { top: 0, bottom: 0, left: 0, right: 0 },
-                            children: [
-                                new docx.Paragraph({
-                                    children: [
-                                        new docx.TextRun({
-                                            text: `Actions Taken: ${actionsTaken}`,
-                                            font: "Times New Roman",
-                                            size: 22,
-                                        }),
-                                    ],
-                                }),
-                                recommendationParagraph,
-                            ],
-                        }),
-                    ],
-                }),
-            ],
-        });
-
-        console.log("Recommendations Table processed successfully.");
-
-        // Collect evidence rows
-        const evidenceRows = Array.from(document.querySelectorAll('.evidence-row')).map(row => ({
-            report: row.querySelector('.evidence-report-url')?.value || "",
-            threat: row.querySelector('.evidence-threat')?.value || "",
-            evidence: row.querySelector('.evidence-evidence-link')?.value || "",
-            authors: getAuthorsString(row.querySelector('.evidence-authors') || document.createElement('div')),
-            platforms: row.querySelector('.evidence-platforms')?.value || "",
-            logo: row.querySelector('.evidence-logo')?.value || "",
-        }));
-
-        console.log("Evidence rows collected successfully.");
-
-        // Build the footerTable rows
-        const footerTableRows = [
-            new docx.TableRow({
-                children: [
-                    new docx.TableCell({ width: { size: 16.6, type: docx.WidthType.PERCENTAGE }, shading: { fill: "8EAADB" }, borders: noBorders, margins: { top: 0, bottom: 0, left: 0, right: 0 }, children: [new docx.Paragraph({ alignment: docx.AlignmentType.LEFT, children: [new docx.TextRun({ text: "Report", bold: true, font: "Times New Roman", size: 22 })] })] }),
-                    new docx.TableCell({ width: { size: 16.6, type: docx.WidthType.PERCENTAGE }, shading: { fill: "8EAADB" }, borders: noBorders, margins: { top: 0, bottom: 0, left: 0, right: 0 }, children: [new docx.Paragraph({ alignment: docx.AlignmentType.LEFT, children: [new docx.TextRun({ text: "Threat Actor", bold: true, font: "Times New Roman", size: 22 })] })] }),
-                    new docx.TableCell({ width: { size: 16.7, type: docx.WidthType.PERCENTAGE }, shading: { fill: "8EAADB" }, borders: noBorders, margins: { top: 0, bottom: 0, left: 0, right: 0 }, children: [new docx.Paragraph({ alignment: docx.AlignmentType.LEFT, children: [new docx.TextRun({ text: "Evidence", bold: true, font: "Times New Roman", size: 22 })] })] }),
-                    new docx.TableCell({ width: { size: 16.7, type: docx.WidthType.PERCENTAGE }, shading: { fill: "8EAADB" }, borders: noBorders, margins: { top: 0, bottom: 0, left: 0, right: 0 }, children: [new docx.Paragraph({ alignment: docx.AlignmentType.LEFT, children: [new docx.TextRun({ text: "Authors", bold: true, font: "Times New Roman", size: 22 })] })] }),
-                    new docx.TableCell({ width: { size: 16.7, type: docx.WidthType.PERCENTAGE }, shading: { fill: "8EAADB" }, borders: noBorders, margins: { top: 0, bottom: 0, left: 0, right: 0 }, children: [new docx.Paragraph({ alignment: docx.AlignmentType.LEFT, children: [new docx.TextRun({ text: "Platforms", bold: true, font: "Times New Roman", size: 22 })] })] }),
-                    new docx.TableCell({ width: { size: 16.7, type: docx.WidthType.PERCENTAGE }, shading: { fill: "8EAADB" }, borders: noBorders, margins: { top: 0, bottom: 0, left: 0, right: 0 }, children: [new docx.Paragraph({ alignment: docx.AlignmentType.LEFT, children: [new docx.TextRun({ text: "Logo", bold: true, font: "Times New Roman", size: 22 })] })] })
-                ]
-            }),
-            ...evidenceRows.map(ev => new docx.TableRow({
-                children: [
-                    new docx.TableCell({ width: { size: 16.6, type: docx.WidthType.PERCENTAGE }, borders: noBorders, margins: { top: 0, bottom: 0, left: 0, right: 0 }, children: [new docx.Paragraph({ alignment: docx.AlignmentType.LEFT, children: [new docx.TextRun({ text: ev.report, font: "Times New Roman", size: 22 })] })] }),
-                    new docx.TableCell({ width: { size: 16.6, type: docx.WidthType.PERCENTAGE }, borders: noBorders, margins: { top: 0, bottom: 0, left: 0, right: 0 }, children: [new docx.Paragraph({ alignment: docx.AlignmentType.LEFT, children: [new docx.TextRun({ text: ev.threat, font: "Times New Roman", size: 22 })] })] }),
-                    new docx.TableCell({ width: { size: 16.7, type: docx.WidthType.PERCENTAGE }, borders: noBorders, margins: { top: 0, bottom: 0, left: 0, right: 0 }, children: [new docx.Paragraph({ alignment: docx.AlignmentType.LEFT, children: [new docx.TextRun({ text: ev.evidence, font: "Times New Roman", size: 22 })] })] }),
-                    new docx.TableCell({ width: { size: 16.7, type: docx.WidthType.PERCENTAGE }, borders: noBorders, margins: { top: 0, bottom: 0, left: 0, right: 0 }, children: [new docx.Paragraph({ alignment: docx.AlignmentType.LEFT, children: [new docx.TextRun({ text: ev.authors, font: "Times New Roman", size: 22 })] })] }),
-                    new docx.TableCell({ width: { size: 16.7, type: docx.WidthType.PERCENTAGE }, borders: noBorders, margins: { top: 0, bottom: 0, left: 0, right: 0 }, children: [new docx.Paragraph({ alignment: docx.AlignmentType.LEFT, children: [new docx.TextRun({ text: ev.platforms, font: "Times New Roman", size: 22 })] })] }),
-                    new docx.TableCell({ width: { size: 16.7, type: docx.WidthType.PERCENTAGE }, borders: noBorders, margins: { top: 0, bottom: 0, left: 0, right: 0 }, children: [new docx.Paragraph({ alignment: docx.AlignmentType.LEFT, children: imagelogo ? [imagelogo] : [] })] })
-                ]
-            }))
-        ];
-        const footerTable = new docx.Table({
-            width: { size: 100, type: docx.WidthType.PERCENTAGE },
-            borders: noBorders,
-            rows: footerTableRows
-        });
-
-        console.log("Footer Table processed successfully.");
-
+// Create header tables (top and bottom)
+function generateDocument(formData, headerTopTable, headerBottomTable, summaryTable, blankPara, incidentTable, narrativeTable, impactTable, objectivesTable, recommendationsTable, footerTable) {
+    return new Promise((resolve, reject) => {
         async function countHtmlLines() {
             const response = await fetch(window.location.href);
             const htmlText = await response.text();
             const lineCount = htmlText.split('\n').length;
             console.log(`This HTML file has approximately ${lineCount} lines.`);
-        return lineCount;
+            return lineCount;
         }
 
         let linecount = countHtmlLines(); // linecount is a Promise
@@ -1103,15 +360,15 @@ function downloadAsDocx() {
 
             // Update the docx.Document children array to add blankPara after every table
             const doc = new docx.Document({
-            creator: "Jesse Noort and Stephen Campbell", // This is a placeholder for the author(s) of the original HTML file 
-            title: "V7", // This is a placeholder for the version of the CDN Incident Report Word Template used to create this document
-            keywords: "1985", // This is a placeholder for the number of lines in the original HTML file
-            revision: count, // This is a placeholder for the number of lines in the actual HTML file used to generate this document
-            subject: "May 26, 2025", // This is a placeholder for the date of the original HTML file
-            description: "creator: author(s) of original HTML file, title: version of CDN Incident Report Word Template, keywords: #lines in original HTML file, revision: date of original HTML file, subject: date of original HTML file, description: this explanation",
+                creator: "Jesse Noort and Stephen Campbell", // This is a placeholder for the author(s) of the original HTML file 
+                title: "V7", // This is a placeholder for the version of the CDN Incident Report Word Template used to create this document
+                keywords: "1985", // This is a placeholder for the number of lines in the original HTML file
+                revision: count, // This is a placeholder for the number of lines in the actual HTML file used to generate this document
+                subject: "May 26, 2025", // This is a placeholder for the date of the original HTML file
+                description: "creator: author(s) of original HTML file, title: version of CDN Incident Report Word Template, keywords: #lines in original HTML file, revision: date of original HTML file, subject: date of original HTML file, description: this explanation",
                 sections: [{
                     children: [
-                        headerTopTable,headerBottomTable, 
+                        headerTopTable, headerBottomTable, 
                         summaryTable, blankPara,
                         incidentTable, blankPara,
                         narrativeTable, blankPara,
@@ -1126,11 +383,814 @@ function downloadAsDocx() {
             console.log("DOCX document structure created successfully with blanks between tables.");
 
             docx.Packer.toBlob(doc).then(blob => {
-                const sanitizedTitle = title.replace(/[^a-z0-9]/gi, '-').toLowerCase() || "incident-alert";
+                const sanitizedTitle = formData.title.replace(/[^a-z0-9]/gi, '-').toLowerCase() || "incident-alert";
                 saveAs(blob, `cdn-incident-alert-${sanitizedTitle}.docx`);
-            });
+                resolve();
+            }).catch(reject);
             console.log("DOCX file generated successfully.");
-        });    
+        }).catch(reject);    
+    });
+}
+
+function createObjectivesAndFooterTables(formData, noBorders, evidenceRows, imagelogo) {
+    // Key Objectives table
+    const objectivesTable = new docx.Table({
+        width: { size: 100, type: docx.WidthType.PERCENTAGE },
+        borders: noBorders,
+        rows: [
+            new docx.TableRow({
+                children: [
+                    new docx.TableCell({
+                        columnSpan: 3,
+                        shading: { fill: "8EAADB" },
+                        borders: noBorders,
+                        margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                        children: [
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: "Key Objectives and Behaviours",
+                                        bold: true,
+                                        font: "Times New Roman",
+                                        size: 22,
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                ],
+            }),
+            ...objectivesList.map(obj => new docx.TableRow({
+                children: [
+                    new docx.TableCell({
+                        columnSpan: 3,
+                        borders: noBorders,
+                        margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                        children: [
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: obj,
+                                        font: "Times New Roman",
+                                        size: 22,
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                ],
+            })),
+            ...ttpsList.map(ttp => new docx.TableRow({
+                children: [
+                    new docx.TableCell({
+                        columnSpan: 3,
+                        borders: noBorders,
+                        margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                        children: [
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: ttp,
+                                        font: "Times New Roman",
+                                        size: 22,
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                ],
+            })),
+        ],
+    });
+
+    console.log("Key Objectives Table processed successfully.");
+
+    // Build the footerTable rows
+    const footerTableRows = [
+        new docx.TableRow({
+            children: [
+                new docx.TableCell({ width: { size: 16.6, type: docx.WidthType.PERCENTAGE }, shading: { fill: "8EAADB" }, borders: noBorders, margins: { top: 0, bottom: 0, left: 0, right: 0 }, children: [new docx.Paragraph({ alignment: docx.AlignmentType.LEFT, children: [new docx.TextRun({ text: "Report", bold: true, font: "Times New Roman", size: 22 })] })] }),
+                new docx.TableCell({ width: { size: 16.6, type: docx.WidthType.PERCENTAGE }, shading: { fill: "8EAADB" }, borders: noBorders, margins: { top: 0, bottom: 0, left: 0, right: 0 }, children: [new docx.Paragraph({ alignment: docx.AlignmentType.LEFT, children: [new docx.TextRun({ text: "Threat Actor", bold: true, font: "Times New Roman", size: 22 })] })] }),
+                new docx.TableCell({ width: { size: 16.7, type: docx.WidthType.PERCENTAGE }, shading: { fill: "8EAADB" }, borders: noBorders, margins: { top: 0, bottom: 0, left: 0, right: 0 }, children: [new docx.Paragraph({ alignment: docx.AlignmentType.LEFT, children: [new docx.TextRun({ text: "Evidence", bold: true, font: "Times New Roman", size: 22 })] })] }),
+                new docx.TableCell({ width: { size: 16.7, type: docx.WidthType.PERCENTAGE }, shading: { fill: "8EAADB" }, borders: noBorders, margins: { top: 0, bottom: 0, left: 0, right: 0 }, children: [new docx.Paragraph({ alignment: docx.AlignmentType.LEFT, children: [new docx.TextRun({ text: "Authors", bold: true, font: "Times New Roman", size: 22 })] })] }),
+                new docx.TableCell({ width: { size: 16.7, type: docx.WidthType.PERCENTAGE }, shading: { fill: "8EAADB" }, borders: noBorders, margins: { top: 0, bottom: 0, left: 0, right: 0 }, children: [new docx.Paragraph({ alignment: docx.AlignmentType.LEFT, children: [new docx.TextRun({ text: "Platforms", bold: true, font: "Times New Roman", size: 22 })] })] }),
+                new docx.TableCell({ width: { size: 16.7, type: docx.WidthType.PERCENTAGE }, shading: { fill: "8EAADB" }, borders: noBorders, margins: { top: 0, bottom: 0, left: 0, right: 0 }, children: [new docx.Paragraph({ alignment: docx.AlignmentType.LEFT, children: [new docx.TextRun({ text: "Logo", bold: true, font: "Times New Roman", size: 22 })] })] })
+            ]
+        }),
+        ...evidenceRows.map(ev => new docx.TableRow({
+            children: [
+                new docx.TableCell({ width: { size: 16.6, type: docx.WidthType.PERCENTAGE }, borders: noBorders, margins: { top: 0, bottom: 0, left: 0, right: 0 }, children: [new docx.Paragraph({ alignment: docx.AlignmentType.LEFT, children: [new docx.TextRun({ text: ev.report, font: "Times New Roman", size: 22 })] })] }),
+                new docx.TableCell({ width: { size: 16.6, type: docx.WidthType.PERCENTAGE }, borders: noBorders, margins: { top: 0, bottom: 0, left: 0, right: 0 }, children: [new docx.Paragraph({ alignment: docx.AlignmentType.LEFT, children: [new docx.TextRun({ text: ev.threat, font: "Times New Roman", size: 22 })] })] }),
+                new docx.TableCell({ width: { size: 16.7, type: docx.WidthType.PERCENTAGE }, borders: noBorders, margins: { top: 0, bottom: 0, left: 0, right: 0 }, children: [new docx.Paragraph({ alignment: docx.AlignmentType.LEFT, children: [new docx.TextRun({ text: ev.evidence, font: "Times New Roman", size: 22 })] })] }),
+                new docx.TableCell({ width: { size: 16.7, type: docx.WidthType.PERCENTAGE }, borders: noBorders, margins: { top: 0, bottom: 0, left: 0, right: 0 }, children: [new docx.Paragraph({ alignment: docx.AlignmentType.LEFT, children: [new docx.TextRun({ text: ev.authors, font: "Times New Roman", size: 22 })] })] }),
+                new docx.TableCell({ width: { size: 16.7, type: docx.WidthType.PERCENTAGE }, borders: noBorders, margins: { top: 0, bottom: 0, left: 0, right: 0 }, children: [new docx.Paragraph({ alignment: docx.AlignmentType.LEFT, children: [new docx.TextRun({ text: ev.platforms, font: "Times New Roman", size: 22 })] })] }),
+                new docx.TableCell({ width: { size: 16.7, type: docx.WidthType.PERCENTAGE }, borders: noBorders, margins: { top: 0, bottom: 0, left: 0, right: 0 }, children: [new docx.Paragraph({ alignment: docx.AlignmentType.LEFT, children: imagelogo ? [imagelogo] : [] })] })
+            ]
+        }))
+    ];
+    const footerTable = new docx.Table({
+        width: { size: 100, type: docx.WidthType.PERCENTAGE },
+        borders: noBorders,
+        rows: footerTableRows
+    });
+
+    console.log("Footer Table processed successfully.");
+
+    return { objectivesTable, footerTable };
+}
+
+function createContentTables(formData, noBorders) {
+    // Incident table
+    const incidentTable = new docx.Table({
+        width: { size: 100, type: docx.WidthType.PERCENTAGE },
+        borders: noBorders,
+        rows: [
+            new docx.TableRow({
+                children: [
+                    new docx.TableCell({
+                        columnSpan: 3,
+                        shading: { fill: "8EAADB" },
+                        borders: noBorders,
+                        margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                        children: [
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: "Incident",
+                                        bold: true,
+                                        font: "Times New Roman",
+                                        size: 22,
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                ],
+            }),
+            new docx.TableRow({
+                children: [
+                    new docx.TableCell({
+                        columnSpan: 3,
+                        borders: noBorders,
+                        margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                        children: [
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: formData.incident,
+                                        font: "Times New Roman",
+                                        size: 22,
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                ],
+            }),
+        ],
+    });
+
+    console.log("Incident Table processed successfully.");
+
+    // Narrative table
+    const narrativeTable = new docx.Table({
+        width: { size: 100, type: docx.WidthType.PERCENTAGE },
+        borders: noBorders,
+        rows: [
+            new docx.TableRow({
+                children: [
+                    new docx.TableCell({
+                        columnSpan: 3,
+                        shading: { fill: "8EAADB" },
+                        borders: noBorders,
+                        margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                        children: [
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: "Narrative",
+                                        bold: true,
+                                        font: "Times New Roman",
+                                        size: 22,
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                ],
+            }),
+            new docx.TableRow({
+                children: [
+                    new docx.TableCell({
+                        columnSpan: 3,
+                        borders: noBorders,
+                        margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                        children: [
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: `Meta-narrative: ${formData.metaNarrative}`,
+                                        font: "Times New Roman",
+                                        size: 22,
+                                    }),
+                                ],
+                            }),
+                            formData.subNarrativeParagraph,
+                        ],
+                    }),
+                ],
+            }),
+        ],
+    });
+
+    console.log("Narrative Table processed successfully.");
+
+    // Impact table
+    const impactTable = new docx.Table({
+        width: { size: 100, type: docx.WidthType.PERCENTAGE },
+        borders: noBorders,
+        rows: [
+            new docx.TableRow({
+                children: [
+                    new docx.TableCell({
+                        columnSpan: 3,
+                        shading: { fill: "8EAADB" },
+                        borders: noBorders,
+                        margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                        children: [
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: "Impact and Outcome",
+                                        bold: true,
+                                        font: "Times New Roman",
+                                        size: 22,
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                ],
+            }),
+            new docx.TableRow({
+                children: [
+                    new docx.TableCell({
+                        columnSpan: 3,
+                        borders: noBorders,
+                        margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                        children: [
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: `Reach: ${formData.reach}`,
+                                        font: "Times New Roman",
+                                        size: 22,
+                                    }),
+                                ],
+                            }),
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: `Outcome: ${formData.outcome}`,
+                                        font: "Times New Roman",
+                                        size: 22,
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                ],
+            }),
+        ],
+    });
+
+    console.log("Impact Table processed successfully.");
+
+    // Recommendations table
+    const recommendationsTable = new docx.Table({
+        width: { size: 100, type: docx.WidthType.PERCENTAGE },
+        borders: noBorders,
+        rows: [
+            new docx.TableRow({
+                children: [
+                    new docx.TableCell({
+                        columnSpan: 3,
+                        shading: { fill: "8EAADB" },
+                        borders: noBorders,
+                        margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                        children: [
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: "Recommendations and Actions Taken",
+                                        bold: true,
+                                        font: "Times New Roman",
+                                        size: 22,
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                ],
+            }),
+            new docx.TableRow({
+                children: [
+                    new docx.TableCell({
+                        columnSpan: 3,
+                        borders: noBorders,
+                        margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                        children: [
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: `Actions Taken: ${formData.actionsTaken}`,
+                                        font: "Times New Roman",
+                                        size: 22,
+                                    }),
+                                ],
+                            }),
+                            formData.recommendationParagraph,
+                        ],
+                    }),
+                ],
+            }),
+        ],
+    });
+
+    console.log("Recommendations Table processed successfully.");
+
+    return {
+        incidentTable,
+        narrativeTable,
+        impactTable,
+        recommendationsTable
+    };
+}
+
+function createSummaryTable(formData, noBorders) {
+    const table = new docx.Table({
+        width: { size: 100, type: docx.WidthType.PERCENTAGE },
+        borders: noBorders,
+        rows: [
+            new docx.TableRow({
+                children: [
+                    new docx.TableCell({
+                        columnSpan: 8,
+                        shading: { fill: "8EAADB" },
+                        borders: noBorders,
+                        margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                        children: [
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: "Summary",
+                                        bold: true,
+                                        font: "Times New Roman",
+                                        size: 22,
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                ],
+            }),
+            new docx.TableRow({
+                children: [
+                    new docx.TableCell({
+                        columnSpan: 2,
+                        width: { size: 22, type: docx.WidthType.PERCENTAGE },
+                        shading: { fill: "8EAADB" },
+                        borders: noBorders,
+                        margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                        verticalAlign: docx.VerticalAlign.BOTTOM,
+                        children: [
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: "Incident",
+                                        bold: true,
+                                        font: "Times New Roman",
+                                        size: 22,
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                    new docx.TableCell({
+                        columnSpan: 6,
+                        width: { size: 78, type: docx.WidthType.PERCENTAGE },
+                        borders: noBorders,
+                        margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                        verticalAlign: docx.VerticalAlign.BOTTOM,
+                        children: [
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: " " + formData.summaryIncident,
+                                        bold: false,
+                                        font: "Times New Roman",
+                                        size: 22,
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                ],
+            }),
+            new docx.TableRow({
+                children: [
+                    new docx.TableCell({
+                        columnSpan: 2,
+                        width: { size: 22, type: docx.WidthType.PERCENTAGE },
+                        shading: { fill: "8EAADB" },
+                        borders: noBorders,
+                        margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                        verticalAlign: docx.VerticalAlign.BOTTOM,
+                        children: [
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: "Narrative",
+                                        bold: true,
+                                        font: "Times New Roman",
+                                        size: 22,
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                    new docx.TableCell({
+                        columnSpan: 6,
+                        width: { size: 78, type: docx.WidthType.PERCENTAGE },
+                        borders: noBorders,
+                        margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                        verticalAlign: docx.VerticalAlign.BOTTOM,
+                        children: [
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: " " + formData.summaryNarrative,
+                                        bold: false,
+                                        font: "Times New Roman",
+                                        size: 22,
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                ],
+            }),
+            new docx.TableRow({
+                children: [
+                    new docx.TableCell({
+                        columnSpan: 2,
+                        width: { size: 22, type: docx.WidthType.PERCENTAGE },
+                        shading: { fill: "8EAADB" },
+                        borders: noBorders,
+                        margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                        verticalAlign: docx.VerticalAlign.BOTTOM,
+                        children: [
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: "Impact",
+                                        bold: true,
+                                        font: "Times New Roman",
+                                        size: 22,
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                    new docx.TableCell({
+                        columnSpan: 6,
+                        width: { size: 78, type: docx.WidthType.PERCENTAGE },
+                        borders: noBorders,
+                        margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                        verticalAlign: docx.VerticalAlign.BOTTOM,
+                        children: [
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: " " + formData.summaryImpact,
+                                        bold: false,
+                                        font: "Times New Roman",
+                                        size: 22,
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                ],
+            }),
+            new docx.TableRow({
+                children: [
+                    new docx.TableCell({
+                        columnSpan: 2,
+                        width: { size: 22, type: docx.WidthType.PERCENTAGE },
+                        shading: { fill: "8EAADB" },
+                        borders: noBorders,
+                        margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                        verticalAlign: docx.VerticalAlign.BOTTOM,
+                        children: [
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: "DISARM TTPs",
+                                        bold: true,
+                                        font: "Times New Roman",
+                                        size: 22,
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                    new docx.TableCell({
+                        columnSpan: 6,
+                        width: { size: 78, type: docx.WidthType.PERCENTAGE },
+                        borders: noBorders,
+                        margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                        verticalAlign: docx.VerticalAlign.BOTTOM,
+                        children: [
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: " " + formData.summaryTTPs,
+                                        bold: false,
+                                        font: "Times New Roman",
+                                        size: 22,
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                ],
+            }),
+            new docx.TableRow({
+                children: [
+                    new docx.TableCell({
+                        columnSpan: 2,
+                        width: { size: 22, type: docx.WidthType.PERCENTAGE },
+                        shading: { fill: "8EAADB" },
+                        borders: noBorders,
+                        margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                        verticalAlign: docx.VerticalAlign.BOTTOM,
+                        children: [
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: "Recommendations",
+                                        bold: true,
+                                        font: "Times New Roman",
+                                        size: 22,
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                    new docx.TableCell({
+                        columnSpan: 6,
+                        width: { size: 78, type: docx.WidthType.PERCENTAGE },
+                        borders: noBorders,
+                        margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                        verticalAlign: docx.VerticalAlign.BOTTOM,
+                        children: [
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: " " + formData.summaryRecommendations,
+                                        bold: false,
+                                        font: "Times New Roman",
+                                        size: 22,
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                ],
+            }),              
+        ],
+    });
+
+    console.log("Summary Table processed successfully.");
+    return table;
+}
+
+function createHeaderTables(formData, noBorders) {
+    const headerTopTable = new docx.Table({
+        width: { size: 100, type: docx.WidthType.PERCENTAGE },
+        borders: noBorders,
+        rows: [
+            new docx.TableRow({
+                children: [
+                    new docx.TableCell({
+                        shading: { fill: "8EAADB" },
+                        borders: noBorders,
+                        columnSpan: 3,
+                        width: { size: 30, type: docx.WidthType.PERCENTAGE },
+                        margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                        children: [
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: `CDN Incident Alert: ${formData.incidentNumber}`,
+                                        bold: true,
+                                        font: "Times New Roman",
+                                        size: 22,
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                    new docx.TableCell({
+                        shading: { fill: "8EAADB" },
+                        borders: noBorders,
+                        columnSpan: 2,
+                        margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                        children: [
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: `${formData.tlpLevel}`, 
+                                        bold: false,
+                                        font: "Times New Roman",
+                                        size: 22,
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                    new docx.TableCell({
+                        shading: { fill: "8EAADB" },
+                        borders: noBorders,
+                        margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                        columnSpan: 2,
+                        width: { size: 15, type: docx.WidthType.PERCENTAGE },
+                        children: [
+                            new docx.Paragraph({
+                                alignment: docx.AlignmentType.RIGHT,
+                                children: [
+                                    new docx.TextRun({
+                                        text: "Date", 
+                                        bold: false,
+                                        font: "Times New Roman",
+                                        size: 22,
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                ],
+            }),
+        ],
+    });
+
+    const blankPara = new docx.Paragraph({ text: "", spacing: { after: 0, before: 0 } });
+    const blankRow = new docx.TableRow({
+        children: [new docx.TableCell({ columnSpan: 8, children: [blankPara], borders: noBorders })],
+    });
+
+    const headerBottomTable = new docx.Table({
+        width: { size: 100, type: docx.WidthType.PERCENTAGE },
+        borders: noBorders,
+        rows: [
+            new docx.TableRow({
+                children: [
+                    new docx.TableCell({
+                        columnSpan: 1,
+                        width: { size: 10, type: docx.WidthType.PERCENTAGE },
+                        shading: { fill: "8EAADB" },
+                        borders: noBorders,
+                        margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                        verticalAlign: docx.VerticalAlign.BOTTOM,
+                        children: [
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: "Title",
+                                        bold: true,
+                                        font: "Times New Roman",
+                                        size: 22,
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                    new docx.TableCell({
+                        columnSpan: 1,
+                        width: { size: 10, type: docx.WidthType.PERCENTAGE },
+                        borders: noBorders,
+                        margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                        verticalAlign: docx.VerticalAlign.BOTTOM,
+                        children: [
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: " " + formData.country,
+                                        bold: false,
+                                        font: "Times New Roman",
+                                        size: 22,
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                    new docx.TableCell({
+                        columnSpan: 3,
+                        width: { size: 65, type: docx.WidthType.PERCENTAGE },
+                        borders: noBorders,
+                        margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                        verticalAlign: docx.VerticalAlign.BOTTOM,
+                        children: [
+                            new docx.Paragraph({
+                                children: [
+                                    new docx.TextRun({
+                                        text: formData.title,
+                                        bold: false,
+                                        font: "Times New Roman",
+                                        size: 22,
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                    new docx.TableCell({
+                        columnSpan: 3,
+                        width: { size: 15, type: docx.WidthType.PERCENTAGE },
+                        borders: noBorders,
+                        margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                        verticalAlign: docx.VerticalAlign.BOTTOM,
+                        children: [
+                            new docx.Paragraph({
+                                alignment: docx.AlignmentType.RIGHT,
+                                children: [
+                                    new docx.TextRun({
+                                        text: formData.date,
+                                        bold: false,
+                                        font: "Times New Roman",
+                                        size: 22,
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                ],
+            }),
+            blankRow,
+        ],
+    });
+
+    console.log("Header tables processed successfully.");
+    return { headerTopTable, headerBottomTable, blankPara, blankRow };
+}
+
+async function downloadAsDocx() {
+    console.log("Starting the DOCX generation process...");
+
+    try {
+        // Get all form data
+        const formData = collectFormData();
+        const narratives = processNarratives();
+        const objectives = processObjectivesAndTTPs();
+
+        console.log("Form values collected successfully.");
+
+        // Set border style to none for all tables
+        const noBorders = {
+            top: { style: docx.BorderStyle.NONE },
+            bottom: { style: docx.BorderStyle.NONE },
+            left: { style: docx.BorderStyle.NONE },
+            right: { style: docx.BorderStyle.NONE },
+            insideHorizontal: { style: docx.BorderStyle.NONE },
+            insideVertical: { style: docx.BorderStyle.NONE }
+        };
+
+        // Create header tables
+        const { headerTopTable, headerBottomTable, blankPara, blankRow } = createHeaderTables(formData, noBorders);
+
+        // 2. Summary table
+        const summaryTable = createSummaryTable(formData, noBorders);
+
+        // Create content tables
+        const { incidentTable, narrativeTable, impactTable, recommendationsTable } = createContentTables(formData, noBorders);
+
+        // Collect evidence rows
+        const evidenceRows = Array.from(document.querySelectorAll('.evidence-row')).map(row => ({
+            report: row.querySelector('.evidence-report-url')?.value || "",
+            threat: row.querySelector('.evidence-threat')?.value || "",
+            evidence: row.querySelector('.evidence-evidence-link')?.value || "",
+            authors: getAuthorsString(row.querySelector('.evidence-authors') || document.createElement('div')),
+            platforms: row.querySelector('.evidence-platforms')?.value || "",
+            logo: row.querySelector('.evidence-logo')?.value || "",
+        }));
+
+        console.log("Evidence rows collected successfully.");
+
+        // Create objectives and footer tables
+        const { objectivesTable, footerTable } = createObjectivesAndFooterTables(formData, noBorders, evidenceRows, imagelogo);
+
+        // Generate and save document
+        await generateDocument(formData, headerTopTable, headerBottomTable, summaryTable, blankPara, incidentTable, narrativeTable, impactTable, objectivesTable, recommendationsTable, footerTable);    
     } catch (error) {
         console.error("Error in the DOCX generation process:", error);
         alert("An error occurred during the DOCX generation process. Please check the console for details.");
