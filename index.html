@@ -154,9 +154,12 @@
                 <span>
                     Select 2 objectives and 4 TTPs from the 
                     <a href="https://disarmfoundation.github.io/disarm-navigator/" target="_blank">DISARM Framework.</a>
-                    Enter manually or use the DISARM Navigator to select TTPs and create and upload layer file.
+                    Enter manually, use the interactive framework, or upload from Navigator layer file.
                 </span>
-                <button type="button" class="add-button" onclick="uploadNavigatorFile()">Upload from Navigator layer file</button>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button type="button" class="add-button" onclick="openDISARMFramework()">Interactive DISARM Framework</button>
+                    <button type="button" class="add-button" onclick="uploadNavigatorFile()">Upload from Navigator layer file</button>
+                </div>
             </div>
             <div id="objectives-container">
                 <div class="objective-entry">
@@ -254,7 +257,17 @@
         </div>
     </div>
 
-    <script src="CDN report generator main.js" defer></script>
+    <!-- Module Scripts - Load in dependency order -->
+    <script src="config.js" defer></script>
+    <script src="data-processing.js" defer></script>
+    <script src="ui-interactions.js" defer></script>
+    <script src="docx-header-tables.js" defer></script>
+    <script src="docx-summary-table.js" defer></script>
+    <script src="docx-content-tables.js" defer></script>
+    <script src="docx-footer-tables.js" defer></script>
+    <script src="docx-generator.js" defer></script>
+    <script src="image-handling.js" defer></script>
+    <script src="main.js" defer></script>
 
 </body>
 </html>

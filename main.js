@@ -1,0 +1,51 @@
+/**
+ * Main JavaScript File
+ * Initializes all modules and sets up the application
+ */
+
+// Initialize the application once the DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('CDN Incident Alert Generator loaded successfully');
+    
+    // Initialize all modules
+    initializeConfig();
+    initializeUIInteractions();
+    initializeURLValidation();
+    initializeImageHandling();
+    
+    // Set default date to today
+    const dateInput = document.getElementById('date');
+    if (dateInput) {
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.value = today;
+    }
+    
+    // Open the form tab by default
+    const firstTabButton = document.querySelector('.tab-button');
+    if (firstTabButton) {
+        firstTabButton.click();
+    }
+});
+
+// Global initialization functions that modules can define
+function initializeConfig() {
+    // Configuration already initialized in config.js
+}
+
+function initializeUIInteractions() {
+    // UI interactions already set up in ui-interactions.js
+}
+
+function initializeURLValidation() {
+    // URL validation set up in data-processing.js
+    if (typeof initializeURLValidation !== 'undefined') {
+        initializeURLValidation();
+    }
+}
+
+function initializeImageHandling() {
+    // Image handling set up in image-handling.js
+    if (typeof initializeImageHandling !== 'undefined') {
+        initializeImageHandling();
+    }
+}
