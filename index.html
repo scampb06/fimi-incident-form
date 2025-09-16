@@ -14,8 +14,6 @@
     
     <div class="tabs">
         <button class="tab-button active" onclick="openTab(event, 'form-tab')">Input Form</button>
-        <!-- <button class="tab-button" onclick="openTab(event, 'preview-tab')">Preview</button>
-        <button class="tab-button" onclick="openTab(event, 'observables-tab')">Observables</button> -->
     </div>
     
     <div id="form-tab" class="tab-content" style="display: block;">
@@ -45,7 +43,7 @@
                 <option value="CZ">CZ</option>
                 <option value="DK">DK</option>
                 <option value="EE">EE</option>
-                <option value="EU" selected>EU</option>
+                <option value="EU">EU</option>
                 <option value="FI">FI</option>
                 <option value="FR">FR</option>
                 <option value="GE">GE</option>
@@ -242,22 +240,10 @@
         <div id="logo-message" style="color: red; margin-top: 5px; text-align: right;"></div>
         
         <div class="buttons">
-            <!-- <button type="button" onclick="generatePreview()">Generate Preview</button> -->
             <button type="button" onclick="downloadAsDocx()">Download DOCX</button>
-            <!-- <button type="button" onclick="downloadAsPdf()">Download PDF</button> -->
-            <!-- <button type="button" onclick="downloadTemplate()">Download HTML</button> -->
         </div>
-    </div>
-    
-    <div id="preview-tab" class="tab-content">
-        <h2>Preview of Generated Template</h2>
-        <div id="preview-content" class="preview"></div>
-        <div class="buttons">
-            <button type="button" onclick="downloadAsPdf()">Download PDF</button>
-            <button type="button" onclick="downloadTemplate()">Download HTML</button>
-        </div>
-    </div>
-    
+    </div> 
+   
     <div id="authorModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.3); z-index:1000;">
         <div style="background:white; padding:20px; border-radius:8px; width:300px; margin:100px auto;">
             <h3>Add Author</h3>
@@ -267,45 +253,6 @@
             <button onclick="closeAuthorModal()">Cancel</button>
         </div>
     </div>
-
-    <!-- <div id="observables-tab" class="tab-content">
-        <h2>Observables Spreadsheet Generator</h2>
-        <div class="section">
-            <p>Enter information about observed items (accounts, websites, content, etc.) related to the incident.</p>
-            
-            <div id="observables-container">
-                <div class="observable-entry">
-                    <h3>Observable #1</h3>
-                    <label for="obs-platform-1">Platform:</label>
-                    <input type="text" id="obs-platform-1" placeholder="E.g., Twitter, Facebook, Website">
-                    
-                    <label for="obs-type-1">Type:</label>
-                    <select id="obs-type-1">
-                        <option value="Account">Account</option>
-                        <option value="Website">Website</option>
-                        <option value="Post">Post/Content</option>
-                        <option value="Channel">Channel</option>
-                        <option value="Group">Group</option>
-                        <option value="Other">Other</option>
-                    </select>
-                    
-                    <label for="obs-identifier-1">Identifier/URL:</label>
-                    <input type="text" id="obs-identifier-1" placeholder="Account name, URL, etc.">
-                    
-                    <label for="obs-details-1">Details/Notes:</label>
-                    <textarea id="obs-details-1" placeholder="Additional details about this observable"></textarea>
-                    
-                    <label for="obs-evidence-1">Evidence Link:</label>
-                    <input type="text" id="obs-evidence-1" placeholder="Link to archived page, screenshot, etc.">
-                </div>
-            </div>
-            
-            <button type="button" class="add-button" onclick="addObservable()">Add Observable</button>
-            <button type="button" onclick="downloadObservables()">Download Observables Spreadsheet</button>
-        </div>
-    </div>
-    
-    <div id="pdf-output"></div> -->
 
     <script src="CDN report generator main.js" defer></script>
 
