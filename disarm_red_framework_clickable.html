@@ -24,7 +24,7 @@ function handleTechniqueClick(box) {
       window.parent.postMessage({
         type: 'techniqueSelected',
         techniqueId: box,
-        techniqueName: technique.textContent.replace(/^\w+\s+/, '').replace(/\s*$/, ''), // Clean technique name
+        techniqueName: technique.textContent.replace(/^T[\d\.]+\s+/, '').replace(/\s*$/, ''), // Clean technique name
         tactic: tacticColumn,
         isObjective: isObjective,
         selected: true
@@ -43,7 +43,7 @@ function handleTechniqueClick(box) {
        window.parent.postMessage({
          type: 'techniqueSelected',
          techniqueId: box,
-         techniqueName: technique.textContent.replace(/^\w+\s+/, '').replace(/\s*$/, ''), // Clean technique name
+         techniqueName: technique.textContent.replace(/^T[\d\.]+\s+/, '').replace(/\s*$/, ''), // Clean technique name
          tactic: tacticColumn,
          isObjective: isObjective,
          selected: false
