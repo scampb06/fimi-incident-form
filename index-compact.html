@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FIMI Incident Report Generator - Compact Layout</title>
+    <link rel="stylesheet" href="CDN report generator style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://unpkg.com/docx@7.1.0/build/index.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        /* Compact Layout Styles */
+        .compact-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .form-section {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            padding: 20px;
+        }
+
+        .section-header {
+            background: #007cba;
+            color: white;
+            margin: -20px -20px 20px -20px;
+            padding: 12px 20px;
+            font-weight: bold;
+            font-size: 16px;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+            align-items: flex-start;
+        }
+
+        .form-col {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .form-col.narrow {
+            flex: 0 0 200px;
+        }
+
+        .form-col.wide {
+            flex: 2;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .dynamic-field-container {
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: white;
+            position: relative;
+        }
+
+        .dynamic-field-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .field-number {
+            background: #007cba;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .remove-field-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .remove-field-btn:hover {
+            background: #c82333;
+        }
+
+        .add-field-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .add-field-btn:hover {
+            background: #218838;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+
+        .action-buttons button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn-primary {
+            background: #007cba;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #005a8a;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .objectives-ttps-section {
+            display: flex;
+            gap: 20px;
+        }
+
+        .objectives-panel,
+        .ttps-panel {
+            flex: 1;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+        }
+
+        .panel-header {
+            background: #f8f9fa;
+            margin: -15px -15px 15px -15px;
+            padding: 10px 15px;
+            font-weight: bold;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .selection-counter {
+            float: right;
+            background: #007cba;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .form-row {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .objectives-ttps-section {
+                flex-direction: column;
+            }
+
+            .compact-container {
+                padding: 10px;
+            }
+        }
+
+        /* Hide original form fields that we'll replace with dynamic ones */
+        #recommendations, 
+        #sub-narratives-container,
+        .sub-narrative-group:not(:first-child),
+        .recommendation-group:not(:first-child) {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="compact-container">
+        <header style="text-align: center; margin-bottom: 30px;">
+            <h1>FIMI Incident Report Generator</h1>
+            <p style="color: #666;">Compact Layout - Streamlined Form Design</p>
+        </header>
+
+        <form id="incidentForm">
+            <!-- Basic Information Section -->
+            <div class="form-section">
+                <div class="section-header">📋 Basic Information</div>
+                
+                <div class="form-row">
+                    <div class="form-col narrow">
+                        <div class="form-group">
+                            <label for="incidentNumber">Incident Number:</label>
+                            <input type="text" id="incidentNumber" placeholder="e.g., 2024-001">
+                        </div>
+                    </div>
+                    <div class="form-col narrow">
+                        <div class="form-group">
+                            <label for="tlpLevel">TLP Level:</label>
+                            <select id="tlpLevel">
+                                <option value="TLP:CLEAR">TLP:CLEAR</option>
+                                <option value="TLP:GREEN">TLP:GREEN</option>
+                                <option value="TLP:AMBER">TLP:AMBER</option>
+                                <option value="TLP:RED">TLP:RED</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="date">Date:</label>
+                            <input type="date" id="date">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="country">Country/Region:</label>
+                            <select id="country" multiple>
+                                <option value="Australia">Australia</option>
+                                <option value="Canada">Canada</option>
+                                <option value="France">France</option>
+                                <option value="Germany">Germany</option>
+                                <option value="Italy">Italy</option>
+                                <option value="Japan">Japan</option>
+                                <option value="United Kingdom">United Kingdom</option>
+                                <option value="United States">United States</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-col wide">
+                        <div class="form-group">
+                            <label for="title">Incident Title:</label>
+                            <input type="text" id="title" placeholder="Brief descriptive title">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Section -->
+            <div class="form-section">
+                <div class="section-header">📝 Executive Summary</div>
+                
+                <div class="form-row">
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="summary-incident">Incident Summary:</label>
+                            <textarea id="summary-incident" placeholder="Brief overview of the incident"></textarea>
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="summary-impact">Impact Assessment:</label>
+                            <textarea id="summary-impact" placeholder="Impact on targets/objectives"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="summary-narrative">Narrative Summary:</label>
+                            <textarea id="summary-narrative" placeholder="Key narrative elements"></textarea>
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="summary-ttps">TTPs Summary:</label>
+                            <textarea id="summary-ttps" placeholder="Techniques, tactics, and procedures used"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="summary-recommendations">Recommendations:</label>
+                    <textarea id="summary-recommendations" placeholder="Key recommendations and next steps"></textarea>
+                </div>
+            </div>
+
+            <!-- Detailed Analysis Section -->
+            <div class="form-section">
+                <div class="section-header">🔍 Detailed Analysis</div>
+                
+                <div class="form-row">
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="incident">Incident Description:</label>
+                            <textarea id="incident" rows="4" placeholder="Detailed incident description"></textarea>
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="metaNarrative">Meta-Narrative:</label>
+                            <textarea id="metaNarrative" rows="4" placeholder="Overarching narrative theme"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="reach">Reach & Scale:</label>
+                            <textarea id="reach" placeholder="Audience reach and scale metrics"></textarea>
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="outcome">Outcome Assessment:</label>
+                            <textarea id="outcome" placeholder="Observed outcomes and effects"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="actionsTaken">Actions Taken:</label>
+                    <textarea id="actionsTaken" placeholder="Response actions and mitigation measures"></textarea>
+                </div>
+            </div>
+
+            <!-- Dynamic Sub-Narratives Section -->
+            <div class="form-section">
+                <div class="section-header">📖 Sub-Narratives</div>
+                <div id="dynamic-sub-narratives">
+                    <div class="dynamic-field-container">
+                        <div class="dynamic-field-header">
+                            <span class="field-number">Sub-Narrative 1</span>
+                        </div>
+                        <textarea class="sub-narrative-text" placeholder="Describe the first sub-narrative..." rows="3"></textarea>
+                    </div>
+                </div>
+                <button type="button" class="add-field-btn" onclick="addSubNarrative()">+ Add Another Sub-Narrative</button>
+            </div>
+
+            <!-- Dynamic Recommendations Section -->
+            <div class="form-section">
+                <div class="section-header">💡 Detailed Recommendations</div>
+                <div id="dynamic-recommendations">
+                    <div class="dynamic-field-container">
+                        <div class="dynamic-field-header">
+                            <span class="field-number">Recommendation 1</span>
+                        </div>
+                        <textarea class="recommendation-text" placeholder="Describe the first recommendation..." rows="3"></textarea>
+                    </div>
+                </div>
+                <button type="button" class="add-field-btn" onclick="addRecommendation()">+ Add Another Recommendation</button>
+            </div>
+
+            <!-- DISARM Framework Section -->
+            <div class="form-section">
+                <div class="section-header">🛡️ DISARM Framework Analysis</div>
+                
+                <div class="action-buttons">
+                    <button type="button" class="btn-secondary" onclick="uploadNavigatorFile()">📁 Upload Navigator File</button>
+                    <button type="button" class="btn-primary" onclick="openDISARMFramework()">🎯 Interactive DISARM Framework</button>
+                </div>
+
+                <div class="objectives-ttps-section">
+                    <div class="objectives-panel">
+                        <div class="panel-header">
+                            Objectives 
+                            <span class="selection-counter" id="objectives-counter">0/2</span>
+                        </div>
+                        <div id="objectives-container">
+                            <p style="color: #666; font-style: italic;">Select objectives using the tools above...</p>
+                        </div>
+                    </div>
+
+                    <div class="ttps-panel">
+                        <div class="panel-header">
+                            TTPs (Techniques, Tactics, Procedures)
+                            <span class="selection-counter" id="ttps-counter">0/4</span>
+                        </div>
+                        <div id="ttps-container">
+                            <p style="color: #666; font-style: italic;">Select TTPs using the tools above...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- URLs Section -->
+            <div class="form-section">
+                <div class="section-header">🔗 Reference URLs</div>
+                
+                <div class="form-row">
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="reporturlInput">Report URL:</label>
+                            <input type="url" id="reporturlInput" placeholder="https://example.com/report">
+                            <div id="reporturlError" style="color: red; font-size: 12px; display: none;"></div>
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="evidenceurlInput">Evidence URL:</label>
+                            <input type="url" id="evidenceurlInput" placeholder="https://example.com/evidence">
+                            <div id="evidenceurlError" style="color: red; font-size: 12px; display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions Section -->
+            <div class="form-section">
+                <div class="section-header">🚀 Generate Report</div>
+                
+                <div class="action-buttons">
+                    <button type="button" class="btn-success" onclick="downloadAsDocx()">📄 Download as Word Document</button>
+                    <button type="button" class="btn-primary" onclick="downloadAsPDF()">📑 Download as PDF</button>
+                    <button type="button" class="btn-secondary" onclick="resetForm()">🔄 Reset Form</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Hidden original form elements for compatibility -->
+    <div style="display: none;">
+        <div id="sub-narratives-container"></div>
+        <div id="recommendations"></div>
+        <input type="file" id="imageInput" accept="image/*">
+    </div>
+
+    <!-- Module Scripts - Load in dependency order -->
+    <script src="config.js" defer></script>
+    <script src="form-data-processing.js" defer></script>
+    <script src="disarm-framework-integration.js" defer></script>
+    <script src="objectives-ttps-management.js" defer></script>
+    <script src="url-validation.js" defer></script>
+    <script src="ui-interactions.js" defer></script>
+    <script src="docx-header-tables.js" defer></script>
+    <script src="docx-summary-table.js" defer></script>
+    <script src="docx-content-tables.js" defer></script>
+    <script src="docx-footer-tables.js" defer></script>
+    <script src="docx-generator.js" defer></script>
+    <script src="image-handling.js" defer></script>
+    <script src="main.js" defer></script>
+
+    <script>
+        // Dynamic field management functions
+        let subNarrativeCount = 1;
+        let recommendationCount = 1;
+
+        function addSubNarrative() {
+            subNarrativeCount++;
+            const container = document.getElementById('dynamic-sub-narratives');
+            const newField = document.createElement('div');
+            newField.className = 'dynamic-field-container';
+            newField.innerHTML = `
+                <div class="dynamic-field-header">
+                    <span class="field-number">Sub-Narrative ${subNarrativeCount}</span>
+                    <button type="button" class="remove-field-btn" onclick="removeSubNarrative(this)">Remove</button>
+                </div>
+                <textarea class="sub-narrative-text" placeholder="Describe this sub-narrative..." rows="3"></textarea>
+            `;
+            container.appendChild(newField);
+        }
+
+        function removeSubNarrative(button) {
+            button.closest('.dynamic-field-container').remove();
+            // Renumber remaining fields
+            const containers = document.querySelectorAll('#dynamic-sub-narratives .dynamic-field-container');
+            containers.forEach((container, index) => {
+                container.querySelector('.field-number').textContent = `Sub-Narrative ${index + 1}`;
+            });
+            subNarrativeCount = containers.length;
+        }
+
+        function addRecommendation() {
+            recommendationCount++;
+            const container = document.getElementById('dynamic-recommendations');
+            const newField = document.createElement('div');
+            newField.className = 'dynamic-field-container';
+            newField.innerHTML = `
+                <div class="dynamic-field-header">
+                    <span class="field-number">Recommendation ${recommendationCount}</span>
+                    <button type="button" class="remove-field-btn" onclick="removeRecommendation(this)">Remove</button>
+                </div>
+                <textarea class="recommendation-text" placeholder="Describe this recommendation..." rows="3"></textarea>
+            `;
+            container.appendChild(newField);
+        }
+
+        function removeRecommendation(button) {
+            button.closest('.dynamic-field-container').remove();
+            // Renumber remaining fields
+            const containers = document.querySelectorAll('#dynamic-recommendations .dynamic-field-container');
+            containers.forEach((container, index) => {
+                container.querySelector('.field-number').textContent = `Recommendation ${index + 1}`;
+            });
+            recommendationCount = containers.length;
+        }
+
+        // Update counters when objectives/TTPs change
+        function updateCounters() {
+            const objectivesCounter = document.getElementById('objectives-counter');
+            const ttpsCounter = document.getElementById('ttps-counter');
+            
+            if (objectivesCounter) {
+                objectivesCounter.textContent = `${objectivesList.length}/2`;
+            }
+            if (ttpsCounter) {
+                ttpsCounter.textContent = `${ttpsList.length}/4`;
+            }
+        }
+
+        // Override the original updateSelectionInfo function to also update our counters
+        const originalUpdateSelectionInfo = window.updateSelectionInfo;
+        window.updateSelectionInfo = function() {
+            if (originalUpdateSelectionInfo) {
+                originalUpdateSelectionInfo();
+            }
+            updateCounters();
+        };
+
+        // Initialize counters on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCounters();
+        });
+
+        function resetForm() {
+            if (confirm('Are you sure you want to reset the entire form? This will clear all entered data.')) {
+                document.getElementById('incidentForm').reset();
+                
+                // Reset dynamic fields to just one each
+                document.getElementById('dynamic-sub-narratives').innerHTML = `
+                    <div class="dynamic-field-container">
+                        <div class="dynamic-field-header">
+                            <span class="field-number">Sub-Narrative 1</span>
+                        </div>
+                        <textarea class="sub-narrative-text" placeholder="Describe the first sub-narrative..." rows="3"></textarea>
+                    </div>
+                `;
+                
+                document.getElementById('dynamic-recommendations').innerHTML = `
+                    <div class="dynamic-field-container">
+                        <div class="dynamic-field-header">
+                            <span class="field-number">Recommendation 1</span>
+                        </div>
+                        <textarea class="recommendation-text" placeholder="Describe the first recommendation..." rows="3"></textarea>
+                    </div>
+                `;
+                
+                subNarrativeCount = 1;
+                recommendationCount = 1;
+                
+                // Clear objectives and TTPs
+                objectivesList = [];
+                ttpsList = [];
+                
+                // Reset containers
+                document.getElementById('objectives-container').innerHTML = '<p style="color: #666; font-style: italic;">Select objectives using the tools above...</p>';
+                document.getElementById('ttps-container').innerHTML = '<p style="color: #666; font-style: italic;">Select TTPs using the tools above...</p>';
+                
+                updateCounters();
+            }
+        }
+    </script>
+</body>
+</html>
