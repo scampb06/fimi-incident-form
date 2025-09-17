@@ -15,12 +15,18 @@ function handleTechniqueClick(box) {
     text.style.display = "block";
     technique.bgColor = "Lime";
     
+    // Determine the tactic based on technique position in table
+    var tacticColumn = getTacticColumn(technique);
+    var isObjective = (tacticColumn === 'TA01' || tacticColumn === 'TA02');
+    
     // Send selection to parent window
     if (window.parent && window.parent !== window) {
       window.parent.postMessage({
         type: 'techniqueSelected',
         techniqueId: box,
         techniqueName: technique.textContent.replace(/^\w+\s+/, '').replace(/\s*$/, ''), // Clean technique name
+        tactic: tacticColumn,
+        isObjective: isObjective,
         selected: true
       }, '*');
     }
@@ -28,16 +34,47 @@ function handleTechniqueClick(box) {
      text.style.display = "none";
      technique.bgColor = "Silver";
      
+     // Determine the tactic based on technique position in table
+     var tacticColumn = getTacticColumn(technique);
+     var isObjective = (tacticColumn === 'TA01' || tacticColumn === 'TA02');
+     
      // Send deselection to parent window
      if (window.parent && window.parent !== window) {
        window.parent.postMessage({
          type: 'techniqueSelected',
          techniqueId: box,
          techniqueName: technique.textContent.replace(/^\w+\s+/, '').replace(/\s*$/, ''), // Clean technique name
+         tactic: tacticColumn,
+         isObjective: isObjective,
          selected: false
        }, '*');
      }
   }
+}
+
+// Helper function to determine which tactic column a technique belongs to
+function getTacticColumn(techniqueElement) {
+  // Find the technique's position in its table row
+  var row = techniqueElement.parentElement;
+  var cells = row.getElementsByTagName('td');
+  var columnIndex = -1;
+  
+  for (var i = 0; i < cells.length; i++) {
+    if (cells[i] === techniqueElement) {
+      columnIndex = i;
+      break;
+    }
+  }
+  
+  // Map column index to tactic
+  var tactics = ['TA01', 'TA02', 'TA05', 'TA06', 'TA07', 'TA08', 'TA09', 'TA10', 'TA11', 'TA12', 'TA13', 'TA14', 'TA15', 'TA16', 'TA17', 'TA18'];
+  
+  if (columnIndex >= 0 && columnIndex < tactics.length) {
+    return tactics[columnIndex];
+  }
+  
+  // Fallback: if we can't determine position, use TA05+ (TTP) as default
+  return 'TA05';
 }
 
 // Add visual feedback for iframe usage
@@ -54,7 +91,7 @@ document.addEventListener('DOMContentLoaded', function() {
     z-index: 1000;
     font-weight: bold;
   `;
-  header.innerHTML = '✓ Interactive DISARM Framework - Click techniques to add them to your report';
+  header.innerHTML = '✓ Interactive DISARM Framework - Click techniques to add them to your report<br><small>🎯 Columns 1-2 = Objectives | 📋 Columns 3+ = TTPs</small>';
   document.body.insertBefore(header, document.body.firstChild);
   
   // Add styling to make checkboxes more visible
@@ -70,6 +107,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     td:hover {
       background-color: #e8f5e8 !important;
+    }
+    /* Highlight objective columns */
+    table tr td:nth-child(1),
+    table tr td:nth-child(2) {
+      border-left: 3px solid #ff9800;
+    }
+    table tr td:nth-child(1) {
+      background-color: #fff3e0 !important;
+    }
+    table tr td:nth-child(2) {
+      background-color: #fff8e1 !important;
     }
   `;
   document.head.appendChild(style);
