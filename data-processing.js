@@ -166,33 +166,33 @@ function openDISARMFramework() {
     // Add message listener for iframe communication
     window.addEventListener('message', function(event) {
         if (event.data && event.data.type === 'techniqueSelected') {
-            const { techniqueId, techniqueName, selected } = event.data;
+            const { techniqueId, techniqueName, tactic, isObjective, selected } = event.data;
             
             if (selected) {
-                // Determine if it's an objective or TTP based on the ID pattern
-                if (techniqueId.startsWith('TA')) {
-                    // It's an objective
+                // Use the tactic information from the iframe to determine categorization
+                if (isObjective || tactic === 'TA01' || tactic === 'TA02') {
+                    // It's an objective (from TA01 Plan Strategy or TA02 Plan Objectives)
                     if (!objectivesList.some(obj => obj.includes(techniqueId))) {
                         objectivesList.push(`${techniqueId}: ${techniqueName}`);
-                        console.log('Added objective:', `${techniqueId}: ${techniqueName}`);
+                        console.log('Added objective ('+tactic+'):', `${techniqueId}: ${techniqueName}`);
                     }
-                } else if (techniqueId.startsWith('T')) {
-                    // It's a TTP
+                } else {
+                    // It's a TTP (from TA05+ columns)
                     if (!ttpsList.some(ttp => ttp.includes(techniqueId))) {
                         ttpsList.push(`${techniqueId}: ${techniqueName}`);
-                        console.log('Added TTP:', `${techniqueId}: ${techniqueName}`);
+                        console.log('Added TTP ('+tactic+'):', `${techniqueId}: ${techniqueName}`);
                     }
                 }
                 updateSelectionInfo();
             } else {
                 // Remove from appropriate list
-                if (techniqueId.startsWith('TA')) {
+                if (isObjective || tactic === 'TA01' || tactic === 'TA02') {
                     objectivesList = objectivesList.filter(obj => !obj.includes(techniqueId));
-                } else if (techniqueId.startsWith('T')) {
+                } else {
                     ttpsList = ttpsList.filter(ttp => !ttp.includes(techniqueId));
                 }
                 updateSelectionInfo();
-                console.log('Removed technique:', techniqueId);
+                console.log('Removed technique ('+tactic+'):', techniqueId);
             }
         }
     });
@@ -241,7 +241,7 @@ function openDISARMFramework() {
     
     const instructions = document.createElement('p');
     instructions.style.cssText = 'margin: 0; font-size: 14px; color: #666;';
-    instructions.innerHTML = 'Browse the framework below for reference, then use "Add Custom Objective/TTP" to input technique IDs. If the framework doesn\'t load, you can <a href="https://github.com/DISARMFoundation/DISARMframeworks/blob/main/generated_files/disarm_red_framework_clickable.html" target="_blank">open it in a new tab</a>.';
+    instructions.innerHTML = 'Click techniques in the framework below to add them to your report. If the framework doesn\'t load, you can <a href="https://github.com/DISARMFoundation/DISARMframeworks/blob/main/generated_files/disarm_red_framework_clickable.html" target="_blank">open it in a new tab</a>.';
     
     headerLeft.appendChild(title);
     headerLeft.appendChild(instructions);
@@ -301,13 +301,13 @@ function openDISARMFramework() {
             `;
             errorMsg.innerHTML = `
                 <h3>📋 DISARM Framework Reference</h3>
-                <p>Use the manual selection buttons below to add techniques to your report.</p>
-                <p><strong>For reference:</strong> <a href="https://github.com/DISARMFoundation/DISARMframeworks/blob/main/generated_files/disarm_red_framework_clickable.html" target="_blank">View DISARM Framework in new tab</a></p>
+                <p>The interactive framework couldn't be loaded. Please open the framework in a new tab to reference techniques.</p>
+                <p><strong>Reference:</strong> <a href="https://github.com/DISARMFoundation/DISARMframeworks/blob/main/generated_files/disarm_red_framework_clickable.html" target="_blank">View DISARM Framework in new tab</a></p>
                 <div style="margin-top: 20px; padding: 15px; background: #e7f3ff; border-radius: 4px; text-align: left;">
-                    <strong>Quick Reference:</strong><br>
-                    • <strong>Objectives</strong> (select 2): TA01 Plan Strategy, TA02 Plan Objectives<br>
-                    • <strong>TTPs</strong> (select up to 4): TA03-TA17 (Execute, Assess, Target, etc.)<br>
-                    • Technique IDs format: T0001, T0002, T0003, etc.
+                    <strong>Framework Structure:</strong><br>
+                    • <strong>Objectives</strong> (columns 1-2): TA01 Plan Strategy, TA02 Plan Objectives<br>
+                    • <strong>TTPs</strong> (columns 3+): TA05-TA18 (Microtarget, Develop Content, etc.)<br>
+                    • Click on techniques directly in the interactive version when available
                 </div>
             `;
             iframe.parentNode.replaceChild(errorMsg, iframe);
@@ -351,84 +351,15 @@ function openDISARMFramework() {
     // Start with the first URL
     tryNextUrl();
     
-    // Add technique selection buttons for manual selection
-    const manualSelectionDiv = document.createElement('div');
-    manualSelectionDiv.style.cssText = `
-        padding: 15px;
-        border-top: 1px solid #ccc;
-        background: #f9f9f9;
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-        align-items: center;
-    `;
-    
-    const manualLabel = document.createElement('span');
-    manualLabel.textContent = 'Quick Add:';
-    manualLabel.style.fontWeight = 'bold';
-    
-    const addObjectiveBtn = document.createElement('button');
-    addObjectiveBtn.textContent = 'Add Custom Objective';
-    addObjectiveBtn.style.cssText = 'padding: 5px 10px; background: #28a745; color: white; border: none; border-radius: 3px; cursor: pointer;';
-    addObjectiveBtn.onclick = () => addCustomTechnique('objective');
-    
-    const addTTPBtn = document.createElement('button');
-    addTTPBtn.textContent = 'Add Custom TTP';
-    addTTPBtn.style.cssText = 'padding: 5px 10px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer;';
-    addTTPBtn.onclick = () => addCustomTechnique('ttp');
-    
-    manualSelectionDiv.appendChild(manualLabel);
-    manualSelectionDiv.appendChild(addObjectiveBtn);
-    manualSelectionDiv.appendChild(addTTPBtn);
-    
     modalHeader.appendChild(headerLeft);
     modalHeader.appendChild(selectionInfo);
     modalHeader.appendChild(closeButton);
     modalContent.appendChild(modalHeader);
     modalContent.appendChild(iframe);
-    modalContent.appendChild(manualSelectionDiv);
     modal.appendChild(modalContent);
     document.body.appendChild(modal);
     
     console.log('DISARM Framework modal opened');
-}
-
-// Add custom technique through prompt
-function addCustomTechnique(type) {
-    const isObjective = type === 'objective';
-    const currentList = isObjective ? objectivesList : ttpsList;
-    const maxCount = isObjective ? 2 : 4;
-    const typeName = isObjective ? 'Objective' : 'TTP';
-    
-    if (currentList.length >= maxCount) {
-        alert(`Maximum ${maxCount} ${typeName.toLowerCase()}s allowed. Remove an existing one first.`);
-        return;
-    }
-    
-    const techniqueId = prompt(`Enter DISARM ${typeName} ID from the framework below (e.g., T0001, T0002, etc.):`);
-    if (!techniqueId) return;
-    
-    const description = prompt(`Enter description/justification for ${typeName} ${techniqueId}:`);
-    if (!description) return;
-    
-    // Fetch the technique title
-    fetchTechniqueTitle(techniqueId).then(title => {
-        const fullText = `${typeName}: ${title} - ${description}`;
-        
-        if (!currentList.includes(fullText)) {
-            currentList.push(fullText);
-            updateSelectionInfo();
-            console.log(`Added custom ${typeName.toLowerCase()}: ${title}`);
-        }
-    }).catch(error => {
-        console.error('Error fetching technique title:', error);
-        const fullText = `${typeName}: ${techniqueId} - ${description}`;
-        if (!currentList.includes(fullText)) {
-            currentList.push(fullText);
-            updateSelectionInfo();
-            console.log(`Added custom ${typeName.toLowerCase()}: ${techniqueId}`);
-        }
-    });
 }
 
 // Handle technique clicks from the iframe (fallback for manual input)
