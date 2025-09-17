@@ -1,105 +1,9 @@
 /**
- * Data Processing Module
- * Handles form data collection, processing, validation, and file uploads
+ * DISARM Framework Integration Module
+ * Handles DISARM Navigator file uploads and interactive framework selection
  */
 
-// Form Data Collection
-function collectFormData() {
-    return {
-        incidentNumber: document.getElementById("incidentNumber").value || "0000",
-        tlpLevel: document.getElementById("tlpLevel").value || "TLP:CLEAR",
-        selectedCountries: document.getElementById('country').selectedOptions,
-        country: Array.from(document.getElementById('country').selectedOptions).map(option => option.value).join(', ') || "",
-        title: document.getElementById("title").value || "",
-        date: document.getElementById("date").value || "",
-        summaryIncident: document.getElementById("summary-incident").value || "",
-        summaryNarrative: document.getElementById("summary-narrative").value || "",
-        summaryImpact: document.getElementById("summary-impact").value || "",
-        summaryTTPs: document.getElementById("summary-ttps").value || "",
-        summaryRecommendations: document.getElementById("summary-recommendations").value || "",
-        incident: document.getElementById("incident").value || "",
-        metaNarrative: document.getElementById("metaNarrative").value || "",
-        reach: document.getElementById("reach").value || "",
-        outcome: document.getElementById("outcome").value || "",
-        actionsTaken: document.getElementById("actionsTaken").value || ""
-    };
-}
-
-// Process narratives and recommendations into docx paragraphs
-function processNarratives() {
-    const subNarrativeEntries = document.querySelectorAll(".sub-narrative-text");
-    let subNarratives = Array.from(subNarrativeEntries)
-        .map((entry, index) => `Sub-Narrative ${index + 1}: ${entry.value || ""}`)
-        .join("\n");
-
-    const subNarrativeTextRuns = subNarratives.split("\n").map(line => 
-        new docx.TextRun({ 
-            break: 1, 
-            text: line, 
-            font: "Times New Roman", 
-            size: 22 
-        })
-    );
-    const subNarrativeParagraph = new docx.Paragraph({ children: subNarrativeTextRuns });
-
-    const recommendationEntries = document.querySelectorAll(".recommendation-text");
-    let recommendations = Array.from(recommendationEntries)
-        .map((entry, index) => `Recommendation ${index + 1}: ${entry.value || ""}`)
-        .join("\n");
-
-    const recommendationTextRuns = recommendations.split("\n").map(line => 
-        new docx.TextRun({ 
-            break: 1, 
-            text: line, 
-            font: "Times New Roman", 
-            size: 22 
-        })
-    );
-    const recommendationParagraph = new docx.Paragraph({ children: recommendationTextRuns });
-
-    return {
-        subNarratives,
-        subNarrativeParagraph,
-        recommendations,
-        recommendationParagraph
-    };
-}
-
-// Process objectives and TTPs if navigator file wasn't uploaded
-function processObjectivesAndTTPs() {
-    if (!navigatorFileUploaded) {
-        // Get objectives and TTPs
-        const objectiveEntries = document.querySelectorAll('.objective-entry');
-        objectivesList = [];
-        objectiveEntries.forEach((entry) => {
-            const objTitle = entry.querySelector('.objective-title').value || '';
-            const objJust = entry.querySelector('.objective-justification').value || '';
-            if (objTitle.trim() !== '') {
-                if (objJust.trim() !== '') {
-                    objectivesList.push(`Objective: ${objTitle} - ${objJust}`);
-                } else {
-                    objectivesList.push(`Objective: ${objTitle}`);
-                }
-            }
-        });
-
-        const ttpEntries = document.querySelectorAll('.ttp-entry');
-        ttpsList = [];
-        ttpEntries.forEach((entry) => {
-            const ttpTitle = entry.querySelector('.ttp-title').value || '';
-            const ttpExpl = entry.querySelector('.ttp-explanation').value || '';
-            if (ttpTitle.trim() !== '' || ttpExpl.trim() !== '') {
-                ttpsList.push(`TTP: ${ttpTitle}${ttpExpl ? ' - ' + ttpExpl : ''}`);
-            }
-        });
-
-        console.log("Objectives and TTPs collected successfully.");
-    }
-    
-    return { objectivesList, ttpsList };
-}
-
-// Navigator File Upload and Processing
+// Upload and process DISARM Navigator JSON file
 async function uploadNavigatorFile() {
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
@@ -366,189 +270,60 @@ function openDISARMFramework() {
 function handleTechniqueClick(event) {
     // This is a fallback handler - the main interaction will be through manual input
     // since we can't directly interact with the GitHub-hosted iframe content
-    console.log('Message received from iframe:', event.data);
+    console.log('Technique click handler triggered');
 }
 
-// Update selection information display
+// Update selection info display
 function updateSelectionInfo() {
     const selectionInfo = document.getElementById('selectionInfo');
     if (selectionInfo) {
-        const objectivesCount = objectivesList.length;
-        const ttpsCount = ttpsList.length;
-        selectionInfo.textContent = `Objectives: ${objectivesCount}/2 | TTPs: ${ttpsCount}/4`;
+        const objectiveCount = objectivesList.length;
+        const ttpCount = ttpsList.length;
+        selectionInfo.textContent = `Objectives: ${objectiveCount}/2 | TTPs: ${ttpCount}/4`;
         
-        // Change color based on completion
-        if (objectivesCount === 2 && ttpsCount === 4) {
-            selectionInfo.style.color = '#28a745'; // Green when complete
-        } else if (objectivesCount > 0 || ttpsCount > 0) {
-            selectionInfo.style.color = '#007cba'; // Blue when partially complete
+        // Update styling based on limits
+        if (objectiveCount >= 2 || ttpCount >= 4) {
+            selectionInfo.style.color = '#28a745'; // Green when near/at limit
         } else {
-            selectionInfo.style.color = '#666'; // Gray when empty
+            selectionInfo.style.color = '#666'; // Default gray
         }
     }
+    
+    // Also update the main form UI
+    updateObjectivesAndTTPsUI();
 }
 
 // Close DISARM modal and update UI
 function closeDISARMModal(modal) {
-    // Remove the modal
-    document.body.removeChild(modal);
+    if (modal && modal.parentNode) {
+        modal.parentNode.removeChild(modal);
+    }
     
-    // Remove the message listener
-    window.removeEventListener('message', handleTechniqueClick);
-    
-    // Update the UI with selected objectives and TTPs
+    // Update the main form with selected techniques
     updateObjectivesAndTTPsUI();
     
-    // Mark as completed (similar to navigator file upload)
-    navigatorFileUploaded = true;
-    
-    const totalSelected = objectivesList.length + ttpsList.length;
-    if (totalSelected > 0) {
-        alert(`DISARM techniques selected successfully! (${objectivesList.length} objectives, ${ttpsList.length} TTPs)`);
-    } else {
-        alert('No techniques were selected. You can still manually enter objectives and TTPs in the form.');
-    }
-    
     console.log('DISARM Framework modal closed');
+    console.log('Final objectives:', objectivesList);
+    console.log('Final TTPs:', ttpsList);
 }
 
-// Update the UI with selected objectives and TTPs
-function updateObjectivesAndTTPsUI() {
-    // Populate the objectives in the UI
-    const objectivesContainer = document.getElementById('objectives-container');
-    if (objectivesContainer && objectivesList.length > 0) {
-        objectivesContainer.innerHTML = objectivesList.map((obj, index) => `
-            <div class="objective-entry">
-                <label>Objective ${index + 1}:</label>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <span style="flex: 1; padding: 8px; background: #f0f8ff; border: 1px solid #ddd; border-radius: 4px;">${obj}</span>
-                    <button type="button" class="remove-button" onclick="removeObjectiveFromList(${index})">Remove</button>
-                </div>
-            </div>
-        `).join('');
-    }
-
-    // Populate the TTPs in the UI
-    const ttpsContainer = document.getElementById('ttps-container');
-    if (ttpsContainer && ttpsList.length > 0) {
-        ttpsContainer.innerHTML = ttpsList.map((ttp, index) => `
-            <div class="ttp-entry">
-                <label>TTP ${index + 1}:</label>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <span style="flex: 1; padding: 8px; background: #fff5f5; border: 1px solid #ddd; border-radius: 4px;">${ttp}</span>
-                    <button type="button" class="remove-button" onclick="removeTTPFromList(${index})">Remove</button>
-                </div>
-            </div>
-        `).join('');
-        
-        // Remove the "Add TTP" button after populating
-        const addTTPButton = document.getElementById('addTTPButton');
-        if (addTTPButton) {
-            addTTPButton.style.display = 'none';
-        }
-    }
-}
-
-// Remove objective from list by index
-function removeObjectiveFromList(index) {
-    if (index >= 0 && index < objectivesList.length) {
-        const removedObj = objectivesList.splice(index, 1)[0];
-        updateObjectivesAndTTPsUI();
-        updateSelectionInfo();
-        console.log(`Removed objective: ${removedObj}`);
-    }
-}
-
-// Remove TTP from list by index
-function removeTTPFromList(index) {
-    if (index >= 0 && index < ttpsList.length) {
-        const removedTTP = ttpsList.splice(index, 1)[0];
-        updateObjectivesAndTTPsUI();
-        updateSelectionInfo();
-        console.log(`Removed TTP: ${removedTTP}`);
-        
-        // Show the "Add TTP" button if all TTPs are removed
-        if (ttpsList.length === 0) {
-            const addTTPButton = document.getElementById('addTTPButton');
-            if (addTTPButton) {
-                addTTPButton.style.display = 'block';
-            }
-        }
-    }
-}
-
-// Fetch technique title from DISARM framework
+// Fetch technique title from DISARM API or fallback
 async function fetchTechniqueTitle(techniqueID) {
-    const url = `https://raw.githubusercontent.com/DISARMFoundation/DISARMframeworks/refs/heads/main/generated_pages/techniques/${techniqueID}.md`;
     try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`Failed to fetch ${url}`);
-        const text = await response.text();
-        const lines = text.split('\n');
-        for (const line of lines) {
-            if (line.startsWith('# Technique ')) {
-                const title = line.replace('# Technique ', '').trim(); // Extract the part after '# Technique '
-                if (title) return title;
+        // Try DISARM framework GitHub API first
+        const response = await fetch(`https://raw.githubusercontent.com/DISARMFoundation/DISARMframeworks/main/techniques/${techniqueID}.md`);
+        if (response.ok) {
+            const text = await response.text();
+            const titleMatch = text.match(/^# (.+)$/m);
+            if (titleMatch) {
+                return titleMatch[1];
             }
         }
+        
+        // Fallback to technique ID if title not found
+        return techniqueID;
     } catch (error) {
-        console.error(`Error fetching technique title for ${techniqueID}:`, error);
+        console.warn(`Could not fetch title for ${techniqueID}:`, error);
+        return techniqueID;
     }
-    return `Technique ${techniqueID}`;
-}
-
-// URL Validation Functions
-function validatereportURL(url) {
-    try {
-        new URL(url);
-        reporturlerror.style.display = 'none';
-    } catch (_) {
-        reporturlerror.style.display = 'block';
-        reporturlerror.textContent = 'Invalid URL. Please enter a valid URL starting with http:// or https://';
-    }
-}
-
-function validateevidenceURL(url) {
-    try {
-        new URL(url);
-        evidenceurlerror.style.display = 'none';
-    } catch (_) {
-        evidenceurlerror.style.display = 'block';
-        evidenceurlerror.textContent = 'Invalid URL. Please enter a valid URL starting with http:// or https://';
-    }
-}
-
-// Initialize URL validation listeners
-function initializeURLValidation() {
-    const reporturlinput = document.getElementById('reporturlInput');
-    const reporturlerror = document.getElementById('reporturlError');
-    let reportdebounceTimer;
-
-    reporturlinput.addEventListener('input', () => {
-        clearTimeout(reportdebounceTimer);
-        reportdebounceTimer = setTimeout(() => {
-            const url = reporturlinput.value.trim();
-            if (url) {
-                validatereportURL(url);
-            } else {
-                reporturlerror.style.display = 'none';
-            }
-        }, 500); // wait 500ms after typing stops
-    });
-
-    const evidenceurlinput = document.getElementById('evidenceurlInput');
-    const evidenceurlerror = document.getElementById('evidenceurlError');
-    let evidencedebounceTimer;
-
-    evidenceurlinput.addEventListener('input', () => {
-        clearTimeout(evidencedebounceTimer);
-        evidencedebounceTimer = setTimeout(() => {
-            const url = evidenceurlinput.value.trim();
-            if (url) {
-                validateevidenceURL(url);
-            } else {
-                evidenceurlerror.style.display = 'none';
-            }
-        }, 500); // wait 500ms after typing stops
-    });
 }
