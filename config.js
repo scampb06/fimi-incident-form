@@ -13,8 +13,8 @@ let navigatorFileUploaded = false; // Track if the navigator file was uploaded s
 let ttpCount = 1;
 let observableCount = 1;
 let authorCount = 1;
-let subNarrativeCount = 2; // Start from 2 since one is already present
-let recommendationCount = 2; // Start from 2 since one is already present
+let subNarrativeCount = 1; // Start from 1 since one is already present in compact form
+let recommendationCount = 1; // Start from 1 since one is already present in compact form
 
 // Debounce timers for URL validation
 let reportdebounceTimer;
