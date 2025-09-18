@@ -37,10 +37,8 @@ function initializeUIInteractions() {
 }
 
 function initializeURLValidation() {
-    // URL validation set up in data-processing.js
-    if (typeof initializeURLValidation !== 'undefined') {
-        initializeURLValidation();
-    }
+    // URL validation is handled in ui-interactions.js
+    // No need to call anything here - it's already initialized
 }
 
 function initializeImageHandling() {

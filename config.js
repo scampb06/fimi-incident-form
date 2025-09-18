@@ -12,6 +12,7 @@ let navigatorFileUploaded = false; // Track if the navigator file was uploaded s
 // UI counters for dynamic form elements
 let ttpCount = 1;
 let observableCount = 1;
+let authorCount = 1;
 let subNarrativeCount = 2; // Start from 2 since one is already present
 let recommendationCount = 2; // Start from 2 since one is already present
 

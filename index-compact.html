@@ -595,9 +595,7 @@
 
     <script>
         // Dynamic field management functions
-        let subNarrativeCount = 1;
-        let recommendationCount = 1;
-        let authorCount = 1;
+        // Note: subNarrativeCount, recommendationCount, and authorCount are declared in config.js
 
         function addInlineAuthor() {
             authorCount++;
@@ -731,6 +729,11 @@
 
         // Update counters when objectives/TTPs change
         function updateCounters() {
+            // Check if the global variables are available
+            if (typeof objectivesList === 'undefined' || typeof ttpsList === 'undefined') {
+                return;
+            }
+            
             const objectivesCounter = document.getElementById('objectives-counter');
             const ttpsCounter = document.getElementById('ttps-counter');
             
@@ -751,9 +754,16 @@
             updateCounters();
         };
 
-        // Initialize counters on page load
+        // Initialize counters on page load (with retry for external scripts)
         document.addEventListener('DOMContentLoaded', function() {
-            updateCounters();
+            function tryUpdateCounters() {
+                if (typeof objectivesList !== 'undefined' && typeof ttpsList !== 'undefined') {
+                    updateCounters();
+                } else {
+                    setTimeout(tryUpdateCounters, 100);
+                }
+            }
+            tryUpdateCounters();
         });
 
         function resetForm() {

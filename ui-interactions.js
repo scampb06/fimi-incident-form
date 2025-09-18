@@ -158,6 +158,12 @@ function validateevidenceURL(url) {
  * Initialize URL validation event listeners
  */
 function initializeURLValidation() {
+    // Wait for config to initialize DOM references
+    if (!reporturlinput) {
+        setTimeout(initializeURLValidation, 100);
+        return;
+    }
+    
     if (reporturlinput) {
         reporturlinput.addEventListener('input', () => {
             clearTimeout(reportdebounceTimer);
