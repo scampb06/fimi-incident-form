@@ -99,8 +99,9 @@ async function downloadAsDocx() {
 
         console.log("Evidence rows collected successfully.");
 
-        // Create objectives and footer tables
-        const { objectivesTable, footerTable } = createObjectivesAndFooterTables(formData, noBorders, evidenceRows, imagelogo);
+        // Create objectives and footer tables (use global imagelogo or null if not defined)
+        const logoToUse = typeof imagelogo !== 'undefined' ? imagelogo : null;
+        const { objectivesTable, footerTable } = createObjectivesAndFooterTables(formData, noBorders, evidenceRows, logoToUse);
 
         // Generate and save document
         await generateDocument(formData, headerTopTable, headerBottomTable, summaryTable, blankPara, incidentTable, narrativeTable, impactTable, objectivesTable, recommendationsTable, footerTable);    
