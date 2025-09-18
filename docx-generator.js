@@ -87,15 +87,15 @@ async function downloadAsDocx() {
         // Create content tables
         const { incidentTable, narrativeTable, impactTable, recommendationsTable } = createContentTables(formData, noBorders);
 
-        // Collect evidence rows
-        const evidenceRows = Array.from(document.querySelectorAll('.evidence-row')).map(row => ({
-            report: row.querySelector('.evidence-report-url')?.value || "",
-            threat: row.querySelector('.evidence-threat')?.value || "",
-            evidence: row.querySelector('.evidence-evidence-link')?.value || "",
-            authors: getAuthorsString(row.querySelector('.evidence-authors') || document.createElement('div')),
-            platforms: row.querySelector('.evidence-platforms')?.value || "",
-            logo: row.querySelector('.evidence-logo')?.value || "",
-        }));
+        // Collect evidence data from the new compact form structure
+        const evidenceRows = [{
+            report: document.getElementById('reporturlInput')?.value || "",
+            threat: document.getElementById('threatActor')?.value || "",
+            evidence: document.getElementById('evidenceurlInput')?.value || "",
+            authors: getAuthorsStringFromInlineInputs(),
+            platforms: document.getElementById('platforms')?.value || "", // Will add this field to Assessment section
+            logo: "", // Logo field was removed from compact form
+        }].filter(row => row.report || row.threat || row.evidence || row.authors || row.platforms); // Only include if has data
 
         console.log("Evidence rows collected successfully.");
 
@@ -111,7 +111,33 @@ async function downloadAsDocx() {
     }
 }
 
-// Utility function to get authors string
+// Utility function to get authors string from inline inputs
+function getAuthorsStringFromInlineInputs() {
+    const authors = [];
+    
+    // Get primary author
+    const primaryName = document.getElementById('authorName1')?.value?.trim();
+    const primaryOrg = document.getElementById('authorOrg1')?.value?.trim();
+    if (primaryName || primaryOrg) {
+        authors.push(`${primaryName || 'Unknown'}, ${primaryOrg || 'Unknown Org'}`);
+    }
+    
+    // Get additional authors
+    const nameInputs = document.querySelectorAll('.author-name-input:not(#authorName1)');
+    const orgInputs = document.querySelectorAll('.author-org-input:not(#authorOrg1)');
+    
+    for (let i = 0; i < nameInputs.length; i++) {
+        const name = nameInputs[i]?.value?.trim();
+        const org = orgInputs[i]?.value?.trim();
+        if (name || org) {
+            authors.push(`${name || 'Unknown'}, ${org || 'Unknown Org'}`);
+        }
+    }
+    
+    return authors.join('; ');
+}
+
+// Utility function to get authors string (legacy - keeping for compatibility)
 function getAuthorsString(authorsDiv) {
     return Array.from(authorsDiv.querySelectorAll('.author-name'))
         .map(span => span.childNodes[0].textContent.trim())
