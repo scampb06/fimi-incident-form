@@ -648,6 +648,41 @@
             return authors.join('; ');
         }
 
+        // Override the functions from ui-interactions.js after DOM loads
+        window.addEventListener('DOMContentLoaded', function() {
+            // Override addSubNarrative for compact form
+            window.addSubNarrative = function() {
+                subNarrativeCount++;
+                const container = document.getElementById('dynamic-sub-narratives');
+                const newField = document.createElement('div');
+                newField.className = 'dynamic-field-container';
+                newField.innerHTML = `
+                    <div class="dynamic-field-header">
+                        <span class="field-number">Sub-Narrative ${subNarrativeCount}</span>
+                        <button type="button" class="remove-field-btn" onclick="removeSubNarrative(this)">Remove</button>
+                    </div>
+                    <textarea class="sub-narrative-text" placeholder="Describe this sub-narrative..." rows="3"></textarea>
+                `;
+                container.appendChild(newField);
+            };
+
+            // Override addRecommendation for compact form
+            window.addRecommendation = function() {
+                recommendationCount++;
+                const container = document.getElementById('dynamic-recommendations');
+                const newField = document.createElement('div');
+                newField.className = 'dynamic-field-container';
+                newField.innerHTML = `
+                    <div class="dynamic-field-header">
+                        <span class="field-number">Recommendation ${recommendationCount}</span>
+                        <button type="button" class="remove-field-btn" onclick="removeRecommendation(this)">Remove</button>
+                    </div>
+                    <textarea class="recommendation-text" placeholder="Describe this recommendation..." rows="3"></textarea>
+                `;
+                container.appendChild(newField);
+            };
+        });
+
         function addSubNarrative() {
             subNarrativeCount++;
             const container = document.getElementById('dynamic-sub-narratives');
