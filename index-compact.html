@@ -37,7 +37,7 @@
         .form-row {
             display: flex;
             gap: 20px;
-            margin-bottom: 15px;
+            margin-bottom: 10px; /* Reduced from 15px for more compact spacing */
             align-items: flex-start; /* Align items to top */
         }
 
@@ -57,7 +57,7 @@
         }
 
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 10px; /* Reduced from 15px for more compact spacing */
         }
 
         .form-group label {
@@ -306,6 +306,44 @@
                 <div class="form-row">
                     <div class="form-col">
                         <div class="form-group">
+                            <label for="reporturlInput">Report URL:</label>
+                            <input type="url" id="reporturlInput" placeholder="https://example.com/report">
+                            <div id="reporturlError" style="color: red; font-size: 12px; display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="authorName1" title="Author Name">Author's Name:</label>
+                            <input type="text" id="authorName1" class="author-name-input" placeholder="Name">
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="authorOrg1" title="Author Organization">Author's Organization:</label>
+                            <input type="text" id="authorOrg1" class="author-org-input" placeholder="Organization">
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label style="visibility: hidden;">Placeholder</label> <!-- Hidden label to maintain spacing -->
+                            <button type="button" class="add-field-btn" onclick="addInlineAuthor()" style="width: 150px; margin-top: 0;">+ Add Author</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="additional-authors"></div>
+            </div>
+
+            <!-- Assessment Section -->
+            <div class="form-section">
+                <div class="section-header">🔍 Assessment</div>
+                
+                <div class="form-row">
+                    <div class="form-col">
+                        <div class="form-group">
                             <label for="threatActor" title="Threat Actor(s)">Threat Actor(s):</label>
                             <input type="text" id="threatActor" placeholder="e.g., Russia, China etc.">
                         </div>
@@ -363,47 +401,128 @@
                         </div>
                     </div>
                 </div>
-
-                <div class="form-row">
-                    <div class="form-col">
-                        <div style="font-weight: bold; margin-bottom: 15px; color: #333;">Author(s)</div>
-                    </div>
-                </div>
-
+                
                 <div class="form-row">
                     <div class="form-col">
                         <div class="form-group">
-                            <label for="authorName1" title="Author Name">Name:</label>
-                            <input type="text" id="authorName1" class="author-name-input" placeholder="Name">
+                            <label for="reach">Reach & Scale:</label>
+                            <textarea id="reach" placeholder="Audience reach and scale metrics"></textarea>
                         </div>
                     </div>
                     <div class="form-col">
                         <div class="form-group">
-                            <label for="authorOrg1" title="Author Organization">Organization:</label>
-                            <input type="text" id="authorOrg1" class="author-org-input" placeholder="Organization">
-                        </div>
-                    </div>
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label title="Logo">Logo:</label>
-                            <img class="evidence-logo" id="imagePreview" alt="No image uploaded yet" style="display: none;" />
-                            <button class="add-button" onclick="triggerFilePicker()">Upload Logo</button>
-                            <input type="file" id="logoFileInput" accept="image/*" title="Please upload a JPEG, PNG, BMP, or GIF image." style="display:none" onchange="previewImage(event)">
-                            <div id="logo-message" style="color: red; margin-top: 5px; font-size: 12px;"></div>
+                            <label for="outcome">Outcome Assessment:</label>
+                            <textarea id="outcome" placeholder="Observed outcomes and effects"></textarea>
                         </div>
                     </div>
                 </div>
 
-                <div id="additional-authors"></div>
-
                 <div class="form-row">
                     <div class="form-col">
-                        <button type="button" class="add-field-btn" onclick="addInlineAuthor()" style="width: 150px;">+ Add Author</button>
+                        <div class="form-group">
+                            <label for="incident">Incident Description:</label>
+                            <textarea id="incident" rows="4" placeholder="Detailed incident description"></textarea>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Summary Section -->
+            <!-- Narratives Section -->
+            <div class="form-section">
+                <div class="section-header">📖 Narratives</div>
+                
+                <div class="form-row">
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="metaNarrative">Meta-Narrative:</label>
+                            <textarea id="metaNarrative" rows="4" placeholder="Overarching narrative theme"></textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="dynamic-sub-narratives">
+                    <div class="dynamic-field-container">
+                        <div class="dynamic-field-header">
+                            <span class="field-number">Sub-Narrative 1</span>
+                        </div>
+                        <textarea class="sub-narrative-text" placeholder="Describe the first sub-narrative..." rows="3"></textarea>
+                    </div>
+                </div>
+                <button type="button" class="add-field-btn" onclick="addSubNarrative()">+ Add Another Sub-Narrative</button>
+            </div>
+
+            <!-- DISARM Framework Section -->
+            <div class="form-section">
+                <div class="section-header">🛡️ DISARM Framework Analysis</div>
+                
+                <div class="action-buttons">
+                    <button type="button" class="btn-secondary" onclick="uploadNavigatorFile()">📁 Upload Navigator File</button>
+                    <button type="button" class="btn-primary" onclick="openDISARMFramework()">🎯 Interactive DISARM Framework</button>
+                </div>
+
+                <div class="objectives-ttps-section">
+                    <div class="objectives-panel">
+                        <div class="panel-header">
+                            Objectives 
+                            <span class="selection-counter" id="objectives-counter">0/2</span>
+                        </div>
+                        <div id="objectives-container">
+                            <p style="color: #666; font-style: italic;">Select objectives using the tools above...</p>
+                        </div>
+                    </div>
+
+                    <div class="ttps-panel">
+                        <div class="panel-header">
+                            TTPs (Techniques, Tactics, Procedures)
+                            <span class="selection-counter" id="ttps-counter">0/4</span>
+                        </div>
+                        <div id="ttps-container">
+                            <p style="color: #666; font-style: italic;">Select TTPs using the tools above...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Incident Response Section -->
+            <div class="form-section">
+                <div class="section-header">💡 Incident Response</div>
+                
+                <div class="form-row">
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="actionsTaken">Actions Taken:</label>
+                            <textarea id="actionsTaken" placeholder="Response actions and mitigation measures"></textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="dynamic-recommendations">
+                    <div class="dynamic-field-container">
+                        <div class="dynamic-field-header">
+                            <span class="field-number">Recommendation 1</span>
+                        </div>
+                        <textarea class="recommendation-text" placeholder="Describe the first recommendation..." rows="3"></textarea>
+                    </div>
+                </div>
+                <button type="button" class="add-field-btn" onclick="addRecommendation()">+ Add Another Recommendation</button>
+            </div>
+
+            <!-- URLs Section -->
+            <div class="form-section">
+                <div class="section-header">🔗 Reference URLs</div>
+                
+                <div class="form-row">
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="evidenceurlInput">Evidence URL:</label>
+                            <input type="url" id="evidenceurlInput" placeholder="https://example.com/evidence">
+                            <div id="evidenceurlError" style="color: red; font-size: 12px; display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Executive Summary Section -->
             <div class="form-section">
                 <div class="section-header">📝 Executive Summary</div>
                 
@@ -440,128 +559,6 @@
                 <div class="form-group">
                     <label for="summary-recommendations">Recommendations:</label>
                     <textarea id="summary-recommendations" placeholder="Key recommendations and next steps"></textarea>
-                </div>
-            </div>
-
-            <!-- Detailed Analysis Section -->
-            <div class="form-section">
-                <div class="section-header">🔍 Detailed Analysis</div>
-                
-                <div class="form-row">
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label for="incident">Incident Description:</label>
-                            <textarea id="incident" rows="4" placeholder="Detailed incident description"></textarea>
-                        </div>
-                    </div>
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label for="metaNarrative">Meta-Narrative:</label>
-                            <textarea id="metaNarrative" rows="4" placeholder="Overarching narrative theme"></textarea>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label for="reach">Reach & Scale:</label>
-                            <textarea id="reach" placeholder="Audience reach and scale metrics"></textarea>
-                        </div>
-                    </div>
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label for="outcome">Outcome Assessment:</label>
-                            <textarea id="outcome" placeholder="Observed outcomes and effects"></textarea>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="actionsTaken">Actions Taken:</label>
-                    <textarea id="actionsTaken" placeholder="Response actions and mitigation measures"></textarea>
-                </div>
-            </div>
-
-            <!-- Dynamic Sub-Narratives Section -->
-            <div class="form-section">
-                <div class="section-header">📖 Sub-Narratives</div>
-                <div id="dynamic-sub-narratives">
-                    <div class="dynamic-field-container">
-                        <div class="dynamic-field-header">
-                            <span class="field-number">Sub-Narrative 1</span>
-                        </div>
-                        <textarea class="sub-narrative-text" placeholder="Describe the first sub-narrative..." rows="3"></textarea>
-                    </div>
-                </div>
-                <button type="button" class="add-field-btn" onclick="addSubNarrative()">+ Add Another Sub-Narrative</button>
-            </div>
-
-            <!-- Dynamic Recommendations Section -->
-            <div class="form-section">
-                <div class="section-header">💡 Detailed Recommendations</div>
-                <div id="dynamic-recommendations">
-                    <div class="dynamic-field-container">
-                        <div class="dynamic-field-header">
-                            <span class="field-number">Recommendation 1</span>
-                        </div>
-                        <textarea class="recommendation-text" placeholder="Describe the first recommendation..." rows="3"></textarea>
-                    </div>
-                </div>
-                <button type="button" class="add-field-btn" onclick="addRecommendation()">+ Add Another Recommendation</button>
-            </div>
-
-            <!-- DISARM Framework Section -->
-            <div class="form-section">
-                <div class="section-header">🛡️ DISARM Framework Analysis</div>
-                
-                <div class="action-buttons">
-                    <button type="button" class="btn-secondary" onclick="uploadNavigatorFile()">📁 Upload Navigator File</button>
-                    <button type="button" class="btn-primary" onclick="openDISARMFramework()">🎯 Interactive DISARM Framework</button>
-                </div>
-
-                <div class="objectives-ttps-section">
-                    <div class="objectives-panel">
-                        <div class="panel-header">
-                            Objectives 
-                            <span class="selection-counter" id="objectives-counter">0/2</span>
-                        </div>
-                        <div id="objectives-container">
-                            <p style="color: #666; font-style: italic;">Select objectives using the tools above...</p>
-                        </div>
-                    </div>
-
-                    <div class="ttps-panel">
-                        <div class="panel-header">
-                            TTPs (Techniques, Tactics, Procedures)
-                            <span class="selection-counter" id="ttps-counter">0/4</span>
-                        </div>
-                        <div id="ttps-container">
-                            <p style="color: #666; font-style: italic;">Select TTPs using the tools above...</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- URLs Section -->
-            <div class="form-section">
-                <div class="section-header">🔗 Reference URLs</div>
-                
-                <div class="form-row">
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label for="reporturlInput">Report URL:</label>
-                            <input type="url" id="reporturlInput" placeholder="https://example.com/report">
-                            <div id="reporturlError" style="color: red; font-size: 12px; display: none;"></div>
-                        </div>
-                    </div>
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label for="evidenceurlInput">Evidence URL:</label>
-                            <input type="url" id="evidenceurlInput" placeholder="https://example.com/evidence">
-                            <div id="evidenceurlError" style="color: red; font-size: 12px; display: none;"></div>
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -624,7 +621,7 @@
                 </div>
                 <div class="form-col">
                     <div class="form-group">
-                        <button type="button" class="remove-field-btn" onclick="removeInlineAuthor(this)" style="margin-top: 8px;">Remove</button>
+                        <button type="button" class="remove-field-btn" onclick="removeInlineAuthor(this)">Remove</button>
                     </div>
                 </div>
             `;
