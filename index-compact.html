@@ -297,7 +297,22 @@
                 <div class="form-row">
                     <div class="form-col">
                         <div class="form-group">
-                            <label for="country" title="Country/Region">Country/Region:</label>
+                            <label for="title" title="Incident Title">Incident Title:</label>
+                            <input type="text" id="title" placeholder="Brief descriptive title">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="threatActor" title="Threat Actor(s)">Threat Actor(s):</label>
+                            <input type="text" id="threatActor" placeholder="e.g., Russia, China etc.">
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="country" title="Targeted Countries">Targeted Countries:</label>
                             <select id="country" multiple class="narrow-input">
                                 <option value="AL">AL</option>
                                 <option value="AT">AT</option>
@@ -347,48 +362,28 @@
                             </select>
                         </div>
                     </div>
-                    <div class="form-col wide">
-                        <div class="form-group">
-                            <label for="title" title="Incident Title">Incident Title:</label>
-                            <input type="text" id="title" placeholder="Brief descriptive title">
-                        </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-col">
+                        <div style="font-weight: bold; margin-bottom: 15px; color: #333;">Author(s)</div>
                     </div>
                 </div>
 
                 <div class="form-row">
-                    <div class="form-col narrow">
-                        <div class="form-group">
-                            <label for="threatActor" title="Threat Actor(s)">Threat Actor(s):</label>
-                            <input type="text" id="threatActor" placeholder="e.g., Russia, China etc.">
-                        </div>
-                    </div>
-                    <div class="form-col narrow">
+                    <div class="form-col">
                         <div class="form-group">
                             <label for="authorName1" title="Author Name">Name:</label>
                             <input type="text" id="authorName1" class="author-name-input" placeholder="Name">
                         </div>
                     </div>
-                    <div class="form-col narrow">
+                    <div class="form-col">
                         <div class="form-group">
                             <label for="authorOrg1" title="Author Organization">Organization:</label>
                             <input type="text" id="authorOrg1" class="author-org-input" placeholder="Organization">
                         </div>
                     </div>
-                </div>
-
-                <div id="additional-authors"></div>
-
-                <div class="form-row">
-                    <div class="form-col narrow">
-                        <!-- Empty space to align with Threat Actor column -->
-                    </div>
                     <div class="form-col">
-                        <button type="button" class="add-field-btn" onclick="addInlineAuthor()">+ Add Author</button>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-col narrow">
                         <div class="form-group">
                             <label title="Logo">Logo:</label>
                             <img class="evidence-logo" id="imagePreview" alt="No image uploaded yet" style="display: none;" />
@@ -396,6 +391,14 @@
                             <input type="file" id="logoFileInput" accept="image/*" title="Please upload a JPEG, PNG, BMP, or GIF image." style="display:none" onchange="previewImage(event)">
                             <div id="logo-message" style="color: red; margin-top: 5px; font-size: 12px;"></div>
                         </div>
+                    </div>
+                </div>
+
+                <div id="additional-authors"></div>
+
+                <div class="form-row">
+                    <div class="form-col">
+                        <button type="button" class="add-field-btn" onclick="addInlineAuthor()" style="width: 150px;">+ Add Author</button>
                     </div>
                 </div>
             </div>
@@ -609,18 +612,19 @@
             const newAuthorRow = document.createElement('div');
             newAuthorRow.className = 'form-row';
             newAuthorRow.innerHTML = `
-                <div class="form-col narrow">
-                    <!-- Empty space to align with Threat Actor column -->
-                </div>
-                <div class="form-col narrow">
+                <div class="form-col">
                     <div class="form-group">
                         <input type="text" id="authorName${authorCount}" class="author-name-input" placeholder="Name">
                     </div>
                 </div>
-                <div class="form-col narrow">
+                <div class="form-col">
                     <div class="form-group">
                         <input type="text" id="authorOrg${authorCount}" class="author-org-input" placeholder="Organization">
-                        <button type="button" class="remove-field-btn" onclick="removeInlineAuthor(this)" style="margin-left: 8px; padding: 4px 8px; font-size: 12px;">Remove</button>
+                    </div>
+                </div>
+                <div class="form-col">
+                    <div class="form-group">
+                        <button type="button" class="remove-field-btn" onclick="removeInlineAuthor(this)" style="margin-top: 8px;">Remove</button>
                     </div>
                 </div>
             `;
