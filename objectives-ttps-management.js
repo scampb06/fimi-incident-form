@@ -46,6 +46,10 @@ function removeObjectiveFromList(index) {
         const removedObj = objectivesList.splice(index, 1)[0];
         updateObjectivesAndTTPsUI();
         updateSelectionInfo();
+        // Update the main form counters
+        if (typeof updateCounters === 'function') {
+            updateCounters();
+        }
         console.log(`Removed objective: ${removedObj}`);
     }
 }
@@ -56,6 +60,10 @@ function removeTTPFromList(index) {
         const removedTTP = ttpsList.splice(index, 1)[0];
         updateObjectivesAndTTPsUI();
         updateSelectionInfo();
+        // Update the main form counters
+        if (typeof updateCounters === 'function') {
+            updateCounters();
+        }
         console.log(`Removed TTP: ${removedTTP}`);
         
         // Show the "Add TTP" button if all TTPs are removed

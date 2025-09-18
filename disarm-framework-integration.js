@@ -291,6 +291,11 @@ function updateSelectionInfo() {
     
     // Also update the main form UI
     updateObjectivesAndTTPsUI();
+    
+    // Update the main form counters
+    if (typeof updateCounters === 'function') {
+        updateCounters();
+    }
 }
 
 // Close DISARM modal and update UI
