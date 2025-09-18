@@ -364,11 +364,30 @@
                     </div>
                     <div class="form-col narrow">
                         <div class="form-group">
-                            <label title="Authors">Authors:</label>
-                            <div class="evidence-authors"></div>
-                            <button type="button" class="add-button" onclick="addAuthor(this)">Add Author</button>
+                            <label for="authorName1" title="Author Name">Name:</label>
+                            <input type="text" id="authorName1" class="author-name-input" placeholder="Name">
                         </div>
                     </div>
+                    <div class="form-col narrow">
+                        <div class="form-group">
+                            <label for="authorOrg1" title="Author Organization">Organization:</label>
+                            <input type="text" id="authorOrg1" class="author-org-input" placeholder="Organization">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="additional-authors"></div>
+
+                <div class="form-row">
+                    <div class="form-col narrow">
+                        <!-- Empty space to align with Threat Actor column -->
+                    </div>
+                    <div class="form-col">
+                        <button type="button" class="add-field-btn" onclick="addInlineAuthor()">+ Add Author</button>
+                    </div>
+                </div>
+
+                <div class="form-row">
                     <div class="form-col narrow">
                         <div class="form-group">
                             <label title="Logo">Logo:</label>
@@ -582,6 +601,51 @@
         // Dynamic field management functions
         let subNarrativeCount = 1;
         let recommendationCount = 1;
+        let authorCount = 1;
+
+        function addInlineAuthor() {
+            authorCount++;
+            const container = document.getElementById('additional-authors');
+            const newAuthorRow = document.createElement('div');
+            newAuthorRow.className = 'form-row';
+            newAuthorRow.innerHTML = `
+                <div class="form-col narrow">
+                    <!-- Empty space to align with Threat Actor column -->
+                </div>
+                <div class="form-col narrow">
+                    <div class="form-group">
+                        <input type="text" id="authorName${authorCount}" class="author-name-input" placeholder="Name">
+                    </div>
+                </div>
+                <div class="form-col narrow">
+                    <div class="form-group">
+                        <input type="text" id="authorOrg${authorCount}" class="author-org-input" placeholder="Organization">
+                        <button type="button" class="remove-field-btn" onclick="removeInlineAuthor(this)" style="margin-left: 8px; padding: 4px 8px; font-size: 12px;">Remove</button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(newAuthorRow);
+        }
+
+        function removeInlineAuthor(button) {
+            button.closest('.form-row').remove();
+        }
+
+        // Function to collect all authors for form submission
+        function collectAuthors() {
+            const authors = [];
+            const nameInputs = document.querySelectorAll('.author-name-input');
+            const orgInputs = document.querySelectorAll('.author-org-input');
+            
+            for (let i = 0; i < nameInputs.length; i++) {
+                const name = nameInputs[i].value.trim();
+                const org = orgInputs[i].value.trim();
+                if (name && org) {
+                    authors.push(`${name}, ${org}`);
+                }
+            }
+            return authors.join('; ');
+        }
 
         function addSubNarrative() {
             subNarrativeCount++;
@@ -683,8 +747,12 @@
                     </div>
                 `;
                 
+                // Reset additional authors
+                document.getElementById('additional-authors').innerHTML = '';
+                
                 subNarrativeCount = 1;
                 recommendationCount = 1;
+                authorCount = 1;
                 
                 // Clear objectives and TTPs
                 objectivesList = [];

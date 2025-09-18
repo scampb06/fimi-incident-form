@@ -5,6 +5,19 @@
 
 // Form Data Collection
 function collectFormData() {
+    // Collect inline authors
+    const authors = [];
+    const nameInputs = document.querySelectorAll('.author-name-input');
+    const orgInputs = document.querySelectorAll('.author-org-input');
+    
+    for (let i = 0; i < nameInputs.length; i++) {
+        const name = nameInputs[i].value.trim();
+        const org = orgInputs[i].value.trim();
+        if (name && org) {
+            authors.push(`${name}, ${org}`);
+        }
+    }
+
     return {
         incidentNumber: document.getElementById("incidentNumber").value || "0000",
         tlpLevel: document.getElementById("tlpLevel").value || "TLP:CLEAR",
@@ -13,6 +26,7 @@ function collectFormData() {
         title: document.getElementById("title").value || "",
         date: document.getElementById("date").value || "",
         threatActor: document.getElementById("threatActor").value || "",
+        authors: authors.join('; '),
         summaryIncident: document.getElementById("summary-incident").value || "",
         summaryNarrative: document.getElementById("summary-narrative").value || "",
         summaryImpact: document.getElementById("summary-impact").value || "",
