@@ -12,6 +12,7 @@ function collectFormData() {
         country: Array.from(document.getElementById('country').selectedOptions).map(option => option.value).join(', ') || "",
         title: document.getElementById("title").value || "",
         date: document.getElementById("date").value || "",
+        threatActor: document.getElementById("threatActor").value || "",
         summaryIncident: document.getElementById("summary-incident").value || "",
         summaryNarrative: document.getElementById("summary-narrative").value || "",
         summaryImpact: document.getElementById("summary-impact").value || "",

@@ -93,6 +93,15 @@
             max-width: 100px;
         }
 
+        /* Image preview styling */
+        .evidence-logo {
+            max-width: 100px;
+            max-height: 60px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 5px;
+        }
+
         .dynamic-field-container {
             border: 1px solid #e0e0e0;
             border-radius: 6px;
@@ -342,6 +351,31 @@
                         <div class="form-group">
                             <label for="title" title="Incident Title">Incident Title:</label>
                             <input type="text" id="title" placeholder="Brief descriptive title">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-col narrow">
+                        <div class="form-group">
+                            <label for="threatActor" title="Threat Actor(s)">Threat Actor(s):</label>
+                            <input type="text" id="threatActor" placeholder="e.g., Russia, China etc.">
+                        </div>
+                    </div>
+                    <div class="form-col narrow">
+                        <div class="form-group">
+                            <label title="Authors">Authors:</label>
+                            <div class="evidence-authors"></div>
+                            <button type="button" class="add-button" onclick="addAuthor(this)">Add Author</button>
+                        </div>
+                    </div>
+                    <div class="form-col narrow">
+                        <div class="form-group">
+                            <label title="Logo">Logo:</label>
+                            <img class="evidence-logo" id="imagePreview" alt="No image uploaded yet" style="display: none;" />
+                            <button class="add-button" onclick="triggerFilePicker()">Upload Logo</button>
+                            <input type="file" id="logoFileInput" accept="image/*" title="Please upload a JPEG, PNG, BMP, or GIF image." style="display:none" onchange="previewImage(event)">
+                            <div id="logo-message" style="color: red; margin-top: 5px; font-size: 12px;"></div>
                         </div>
                     </div>
                 </div>
@@ -664,5 +698,17 @@
             }
         }
     </script>
+
+    <!-- Author Modal -->
+    <div id="authorModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.3); z-index:1000;">
+        <div style="background:white; padding:20px; border-radius:8px; width:300px; margin:100px auto;">
+            <h3>Add Author</h3>
+            <label>Name: <input type="text" id="modalAuthorName"></label><br><br>
+            <label>Organization: <input type="text" id="modalAuthorOrg"></label><br><br>
+            <button onclick="submitAuthorModal()">OK</button>
+            <button onclick="closeAuthorModal()">Cancel</button>
+        </div>
+    </div>
+
 </body>
 </html>
