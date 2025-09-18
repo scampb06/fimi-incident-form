@@ -49,7 +49,7 @@
         }
 
         .form-col.narrow {
-            flex: 0 0 350px; /* Wider to accommodate longer labels on one line */
+            flex: 0 0 300px; /* Wider to accommodate longer labels on one line */
         }
 
         .form-col.wide {
@@ -85,6 +85,12 @@
         .form-group textarea {
             resize: vertical;
             min-height: 80px;
+        }
+
+        /* Narrow input for country codes and similar short fields */
+        .form-group .narrow-input {
+            width: 100px !important;
+            max-width: 100px;
         }
 
         .dynamic-field-container {
@@ -283,16 +289,52 @@
                     <div class="form-col">
                         <div class="form-group">
                             <label for="country" title="Country/Region">Country/Region:</label>
-                            <select id="country" multiple>
-                                <option value="Australia">Australia</option>
-                                <option value="Canada">Canada</option>
-                                <option value="France">France</option>
-                                <option value="Germany">Germany</option>
-                                <option value="Italy">Italy</option>
-                                <option value="Japan">Japan</option>
-                                <option value="United Kingdom">United Kingdom</option>
-                                <option value="United States">United States</option>
-                                <option value="Other">Other</option>
+                            <select id="country" multiple class="narrow-input">
+                                <option value="AL">AL</option>
+                                <option value="AT">AT</option>
+                                <option value="BE">BE</option>
+                                <option value="BA">BA</option>
+                                <option value="BG">BG</option>
+                                <option value="HR">HR</option>
+                                <option value="CY">CY</option>
+                                <option value="CZ">CZ</option>
+                                <option value="DK">DK</option>
+                                <option value="EE">EE</option>
+                                <option value="EU">EU</option>
+                                <option value="FI">FI</option>
+                                <option value="FR">FR</option>
+                                <option value="GE">GE</option>
+                                <option value="GB">GB</option>
+                                <option value="DE">DE</option>
+                                <option value="EL">EL</option>
+                                <option value="GR">GR</option>
+                                <option value="HU">HU</option>
+                                <option value="IS">IS</option>
+                                <option value="IE">IE</option>
+                                <option value="IT">IT</option>
+                                <option value="XK">XK</option>
+                                <option value="LV">LV</option>
+                                <option value="LI">LI</option>
+                                <option value="LT">LT</option>
+                                <option value="LU">LU</option>
+                                <option value="MT">MT</option>
+                                <option value="MD">MD</option>
+                                <option value="ME">ME</option>
+                                <option value="NL">NL</option>
+                                <option value="MK">MK</option>
+                                <option value="NO">NO</option>
+                                <option value="PL">PL</option>
+                                <option value="PT">PT</option>
+                                <option value="RO">RO</option>
+                                <option value="RS">RS</option>
+                                <option value="SK">SK</option>
+                                <option value="SI">SI</option>
+                                <option value="ES">ES</option>
+                                <option value="SE">SE</option>
+                                <option value="CH">CH</option>
+                                <option value="TR">TR</option>
+                                <option value="UA">UA</option>
+                                <option value="UK">UK</option>
                             </select>
                         </div>
                     </div>
