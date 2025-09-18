@@ -42,8 +42,6 @@ function initializeURLValidation() {
 }
 
 function initializeImageHandling() {
-    // Image handling set up in image-handling.js
-    if (typeof initializeImageHandling !== 'undefined') {
-        initializeImageHandling();
-    }
+    // Image handling is handled in image-handling.js
+    // No need to call anything here - it's already initialized
 }
