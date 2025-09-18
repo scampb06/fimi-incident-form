@@ -49,7 +49,7 @@
         }
 
         .form-col.narrow {
-            flex: 0 0 220px; /* Slightly wider to accommodate labels */
+            flex: 0 0 300px; /* Slightly wider to accommodate labels */
         }
 
         .form-col.wide {
@@ -65,11 +65,9 @@
             margin-bottom: 5px;
             font-weight: bold;
             color: #333;
-            height: 20px; /* Fixed height to ensure alignment */
+            min-height: 20px; /* Minimum height to ensure alignment */
             line-height: 20px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap; /* Prevent label wrapping */
+            /* Remove truncation since we have more space now */
         }
 
         .form-group input,
