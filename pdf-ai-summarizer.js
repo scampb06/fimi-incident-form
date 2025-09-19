@@ -190,6 +190,7 @@ ${inputText}`;
  */
 function updateIncidentDescriptionField(summary) {
     const descriptionField = document.getElementById('incidentDescription') || 
+                           document.getElementById('incident') ||
                            document.getElementById('description') ||
                            document.querySelector('textarea[placeholder*="description" i]');
     
@@ -264,7 +265,7 @@ function hideProgressIndicator() {
  */
 function addAISummarizerButton() {
     // Find the report URL field
-    const reportUrlField = document.getElementById('reporturlInput');
+    const reportUrlField = document.getElementById('reportURL');
     if (!reportUrlField) {
         console.warn('Report URL field not found');
         return;
@@ -273,17 +274,13 @@ function addAISummarizerButton() {
     // Create the button
     const button = document.createElement('button');
     button.type = 'button';
-    button.textContent = '🤖 Generate AI Summary';
-    button.className = 'btn-secondary';
+    button.textContent = 'Summarize';
+    button.className = 'add-button';
     button.style.cssText = `
         margin-left: 10px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        padding: 8px 16px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
+        padding: 6px 12px;
+        font-size: 12px;
+        white-space: nowrap;
     `;
     
     // Add click handler
@@ -304,7 +301,7 @@ function addAISummarizerButton() {
         
         try {
             button.disabled = true;
-            button.textContent = '🔄 Processing...';
+            button.textContent = 'Processing...';
             
             await generateIncidentDescription(pdfUrl);
             
@@ -312,15 +309,25 @@ function addAISummarizerButton() {
             alert(`Error: ${error.message}`);
         } finally {
             button.disabled = false;
-            button.textContent = '🤖 Generate AI Summary';
+            button.textContent = 'Summarize';
         }
     });
     
     // Insert button after the report URL field
     const container = reportUrlField.parentElement;
-    container.style.display = 'flex';
-    container.style.alignItems = 'center';
-    container.appendChild(button);
+    
+    // Create a wrapper div for the input and button
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = `
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 5px;
+    `;
+    
+    // Insert wrapper after the input field
+    reportUrlField.parentNode.insertBefore(wrapper, reportUrlField.nextSibling);
+    wrapper.appendChild(button);
 }
 
 /**

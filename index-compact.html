@@ -314,6 +314,18 @@
                 <div class="form-row">
                     <div class="form-col">
                         <div class="form-group">
+                            <label for="incidentDescription">Incident Description:</label>
+                            <div style="display: flex; align-items: flex-start; gap: 10px;">
+                                <textarea id="incidentDescription" rows="4" placeholder="Enter or generate a description of the incident..." style="flex: 1;"></textarea>
+                                <button type="button" class="add-field-btn" onclick="generateAIIncidentDescription()" style="width: 150px; margin-top: 0;">Generate</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-col">
+                        <div class="form-group">
                             <label for="authorName1" title="Author Name">Author's Name:</label>
                             <input type="text" id="authorName1" class="author-name-input" placeholder="Name">
                         </div>
@@ -398,13 +410,74 @@
                             </select>
                         </div>
                     </div>
-                </div>
-
-                <div class="form-row">
                     <div class="form-col">
                         <div class="form-group">
-                            <label for="platforms" title="Targeted Platforms">Targeted Platforms:</label>
-                            <input type="text" id="platforms" placeholder="e.g., Facebook, Twitter, WhatsApp, etc.">
+                            <label for="platforms" title="Platforms">Platforms:</label>
+                            <select id="platforms" multiple>
+                                <option value="9Gag">9Gag</option>
+                                <option value="Badoo">Badoo</option>
+                                <option value="Baidu Tieba">Baidu Tieba</option>
+                                <option value="Behance">Behance</option>
+                                <option value="BeReal">BeReal</option>
+                                <option value="Bilibili">Bilibili</option>
+                                <option value="Bluesky">Bluesky</option>
+                                <option value="Bumble Bizz">Bumble Bizz</option>
+                                <option value="Clubhouse">Clubhouse</option>
+                                <option value="Discord">Discord</option>
+                                <option value="Douban">Douban</option>
+                                <option value="Douyin">Douyin</option>
+                                <option value="Dribbble">Dribbble</option>
+                                <option value="Facebook">Facebook</option>
+                                <option value="Fanbase">Fanbase</option>
+                                <option value="Flickr">Flickr</option>
+                                <option value="Hi5">Hi5</option>
+                                <option value="Instagram">Instagram</option>
+                                <option value="Kiwibox">Kiwibox</option>
+                                <option value="Kuaishou">Kuaishou</option>
+                                <option value="Lemon8">Lemon8</option>
+                                <option value="Likee">Likee</option>
+                                <option value="Line">Line</option>
+                                <option value="LinkedIn">LinkedIn</option>
+                                <option value="Little Red Book / Xiaohongshu (RedNote)">Little Red Book / Xiaohongshu (RedNote)</option>
+                                <option value="Mastodon">Mastodon</option>
+                                <option value="Meetup">Meetup</option>
+                                <option value="Nextdoor">Nextdoor</option>
+                                <option value="Ning">Ning</option>
+                                <option value="Noplace">Noplace</option>
+                                <option value="Odnoklassniki">Odnoklassniki</option>
+                                <option value="Phoenix">Phoenix</option>
+                                <option value="PI.FYI">PI.FYI</option>
+                                <option value="Picsart">Picsart</option>
+                                <option value="Pinterest">Pinterest</option>
+                                <option value="QQ">QQ</option>
+                                <option value="Qzone">Qzone</option>
+                                <option value="Quora">Quora</option>
+                                <option value="Reddit">Reddit</option>
+                                <option value="RedNote (Xiaohongshu)">RedNote (Xiaohongshu)</option>
+                                <option value="Ren">Ren</option>
+                                <option value="Renren">Renren</option>
+                                <option value="Roblox">Roblox</option>
+                                <option value="Roposo">Roposo</option>
+                                <option value="Snapchat">Snapchat</option>
+                                <option value="Substack">Substack</option>
+                                <option value="Tagged">Tagged</option>
+                                <option value="Telegram">Telegram</option>
+                                <option value="Threads">Threads</option>
+                                <option value="TikTok">TikTok</option>
+                                <option value="Tumblr">Tumblr</option>
+                                <option value="Twitch">Twitch</option>
+                                <option value="Vibe">Vibe</option>
+                                <option value="VKontakte (VK)">VKontakte (VK)</option>
+                                <option value="WeChat">WeChat</option>
+                                <option value="Weibo">Weibo</option>
+                                <option value="WhatsApp">WhatsApp</option>
+                                <option value="X (Twitter)">X (Twitter)</option>
+                                <option value="Xing">Xing</option>
+                                <option value="Yizhibo">Yizhibo</option>
+                                <option value="Youku Tudou">Youku Tudou</option>
+                                <option value="YouTube">YouTube</option>
+                                <option value="Zhihu">Zhihu</option>
+                            </select>
                         </div>
                     </div>
                 </div>
@@ -420,15 +493,6 @@
                         <div class="form-group">
                             <label for="outcome">Outcome Assessment:</label>
                             <textarea id="outcome" placeholder="Observed outcomes and effects"></textarea>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label for="incident">Incident Description:</label>
-                            <textarea id="incident" rows="4" placeholder="Detailed incident description"></textarea>
                         </div>
                     </div>
                 </div>
@@ -817,6 +881,45 @@
                 document.getElementById('ttps-container').innerHTML = '<p style="color: #666; font-style: italic;">Select TTPs using the tools above...</p>';
                 
                 updateCounters();
+            }
+        }
+
+        // AI Incident Description Generation
+        async function generateAIIncidentDescription() {
+            const reportUrlField = document.getElementById('reporturlInput');
+            const incidentDescField = document.getElementById('incidentDescription');
+            const button = event.target;
+            
+            if (!reportUrlField.value.trim()) {
+                alert('Please enter a Report URL first');
+                reportUrlField.focus();
+                return;
+            }
+            
+            if (!reportUrlField.value.toLowerCase().includes('.pdf')) {
+                if (!confirm('The URL doesn\'t appear to be a PDF. Continue anyway?')) {
+                    return;
+                }
+            }
+            
+            // Check if the PDF AI summarizer function is available
+            if (typeof generateIncidentDescription === 'undefined') {
+                alert('AI summarization feature is not available. Please ensure the PDF AI summarizer module is loaded.');
+                return;
+            }
+            
+            try {
+                button.disabled = true;
+                button.textContent = 'Processing...';
+                
+                // Call the PDF AI summarizer function
+                await generateIncidentDescription(reportUrlField.value);
+                
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Generate';
             }
         }
     </script>
