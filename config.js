@@ -23,6 +23,9 @@ let evidencedebounceTimer;
 // Author modal callback
 let authorCallback = null;
 
+// OpenAI API configuration for AI Summarizer
+const OPENAI_API_KEY = ''; // API key will be prompted on first use
+
 // DOM element references (initialized when DOM is ready)
 let reporturlinput = null;
 let reporturlerror = null;
@@ -35,6 +38,59 @@ function initializeConfig() {
     reporturlerror = document.getElementById('reporturlError');
     evidenceurlinput = document.getElementById('evidenceurlInput');
     evidenceurlerror = document.getElementById('evidenceurlError');
+    
+    // Initialize AI Summarizer if API key is configured
+    initializeAISummarizer();
+}
+
+// Initialize AI Summarizer with API key
+function initializeAISummarizer() {
+    // Try to get API key from localStorage first
+    let apiKey = OPENAI_API_KEY || localStorage.getItem('openai_api_key');
+    
+    if (!apiKey) {
+        console.log('🔑 OpenAI API key not found. Will prompt when AI Summarizer is used.');
+        return;
+    }
+    
+    // Check if setOpenAIApiKey function is available (from pdf-ai-summarizer.js)
+    if (typeof setOpenAIApiKey === 'function') {
+        setOpenAIApiKey(apiKey);
+        console.log('✅ AI Summarizer initialized successfully');
+    } else {
+        // Retry after a short delay if the function isn't loaded yet
+        setTimeout(initializeAISummarizer, 100);
+    }
+}
+
+// Function to prompt for API key when needed
+function promptForAPIKey() {
+    const apiKey = prompt(
+        'Please enter your OpenAI API key:\n\n' +
+        '• Get your API key from: https://platform.openai.com/api-keys\n' +
+        '• Your key should start with "sk-"\n' +
+        '• The key will be saved locally for this session'
+    );
+    
+    if (apiKey && apiKey.trim()) {
+        const trimmedKey = apiKey.trim();
+        
+        if (!trimmedKey.startsWith('sk-')) {
+            alert('Warning: API key should start with "sk-". Please verify your key.');
+        }
+        
+        // Save to localStorage for future use
+        localStorage.setItem('openai_api_key', trimmedKey);
+        
+        // Initialize the AI summarizer
+        if (typeof setOpenAIApiKey === 'function') {
+            setOpenAIApiKey(trimmedKey);
+            console.log('✅ AI Summarizer initialized with provided API key');
+            return trimmedKey;
+        }
+    }
+    
+    return null;
 }
 
 // Call initialization when DOM is ready
