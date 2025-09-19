@@ -18,26 +18,50 @@ function collectFormData() {
         }
     }
 
+    // Helper function to safely get element value
+    function safeGetValue(elementId, defaultValue = "") {
+        const element = document.getElementById(elementId);
+        if (!element) {
+            console.warn(`Element with ID '${elementId}' not found`);
+            return defaultValue;
+        }
+        return element.value || defaultValue;
+    }
+
+    // Helper function to safely get selected options
+    function safeGetSelectedOptions(elementId, defaultValue = "") {
+        const element = document.getElementById(elementId);
+        if (!element) {
+            console.warn(`Element with ID '${elementId}' not found`);
+            return defaultValue;
+        }
+        if (!element.selectedOptions) {
+            console.warn(`Element with ID '${elementId}' has no selectedOptions property`);
+            return defaultValue;
+        }
+        return Array.from(element.selectedOptions).map(option => option.value).join(', ') || defaultValue;
+    }
+
     return {
-        incidentNumber: document.getElementById("incidentNumber").value || "0000",
-        tlpLevel: document.getElementById("tlpLevel").value || "TLP:CLEAR",
-        selectedCountries: document.getElementById('country').selectedOptions,
-        country: Array.from(document.getElementById('country').selectedOptions).map(option => option.value).join(', ') || "",
-        platforms: Array.from(document.getElementById('platforms').selectedOptions).map(option => option.value).join(', ') || "",
-        title: document.getElementById("title").value || "",
-        date: document.getElementById("date").value || "",
-        threatActor: document.getElementById("threatActor").value || "",
+        incidentNumber: safeGetValue("incidentNumber", "0000"),
+        tlpLevel: safeGetValue("tlpLevel", "TLP:CLEAR"),
+        selectedCountries: document.getElementById('country')?.selectedOptions,
+        country: safeGetSelectedOptions('country'),
+        platforms: safeGetSelectedOptions('platforms'),
+        title: safeGetValue("title"),
+        date: safeGetValue("date"),
+        threatActor: safeGetValue("threatActor"),
         authors: authors.join('; '),
-        summaryIncident: document.getElementById("summary-incident").value || "",
-        summaryNarrative: document.getElementById("summary-narrative").value || "",
-        summaryImpact: document.getElementById("summary-impact").value || "",
-        summaryTTPs: document.getElementById("summary-ttps").value || "",
-        summaryRecommendations: document.getElementById("summary-recommendations").value || "",
-        incident: document.getElementById("incidentDescription").value || "",
-        metaNarrative: document.getElementById("metaNarrative").value || "",
-        reach: document.getElementById("reach").value || "",
-        outcome: document.getElementById("outcome").value || "",
-        actionsTaken: document.getElementById("actionsTaken").value || ""
+        summaryIncident: safeGetValue("summary-incident"),
+        summaryNarrative: safeGetValue("summary-narrative"),
+        summaryImpact: safeGetValue("summary-impact"),
+        summaryTTPs: safeGetValue("summary-ttps"),
+        summaryRecommendations: safeGetValue("summary-recommendations"),
+        incident: safeGetValue("incidentDescription"),
+        metaNarrative: safeGetValue("metaNarrative"),
+        reach: safeGetValue("reach"),
+        outcome: safeGetValue("outcome"),
+        actionsTaken: safeGetValue("actionsTaken")
     };
 }
 
