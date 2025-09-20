@@ -264,8 +264,10 @@ function hideProgressIndicator() {
  * Call this function to add the feature to your form
  */
 function addAISummarizerButton() {
-    // Find the report URL field
-    const reportUrlField = document.getElementById('reportURL');
+    // Find the report URL field - try multiple possible IDs
+    const reportUrlField = document.getElementById('reportURL') || 
+                          document.getElementById('reporturlInput') ||
+                          document.getElementById('reportUrlInput');
     if (!reportUrlField) {
         console.warn('Report URL field not found');
         return;
