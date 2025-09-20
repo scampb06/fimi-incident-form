@@ -43,7 +43,10 @@ const AI_CONFIG = {
         'https://api.allorigins.win/raw?url=',
         'https://corsproxy.io/?',
         'https://cors-anywhere.herokuapp.com/'
-    ]
+    ],
+    
+    // Enable CORS proxy for API requests if backend doesn't support CORS
+    USE_API_CORS_PROXY: true
 };
 
 // PDF.js worker configuration (load from CDN)
@@ -197,15 +200,12 @@ Please write this as a professional incident description suitable for a cybersec
 Document text:
 ${inputText}`;
 
-//      const response = await fetch(AI_CONFIG.OPENAI_API_URL, {
+        // Try API request with CORS-friendly headers (avoid preflight)
         const response = await fetch(AI_CONFIG.AIRBOLT_API_URL, {           
             method: 'POST',
-/*          headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${AI_CONFIG.OPENAI_API_KEY}`
+            headers: { 
+                'Content-Type': 'text/plain'  // Use text/plain to avoid preflight
             },
-*/
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 model: AI_CONFIG.MODEL,
                 messages: [
@@ -238,6 +238,12 @@ ${inputText}`;
         
     } catch (error) {
         console.error('AI summary generation error:', error);
+        
+        // Provide specific guidance for CORS issues
+        if (error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
+            throw new Error(`Backend API CORS Error: Your Airbolt API needs CORS configuration.\n\nTo fix this, add these headers to your backend:\n• Access-Control-Allow-Origin: https://scampb06.github.io\n• Access-Control-Allow-Methods: POST, OPTIONS\n• Access-Control-Allow-Headers: Content-Type\n\nAlternatively, test locally or use a different domain.\n\nTechnical details: ${error.message}`);
+        }
+        
         throw new Error(`Failed to generate AI summary: ${error.message}`);
     }
 }
