@@ -8,7 +8,10 @@
  * 
  * Usage:
  * 1. Include PDF.js library in your HTML
- * 2. Call generateIncidentDescription(/**
+ * 2. Call generateIncidentDescription() with a PDF URL to process and summarize
+ */
+
+/**
  * Initialize the AI summarizer when DOM is ready
  * Disabled for compact form - uses inline implementation
  */
@@ -23,8 +26,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.warn('<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>');
     }
 });
-*/ocess and summarize
- */
+*/
 
 // Configuration
 const AI_CONFIG = {
