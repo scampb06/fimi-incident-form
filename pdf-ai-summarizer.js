@@ -1,15 +1,14 @@
 /**
  * PDF AI Summarizer Module
- * Handles PDF text extraction and OpenAI API integration for automatic incident description generation
+ * Handles PDF text extraction and Airbolt API integration for automatic incident description generation
  * 
  * Dependencies:
  * - PDF.js library for PDF text extraction
- * - OpenAI API key (requires user configuration)
+ * - Airbolt API endpoint
  * 
  * Usage:
  * 1. Include PDF.js library in your HTML
- * 2. Set your OpenAI API key in the configuration
- * 3. Call generateIncidentDescription(pdfUrl) to process and summarize
+ * 2. Call generateIncidentDescription(pdfUrl) to process and summarize
  */
 
 // Configuration
@@ -17,6 +16,7 @@ const AI_CONFIG = {
     // Set your OpenAI API key here (consider using environment variables in production)
     OPENAI_API_KEY: '', // Replace with your actual API key
     OPENAI_API_URL: 'https://api.openai.com/v1/chat/completions',
+    AIRBOLT_API_URL: 'https://my-ai-backend.onrender.com/chat/completions',
     MODEL: 'gpt-3.5-turbo', // or 'gpt-4' for better quality
     MAX_TOKENS: 1000, // Adjust based on desired summary length
     TEMPERATURE: 0.3 // Lower = more focused, higher = more creative
@@ -41,18 +41,6 @@ async function generateIncidentDescription(pdfUrl) {
             throw new Error('PDF URL is required');
         }
         
-        if (!AI_CONFIG.OPENAI_API_KEY) {
-            // Try to prompt for API key if not set
-            if (typeof promptForAPIKey === 'function') {
-                const apiKey = promptForAPIKey();
-                if (!apiKey) {
-                    throw new Error('OpenAI API key is required to generate summaries');
-                }
-            } else {
-                throw new Error('OpenAI API key not configured. Please set AI_CONFIG.OPENAI_API_KEY');
-            }
-        }
-        
         // Extract text from PDF
         showProgressIndicator('Extracting text from PDF...');
         const pdfText = await extractTextFromPDF(pdfUrl);
@@ -61,7 +49,7 @@ async function generateIncidentDescription(pdfUrl) {
             throw new Error('No text could be extracted from the PDF');
         }
         
-        // Generate summary using OpenAI
+        // Generate summary using Airbolt API
         showProgressIndicator('Generating AI summary...');
         const summary = await generateAISummary(pdfText);
         
@@ -116,7 +104,7 @@ async function extractTextFromPDF(pdfUrl) {
 }
 
 /**
- * Generate AI summary using OpenAI API
+ * Generate AI summary using Airbolt API
  * @param {string} text - Text content to summarize
  * @returns {Promise<string>} - AI-generated summary
  */
@@ -142,12 +130,15 @@ Please write this as a professional incident description suitable for a cybersec
 Document text:
 ${inputText}`;
 
-        const response = await fetch(AI_CONFIG.OPENAI_API_URL, {
+//      const response = await fetch(AI_CONFIG.OPENAI_API_URL, {
+        const response = await fetch(AI_CONFIG.AIRBOLT_API_URL, {           
             method: 'POST',
-            headers: {
+/*          headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${AI_CONFIG.OPENAI_API_KEY}`
             },
+*/
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 model: AI_CONFIG.MODEL,
                 messages: [
@@ -167,13 +158,13 @@ ${inputText}`;
         
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(`OpenAI API error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+            throw new Error(`Airbolt API error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
         }
         
         const data = await response.json();
         
         if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-            throw new Error('Invalid response format from OpenAI API');
+            throw new Error('Invalid response format from Airbolt API');
         }
         
         return data.choices[0].message.content.trim();
@@ -333,11 +324,11 @@ function addAISummarizerButton() {
 }
 
 /**
- * Configuration function to set OpenAI API key
- * @param {string} apiKey - Your OpenAI API key
+ * Configuration function to set Airbolt API settings
+ * @param {string} apiUrl - Your Airbolt API URL
  */
-function setOpenAIApiKey(apiKey) {
-    AI_CONFIG.OPENAI_API_KEY = apiKey;
+function setAirboltApiUrl(apiUrl) {
+    AI_CONFIG.AIRBOLT_API_URL = apiUrl;
 }
 
 /**
@@ -358,7 +349,7 @@ document.addEventListener('DOMContentLoaded', function() {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         generateIncidentDescription,
-        setOpenAIApiKey,
+        setAirboltApiUrl,
         addAISummarizerButton
     };
 }
