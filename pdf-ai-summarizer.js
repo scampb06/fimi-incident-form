@@ -36,7 +36,14 @@ const AI_CONFIG = {
     AIRBOLT_API_URL: 'https://my-ai-backend.onrender.com/chat/completions',
     MODEL: 'gpt-3.5-turbo', // or 'gpt-4' for better quality
     MAX_TOKENS: 1000, // Adjust based on desired summary length
-    TEMPERATURE: 0.3 // Lower = more focused, higher = more creative
+    TEMPERATURE: 0.3, // Lower = more focused, higher = more creative
+    
+    // CORS proxy options for PDF access
+    CORS_PROXIES: [
+        'https://api.allorigins.win/raw?url=',
+        'https://corsproxy.io/?',
+        'https://cors-anywhere.herokuapp.com/'
+    ]
 };
 
 // PDF.js worker configuration (load from CDN)
@@ -93,8 +100,45 @@ async function generateIncidentDescription(pdfUrl) {
  */
 async function extractTextFromPDF(pdfUrl) {
     try {
-        // Load PDF document
-        const pdf = await pdfjsLib.getDocument(pdfUrl).promise;
+        let pdf;
+        const proxies = AI_CONFIG.CORS_PROXIES;
+        
+        // Try multiple approaches to load the PDF
+        for (let i = 0; i < proxies.length; i++) {
+            try {
+                const proxy = proxies[i];
+                const proxiedUrl = proxy + encodeURIComponent(pdfUrl);
+                
+                console.log(`Attempt ${i + 1}: Loading PDF via proxy:`, proxy);
+                
+                pdf = await pdfjsLib.getDocument({
+                    url: proxiedUrl,
+                    withCredentials: false
+                }).promise;
+                
+                console.log('Successfully loaded PDF via proxy');
+                break; // Success, exit the loop
+                
+            } catch (proxyError) {
+                console.warn(`Proxy ${i + 1} failed:`, proxyError.message);
+                
+                // If this is the last proxy, try direct access
+                if (i === proxies.length - 1) {
+                    console.log('All proxies failed, trying direct access...');
+                    
+                    try {
+                        pdf = await pdfjsLib.getDocument({
+                            url: pdfUrl,
+                            withCredentials: false
+                        }).promise;
+                        
+                        console.log('Successfully loaded PDF via direct access');
+                    } catch (directError) {
+                        throw new Error('All methods failed to load PDF due to CORS restrictions');
+                    }
+                }
+            }
+        }
         let fullText = '';
         
         // Extract text from each page
@@ -116,6 +160,12 @@ async function extractTextFromPDF(pdfUrl) {
         
     } catch (error) {
         console.error('PDF extraction error:', error);
+        
+        // If CORS proxy fails, try a different approach or provide guidance
+        if (error.message.includes('Failed to fetch') || error.message.includes('CORS')) {
+            throw new Error('Unable to access PDF due to CORS restrictions. Please try:\n1. Using a direct PDF download link\n2. Hosting the PDF on a CORS-enabled server\n3. Using a local PDF file');
+        }
+        
         throw new Error(`Failed to extract text from PDF: ${error.message}`);
     }
 }

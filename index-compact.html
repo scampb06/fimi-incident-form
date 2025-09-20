@@ -916,7 +916,14 @@
                 await generateIncidentDescription(reportUrlField.value);
                 
             } catch (error) {
-                alert(`Error: ${error.message}`);
+                let errorMessage = error.message;
+                
+                // Provide user-friendly error messages for common issues
+                if (errorMessage.includes('CORS') || errorMessage.includes('Failed to fetch')) {
+                    errorMessage = `Unable to access the PDF due to browser security restrictions.\n\nAlternative solutions:\n• Try a direct download link instead of a web page URL\n• Download the PDF and use a local file\n• Some PDFs from academic or government sites may work better\n\nTechnical details: ${error.message}`;
+                }
+                
+                alert(`Error: ${errorMessage}`);
             } finally {
                 button.disabled = false;
                 button.textContent = 'Generate';
