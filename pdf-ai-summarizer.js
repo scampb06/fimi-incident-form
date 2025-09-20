@@ -8,7 +8,22 @@
  * 
  * Usage:
  * 1. Include PDF.js library in your HTML
- * 2. Call generateIncidentDescription(pdfUrl) to process and summarize
+ * 2. Call generateIncidentDescription(/**
+ * Initialize the AI summarizer when DOM is ready
+ * Disabled for compact form - uses inline implementation
+ */
+/*
+document.addEventListener('DOMContentLoaded', function() {
+    // Automatically add the button when the page loads
+    addAISummarizerButton();
+    
+    // Check if PDF.js is loaded
+    if (typeof pdfjsLib === 'undefined') {
+        console.warn('PDF.js library not found. Please include it in your HTML:');
+        console.warn('<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>');
+    }
+});
+*/ocess and summarize
  */
 
 // Configuration
@@ -333,7 +348,9 @@ function setAirboltApiUrl(apiUrl) {
 
 /**
  * Initialize the AI summarizer when DOM is ready
+ * Disabled for compact form - uses inline implementation
  */
+/*
 document.addEventListener('DOMContentLoaded', function() {
     // Automatically add the button when the page loads
     addAISummarizerButton();
@@ -344,6 +361,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.warn('<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>');
     }
 });
+*/
 
 // Export functions for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
