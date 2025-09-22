@@ -142,7 +142,7 @@ Please write this as a professional incident description suitable for a cybersec
 Document text:
 ${inputText}`;
 
-        const response = await fetch(AI_CONFIG.OPENAI_API_URL, {
+/*         const response = await fetch(AI_CONFIG.OPENAI_API_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -163,6 +163,29 @@ ${inputText}`;
                 max_tokens: AI_CONFIG.MAX_TOKENS,
                 temperature: AI_CONFIG.TEMPERATURE
             })
+        }); */
+        
+        const response = await fetch('http://localhost:5239/generate-text', { // Adjust port if needed
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+//            body: JSON.stringify({ prompt: prompt })
+            body: JSON.stringify({
+                model: AI_CONFIG.MODEL,
+                messages: [
+                    {
+                        role: 'system',
+                        content: 'You are a cybersecurity analyst expert at summarizing incident reports. Provide clear, structured, and professional summaries.'
+                    },
+                    {
+                        role: 'user',
+                        content: prompt
+                    }
+                ],
+                max_tokens: AI_CONFIG.MAX_TOKENS,
+                temperature: AI_CONFIG.TEMPERATURE
+            })            
         });
         
         if (!response.ok) {
