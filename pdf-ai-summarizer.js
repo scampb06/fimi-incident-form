@@ -183,8 +183,8 @@ ${inputText}`;
                         content: prompt
                     }
                 ],
-                max_tokens: AI_CONFIG.MAX_TOKENS,
-                temperature: AI_CONFIG.TEMPERATURE
+//                max_tokens: AI_CONFIG.MAX_TOKENS,
+//                temperature: AI_CONFIG.TEMPERATURE
             })            
         });
         
