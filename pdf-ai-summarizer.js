@@ -170,8 +170,8 @@ ${inputText}`;
             headers: {
                 'Content-Type': 'application/json'
             },
-//            body: JSON.stringify({ prompt: prompt })
-            body: JSON.stringify({
+            body: JSON.stringify({ prompt: prompt })
+/*             body: JSON.stringify({
                 model: AI_CONFIG.MODEL,
                 messages: [
                     {
@@ -183,9 +183,9 @@ ${inputText}`;
                         content: prompt
                     }
                 ],
-//                max_tokens: AI_CONFIG.MAX_TOKENS,
-//                temperature: AI_CONFIG.TEMPERATURE
-            })            
+                max_tokens: AI_CONFIG.MAX_TOKENS,
+                temperature: AI_CONFIG.TEMPERATURE
+            })         */    
         });
         
         if (!response.ok) {
