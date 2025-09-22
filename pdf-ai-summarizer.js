@@ -342,7 +342,9 @@ function setOpenAIApiKey(apiKey) {
 
 /**
  * Initialize the AI summarizer when DOM is ready
+ * Disabled for compact form - uses inline implementation instead
  */
+/*
 document.addEventListener('DOMContentLoaded', function() {
     // Automatically add the button when the page loads
     addAISummarizerButton();
@@ -353,6 +355,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.warn('<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>');
     }
 });
+*/
 
 // Export functions for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
