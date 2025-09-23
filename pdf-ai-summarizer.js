@@ -82,18 +82,162 @@ async function generateIncidentDescription(pdfUrl) {
 }
 
 /**
- * Extract text from PDF using PDF.js
+ * Extract text from PDF using PDF.js with CORS proxy fallback
  * @param {string} pdfUrl - URL of the PDF file
  * @returns {Promise<string>} - Extracted text content
  */
 async function extractTextFromPDF(pdfUrl) {
-    try {
-        // Load PDF document
-        const pdf = await pdfjsLib.getDocument(pdfUrl).promise;
-        let fullText = '';
+    // Corsfix endpoints - reliable, fast CORS proxy service
+    const corsFixProxies = [
+        // Primary Corsfix endpoints (fastest)
+        'https://corsfix.com/',
+        'https://api.corsfix.com/',
+        // Backup reliable proxies
+        'https://api.codetabs.com/v1/proxy?quest=',
+        'https://thingproxy.freeboard.io/fetch/'
+    ];
+    
+    const TIMEOUT_MS = 15000; // 15 seconds max timeout
+    const FAST_TIMEOUT_MS = 8000; // 8 seconds for first attempts
+    
+    /**
+     * Create a timeout promise that rejects after specified milliseconds
+     */
+    function createTimeoutPromise(ms, operation = 'operation') {
+        return new Promise((_, reject) => 
+            setTimeout(() => reject(new Error(`${operation} timed out after ${ms}ms`)), ms)
+        );
+    }
+    
+    /**
+     * Attempt to load PDF with timeout
+     */
+    async function loadPDFWithTimeout(url, timeoutMs) {
+        const loadPromise = pdfjsLib.getDocument({
+            url: url,
+            httpHeaders: {
+                'Accept': 'application/pdf,*/*',
+                'Cache-Control': 'no-cache'
+            },
+            // PDF.js specific options
+            verbosity: 0, // Reduce console noise
+            enableXfa: false, // Disable XFA for performance
+            disableAutoFetch: false,
+            disableStream: false,
+            disableRange: false
+        }).promise;
         
-        // Extract text from each page
-        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        return Promise.race([
+            loadPromise,
+            createTimeoutPromise(timeoutMs, 'PDF loading')
+        ]);
+    }
+    
+    /**
+     * Try to extract text using direct URL first, then Corsfix proxies
+     */
+    async function tryExtractWithFallback() {
+        let lastError = null;
+        
+        // First, try direct access (works for same-origin or CORS-enabled URLs)
+        try {
+            console.log('Attempting direct PDF access...');
+            const pdf = await loadPDFWithTimeout(pdfUrl, FAST_TIMEOUT_MS);
+            return await extractTextFromPDF_Internal(pdf);
+        } catch (error) {
+            console.log('Direct access failed:', error.message);
+            lastError = error;
+            
+            // If it's not a CORS error, don't try proxies
+            if (!error.message.includes('CORS') && 
+                !error.message.includes('Failed to fetch') &&
+                !error.message.includes('NetworkError')) {
+                throw error;
+            }
+        }
+        
+        // Try Corsfix and backup proxies with progressive timeout strategy
+        console.log('Trying CORS proxies...');
+        for (let i = 0; i < corsFixProxies.length; i++) {
+            const proxy = corsFixProxies[i];
+            let proxyUrl;
+            
+            // Handle different proxy URL formats
+            if (proxy.includes('corsfix.com')) {
+                // Corsfix format: https://corsfix.com/https://example.com/file.pdf
+                proxyUrl = proxy + pdfUrl;
+            } else if (proxy.includes('codetabs.com')) {
+                // CodeTabs format: https://api.codetabs.com/v1/proxy?quest=URL
+                proxyUrl = proxy + encodeURIComponent(pdfUrl);
+            } else {
+                // Standard format: https://proxy.com/URL
+                proxyUrl = proxy + encodeURIComponent(pdfUrl);
+            }
+            
+            const timeoutMs = i < 2 ? FAST_TIMEOUT_MS : TIMEOUT_MS; // Use longer timeout for backup proxies
+            
+            try {
+                const proxyName = proxy.includes('corsfix.com') ? 'Corsfix' : 
+                                proxy.includes('codetabs.com') ? 'CodeTabs' : 
+                                proxy.includes('thingproxy.freeboard.io') ? 'ThingProxy' : 
+                                `Proxy ${i + 1}`;
+                
+                console.log(`Attempting ${proxyName}: ${proxy}`);
+                showProgressIndicator(`Trying ${proxyName}...`);
+                
+                const pdf = await loadPDFWithTimeout(proxyUrl, timeoutMs);
+                console.log(`Success with ${proxyName}`);
+                return await extractTextFromPDF_Internal(pdf);
+                
+            } catch (error) {
+                console.log(`Proxy ${i + 1} failed:`, error.message);
+                lastError = error;
+                
+                // If this proxy is permanently down or blocked, try next one quickly
+                if (error.message.includes('timed out') || 
+                    error.message.includes('NetworkError') ||
+                    error.message.includes('Failed to fetch')) {
+                    continue;
+                }
+                
+                // For other errors, give it a moment before trying next proxy
+                if (i < corsFixProxies.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+            }
+        }
+        
+        throw new Error(`All proxy attempts failed. Last error: ${lastError?.message || 'Unknown error'}`);
+    }
+    
+    try {
+        return await tryExtractWithFallback();
+        
+    } catch (error) {
+        console.error('PDF extraction error:', error);
+        
+        // Provide helpful error messages based on the type of failure
+        if (error.message.includes('timed out')) {
+            throw new Error(`PDF loading timed out. The document may be too large or the server is slow. Please try again or use a different PDF.`);
+        } else if (error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
+            throw new Error(`Unable to access PDF due to server restrictions. Please check the URL or try downloading the PDF and using a local copy.`);
+        } else {
+            throw new Error(`Failed to extract text from PDF: ${error.message}`);
+        }
+    }
+}
+
+/**
+ * Internal function to extract text from a loaded PDF document
+ * @param {PDFDocumentProxy} pdf - Loaded PDF document
+ * @returns {Promise<string>} - Extracted text content
+ */
+async function extractTextFromPDF_Internal(pdf) {
+    let fullText = '';
+    
+    // Extract text from each page
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        try {
             const page = await pdf.getPage(pageNum);
             const textContent = await page.getTextContent();
             
@@ -104,15 +248,28 @@ async function extractTextFromPDF(pdfUrl) {
                 .replace(/\s+/g, ' ') // Normalize whitespace
                 .trim();
             
-            fullText += pageText + '\n\n';
+            if (pageText) {
+                fullText += pageText + '\n\n';
+            }
+            
+            // Update progress for large documents
+            if (pdf.numPages > 10 && pageNum % 5 === 0) {
+                showProgressIndicator(`Processing page ${pageNum}/${pdf.numPages}...`);
+            }
+            
+        } catch (pageError) {
+            console.warn(`Error extracting text from page ${pageNum}:`, pageError.message);
+            // Continue with other pages even if one fails
         }
-        
-        return fullText.trim();
-        
-    } catch (error) {
-        console.error('PDF extraction error:', error);
-        throw new Error(`Failed to extract text from PDF: ${error.message}`);
     }
+    
+    const result = fullText.trim();
+    
+    if (!result || result.length < 50) {
+        throw new Error('PDF appears to contain no readable text or may be image-based');
+    }
+    
+    return result;
 }
 
 /**
