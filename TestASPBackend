@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenAI Minimal API Example</title>
+</head>
+<body>
+    <h1>Generate Text with OpenAI</h1>
+    <textarea id="promptInput" rows="5" cols="50" placeholder="Enter your prompt here..."></textarea><br>
+    <button onclick="generateText()">Generate</button>
+    <pre id="result"></pre>
+
+    <script>
+        async function generateText() {
+            const prompt = document.getElementById('promptInput').value;
+            const resultElement = document.getElementById('result');
+            resultElement.textContent = 'Generating...';
+
+            try {
+                const response = await fetch('http://localhost:5239/generate-text', { // Adjust port if needed
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ prompt: prompt })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to generate text.');
+                }
+
+                const data = await response.json();
+                // Extract the generated text from the OpenAI response structure
+                const generatedText = data.choices[0].message.content;
+                resultElement.textContent = generatedText;
+
+            } catch (error) {
+                resultElement.textContent = `Error: ${error.message}`;
+                console.error('Error:', error);
+            }
+        }
+    </script>
+</body>
+</html>

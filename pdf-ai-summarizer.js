@@ -165,7 +165,8 @@ ${inputText}`;
             })
         }); */
         
-        const response = await fetch('http://localhost:5239/generate-text', { // Adjust port if needed
+//        const response = await fetch('http://localhost:5239/generate-text', { // Adjust port if needed
+        const response = await fetch('https://fimi-incident-form-genai.azurewebsites.net/generate-text', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
