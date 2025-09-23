@@ -41,7 +41,7 @@ async function generateIncidentDescription(pdfUrl) {
             throw new Error('PDF URL is required');
         }
         
-        if (!AI_CONFIG.OPENAI_API_KEY) {
+/*         if (!AI_CONFIG.OPENAI_API_KEY) {
             // Try to prompt for API key if not set
             if (typeof promptForAPIKey === 'function') {
                 const apiKey = promptForAPIKey();
@@ -51,7 +51,7 @@ async function generateIncidentDescription(pdfUrl) {
             } else {
                 throw new Error('OpenAI API key not configured. Please set AI_CONFIG.OPENAI_API_KEY');
             }
-        }
+        } */
         
         // Extract text from PDF
         showProgressIndicator('Extracting text from PDF...');
