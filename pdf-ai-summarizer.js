@@ -90,6 +90,7 @@ async function extractTextFromPDF(pdfUrl) {
     // Corsfix endpoints - reliable, fast CORS proxy service
     const corsFixProxies = [
         // Primary Corsfix endpoints (fastest)
+        'http://localhost:5239/cors-proxy/pdf?url=',
         'https://proxy.corsfix.com/?',
         'https://api.corsfix.com/',
         // Backup reliable proxies
@@ -177,7 +178,8 @@ async function extractTextFromPDF(pdfUrl) {
             const timeoutMs = i < 2 ? FAST_TIMEOUT_MS : TIMEOUT_MS; // Use longer timeout for backup proxies
             
             try {
-                const proxyName = proxy.includes('corsfix.com') ? 'Corsfix' : 
+                const proxyName = proxy.includes('cors-proxy') ? 'My CORS Proxy' : 
+                                proxy.includes('corsfix.com') ? 'Corsfix' :
                                 proxy.includes('codetabs.com') ? 'CodeTabs' : 
                                 proxy.includes('thingproxy.freeboard.io') ? 'ThingProxy' : 
                                 `Proxy ${i + 1}`;
