@@ -345,16 +345,16 @@ async function generateAISummary(text) {
             text.substring(0, maxInputLength) + '...[truncated]' : 
             text;
         
-        const prompt = `Please analyze the following cybersecurity incident report and provide a concise half-page summary that includes:
+        const prompt = `Please analyze the following FIMI incident report and provide a concise half-page summary that includes:
 
 1. **Incident Overview**: What happened and when
-2. **Threat Actor**: Who was responsible (if identified)
-3. **Attack Methods**: How the attack was carried out
-4. **Impact**: What systems, data, or operations were affected
-5. **Key Findings**: Important technical details or indicators
-6. **Timeline**: Key dates and progression of the incident
+2. **(A)ctor**: Who was the threat actor responsible (if identified)
+3. **(B)ehavior**: How was the attack carried out
+4. **(C)ontent**: What were the key narratives and what type of content was deployed
+5. **(D)istribution**: Through which channels were the narratives propagated, which audiences were targeted, and what was the reach
+6. **(E)ffect**: What level of engagement did the content achieve and what was the real-world impact
 
-Please write this as a professional incident description suitable for a cybersecurity report. Focus on factual information and avoid speculation.
+Please write this as a professional incident description suitable for a FIMI report. Focus on factual information and avoid speculation.
 
 Document text:
 ${inputText}`;

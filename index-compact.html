@@ -971,11 +971,11 @@
                     throw new Error('No content found in form fields to summarize. Please fill in some form data first.');
                 }
                 
-                const prompt = `Please create a concise executive summary (1-2 paragraphs) based on the following cybersecurity incident information:
+                const prompt = `Please create a concise executive summary (1-2 sentences) based on the following FIMI incident information:
 
 ${sections.map(section => `${section.name}: ${section.content}`).join('\n\n')}
 
-Provide a high-level overview that would be suitable for executive leadership, focusing on the key incident details, impact, and recommendations.`;
+Provide a high-level overview that would be suitable for executive leadership, focusing on the key incident details, narrative, impact, and recommendations.`;
                 
                 // Call the AI service
                 showProgressIndicator('Calling AI service...');
