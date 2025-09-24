@@ -111,27 +111,83 @@ async function extractTextFromPDF(pdfUrl) {
     }
     
     /**
-     * Attempt to load PDF with timeout
+     * Attempt to load PDF with timeout and chunked encoding handling
      */
-    async function loadPDFWithTimeout(url, timeoutMs) {
-        const loadPromise = pdfjsLib.getDocument({
-            url: url,
-            httpHeaders: {
-                'Accept': 'application/pdf,*/*',
-                'Cache-Control': 'no-cache'
-            },
-            // PDF.js specific options
-            verbosity: 0, // Reduce console noise
-            enableXfa: false, // Disable XFA for performance
-            disableAutoFetch: false,
-            disableStream: false,
-            disableRange: false
-        }).promise;
+    async function loadPDFWithTimeout(url, timeoutMs, isLocalProxy = false) {
+        let loadPromise;
+        
+        if (isLocalProxy) {
+            // For local CORS proxy, use fetch first to handle chunked encoding issues
+            loadPromise = fetchAndLoadPDF(url, timeoutMs);
+        } else {
+            // Standard PDF.js loading for other proxies
+            loadPromise = pdfjsLib.getDocument({
+                url: url,
+                httpHeaders: {
+                    'Accept': 'application/pdf,*/*',
+                    'Cache-Control': 'no-cache',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                },
+                // PDF.js specific options
+                verbosity: 0, // Reduce console noise
+                enableXfa: false, // Disable XFA for performance
+                disableAutoFetch: false,
+                disableStream: true, // Disable streaming for problematic proxies
+                disableRange: true // Disable range requests for better compatibility
+            }).promise;
+        }
         
         return Promise.race([
             loadPromise,
             createTimeoutPromise(timeoutMs, 'PDF loading')
         ]);
+    }
+    
+    /**
+     * Fetch PDF data and load with PDF.js (for handling chunked encoding issues)
+     */
+    async function fetchAndLoadPDF(url, timeoutMs) {
+        // First fetch the PDF data completely
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+        
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/pdf,*/*',
+                    'Cache-Control': 'no-cache'
+                },
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            // Get the full PDF data as ArrayBuffer
+            const arrayBuffer = await response.arrayBuffer();
+            
+            if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+                throw new Error('Received empty PDF data');
+            }
+            
+            // Load PDF from the complete data
+            return await pdfjsLib.getDocument({
+                data: arrayBuffer,
+                verbosity: 0,
+                enableXfa: false
+            }).promise;
+            
+        } catch (error) {
+            clearTimeout(timeoutId);
+            if (error.name === 'AbortError') {
+                throw new Error('Request timed out');
+            }
+            throw error;
+        }
     }
     
     /**
@@ -184,10 +240,12 @@ async function extractTextFromPDF(pdfUrl) {
                                 proxy.includes('thingproxy.freeboard.io') ? 'ThingProxy' : 
                                 `Proxy ${i + 1}`;
                 
+                const isLocalProxy = proxy.includes('cors-proxy');
+                
                 console.log(`Attempting ${proxyName}: ${proxy}`);
                 showProgressIndicator(`Trying ${proxyName}...`);
                 
-                const pdf = await loadPDFWithTimeout(proxyUrl, timeoutMs);
+                const pdf = await loadPDFWithTimeout(proxyUrl, timeoutMs, isLocalProxy);
                 console.log(`Success with ${proxyName}`);
                 return await extractTextFromPDF_Internal(pdf);
                 
