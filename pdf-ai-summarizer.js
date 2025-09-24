@@ -90,7 +90,7 @@ async function extractTextFromPDF(pdfUrl) {
     // Corsfix endpoints - reliable, fast CORS proxy service
     const corsFixProxies = [
         // Primary Corsfix endpoints (fastest)
-        'http://localhost:5239/cors-proxy/pdf?url=',
+        'https://fimi-incident-form-genai.azurewebsites.net/cors-proxy/pdf?url=',
         'https://proxy.corsfix.com/?',
         'https://api.corsfix.com/',
         // Backup reliable proxies
