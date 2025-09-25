@@ -40,7 +40,7 @@ function initializeURLValidation() {
             } else {
                 reporturlerror.style.display = 'none';
             }
-        }, 500); // wait 500ms after typing stops
+        }, 1500); // wait 500ms after typing stops
     });
 
     const evidenceurlinput = document.getElementById('evidenceurlInput');
@@ -56,6 +56,6 @@ function initializeURLValidation() {
             } else {
                 evidenceurlerror.style.display = 'none';
             }
-        }, 500); // wait 500ms after typing stops
+        }, 1500); // wait 500ms after typing stops
     });
 }
