@@ -971,7 +971,7 @@
                     throw new Error('No content found in form fields to summarize. Please fill in some form data first.');
                 }
                 
-                const prompt = `Please create a concise five line executive summary based on the following FIMI incident information:
+/*                 const prompt = `Please create a concise five line executive summary based on the following FIMI incident information:
 
 ${sections.map(section => `${section.name}: ${section.content}`).join('\n\n')}
 
@@ -982,6 +982,12 @@ Provide one line for each section as follows:
 3. Impact Assessment: [one line summary]
 4. TTPs Summary: [one line summary]
 5. Recommendations: [one line summary]
+
+Make sure the summary is clear and professional.`; */
+
+                const prompt = `Please create a concise one paragraph executive summary based on the following FIMI incident information:
+
+${sections.map(section => `${section.name}: ${section.content}`).join('\n\n')}
 
 Make sure the summary is clear and professional.`;
 
