@@ -385,14 +385,18 @@ function openTechniqueSelector() {
             
             // Determine if this technique should be classified as objective or TTP
             // Based on DISARM framework: TA01 and TA02 are objectives, others are TTPs
-            // Using known technique mappings for TA01 (Plan Strategy) and TA02 (Plan Objectives)
+            // Using accurate technique mappings from the official DISARM framework
             const objectiveTechniques = [
-                'T0072', 'T0073', 'T0074', // TA01 - Plan Strategy
-                'T0002', 'T0003', 'T0004', 'T0080', 'T0081', 'T0082', 'T0083' // TA02 - Plan Objectives
+                // TA01 techniques
+                'T0073', 'T0074',
+                // TA02 techniques  
+                'T0075', 'T0076', 'T0077', 'T0078', 'T0079', 'T0135', 'T0136', 'T0137', 'T0138', 'T0139', 'T0140'
             ];
             
-            const baseId = id.split('.')[0]; // Remove sub-technique numbering (e.g., T0014.001 -> T0014)
+            const baseId = id.split('.')[0]; // Remove sub-technique numbering (e.g., T0135.001 -> T0135)
             const isObjective = objectiveTechniques.includes(baseId);
+            
+            console.log(`Technique ${id} (base: ${baseId}) classified as: ${isObjective ? 'Objective' : 'TTP'}`);
             
             let addedSuccessfully = false;
             let addedAs = '';
