@@ -57,19 +57,46 @@
             border-color: #28a745 !important;
         }
         
+        .btn {
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 15px;
+            margin-right: 10px;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        
+        .select-btn {
+            background: #28a745;
+            color: white;
+        }
+        
+        .select-btn:hover {
+            background: #218838;
+        }
+        
+        .select-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        
         .clear-btn {
             background: #dc3545;
             color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-top: 10px;
-            font-size: 14px;
         }
         
         .clear-btn:hover {
             background: #c82333;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 15px;
         }
         
         .info {
@@ -145,7 +172,10 @@
                 </datalist>
             </div>
             
-            <button type="button" class="clear-btn" onclick="clearForm()">Clear Form</button>
+            <div class="button-group">
+                <button type="submit" class="btn select-btn" id="selectBtn" disabled>Select Technique</button>
+                <button type="button" class="btn clear-btn" onclick="clearForm()">Clear Form</button>
+            </div>
         </form>
         
         <div id="status" class="loading">Loading techniques...</div>
@@ -241,6 +271,9 @@
                     techniqueNameField.value = '';
                 }
             }
+            
+            // Update button state
+            updateSelectButtonState();
         });
         
         // Handle technique name input changes
@@ -269,6 +302,9 @@
                     techniqueIdField.value = '';
                 }
             }
+            
+            // Update button state
+            updateSelectButtonState();
         });
         
         // Check if input is a partial match (user is still typing)
@@ -280,6 +316,19 @@
             }
         }
         
+        // Update Select button state based on current selection
+        function updateSelectButtonState() {
+            const selectBtn = document.getElementById('selectBtn');
+            const id = document.getElementById('techniqueId').value.trim();
+            const name = document.getElementById('techniqueName').value.trim();
+            
+            // Enable button only if both ID and name are filled and match a valid technique
+            const isValidSelection = id && name && techniqueIdMap.has(id) && techniqueIdMap.get(id).name === name;
+            
+            selectBtn.disabled = !isValidSelection;
+            selectBtn.textContent = isValidSelection ? 'Select Technique' : 'Select a technique first';
+        }
+        
         // Clear form function
         function clearForm() {
             document.getElementById('techniqueId').value = '';
@@ -288,6 +337,9 @@
             document.getElementById('techniqueName').classList.remove('selected');
             document.getElementById('status').innerHTML = 
                 `<div class="info">Form cleared. Start typing in either field to search techniques.</div>`;
+            
+            // Update button state
+            updateSelectButtonState();
         }
         
         // Handle form submission (send selection to parent window)
