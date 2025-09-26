@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DISARM Technique Extractor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            margin: 20px 0;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .output {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>DISARM Technique Extractor</h1>
+    
+    <div class="container">
+        <h2>Instructions:</h2>
+        <ol>
+            <li>Open disarm_red_framework_clickable.html in a text editor</li>
+            <li>Copy the entire HTML content</li>
+            <li>Paste it in the text area below</li>
+            <li>Click "Extract Techniques" to generate the JSON</li>
+            <li>Copy the generated JSON and save it as "disarm-techniques.json"</li>
+        </ol>
+    </div>
+    
+    <div class="container">
+        <h3>Paste HTML Content Here:</h3>
+        <textarea id="htmlInput" placeholder="Paste the content of disarm_red_framework_clickable.html here..."></textarea>
+    </div>
+    
+    <div class="container">
+        <button onclick="extractTechniques()">Extract Techniques</button>
+        <button onclick="downloadJSON()" id="downloadBtn" style="display:none;">Download JSON File</button>
+    </div>
+    
+    <div class="container">
+        <h3>Output:</h3>
+        <div id="output" class="output">Results will appear here...</div>
+    </div>
+
+    <script>
+        let extractedTechniques = [];
+        
+        function extractTechniques() {
+            const htmlContent = document.getElementById('htmlInput').value.trim();
+            const outputDiv = document.getElementById('output');
+            
+            if (!htmlContent) {
+                outputDiv.innerHTML = '<span class="error">Please paste the HTML content first.</span>';
+                return;
+            }
+            
+            try {
+                // Create a temporary DOM element to parse the HTML
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = htmlContent;
+                
+                // Find all td elements with technique IDs (they have IDs starting with 'T')
+                const techniqueCells = tempDiv.querySelectorAll('td[id^="T"]');
+                
+                const techniques = [];
+                let processedCount = 0;
+                
+                techniqueCells.forEach(cell => {
+                    const techniqueId = cell.id;
+                    const cellText = cell.textContent || cell.innerText;
+                    
+                    // Skip if this is a text element (ends with 'text') or empty cells
+                    if (techniqueId.endsWith('text') || !cellText.trim()) {
+                        return;
+                    }
+                    
+                    // Extract technique name by removing the ID from the beginning
+                    // Format: "T0086.001 Develop Memes" -> "Develop Memes"
+                    let techniqueName = cellText
+                        .replace(new RegExp('^' + techniqueId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), '') // Remove the technique ID
+                        .trim();
+                    
+                    // Remove any leading colon or whitespace
+                    techniqueName = techniqueName.replace(/^[\s:]+/, '');
+                    
+                    if (techniqueName && techniqueName.length > 0) {
+                        techniques.push({
+                            type: "technique",
+                            id: techniqueId,
+                            name: techniqueName
+                        });
+                        processedCount++;
+                    }
+                });
+                
+                if (techniques.length === 0) {
+                    outputDiv.innerHTML = '<span class="error">No techniques found. Make sure you pasted the correct HTML content.</span>';
+                    return;
+                }
+                
+                // Sort techniques by ID for consistency
+                techniques.sort((a, b) => {
+                    // Custom sort to handle technique IDs properly
+                    const parseId = (id) => {
+                        const parts = id.replace('T', '').split('.');
+                        return {
+                            main: parseInt(parts[0]) || 0,
+                            sub: parts[1] ? parseInt(parts[1]) : 0
+                        };
+                    };
+                    
+                    const aId = parseId(a.id);
+                    const bId = parseId(b.id);
+                    
+                    if (aId.main !== bId.main) {
+                        return aId.main - bId.main;
+                    }
+                    return aId.sub - bId.sub;
+                });
+                
+                // Store for download
+                extractedTechniques = techniques;
+                
+                // Generate JSON output
+                const jsonOutput = JSON.stringify(techniques, null, 2);
+                
+                let output = `<span class="success">Successfully extracted ${techniques.length} techniques!</span>\n\n`;
+                output += `First 10 techniques:\n`;
+                techniques.slice(0, 10).forEach(tech => {
+                    output += `${tech.id}: ${tech.name}\n`;
+                });
+                output += `\n--- Generated JSON (copy this to disarm-techniques.json) ---\n\n`;
+                output += jsonOutput;
+                
+                outputDiv.textContent = output;
+                
+                // Show download button
+                document.getElementById('downloadBtn').style.display = 'inline-block';
+                
+            } catch (error) {
+                outputDiv.innerHTML = `<span class="error">Error extracting techniques: ${error.message}</span>`;
+                console.error('Extraction error:', error);
+            }
+        }
+        
+        function downloadJSON() {
+            if (extractedTechniques.length === 0) {
+                alert('No techniques extracted yet. Please extract techniques first.');
+                return;
+            }
+            
+            const jsonContent = JSON.stringify(extractedTechniques, null, 2);
+            const blob = new Blob([jsonContent], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'disarm-techniques.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        // Auto-resize textarea
+        document.getElementById('htmlInput').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.max(200, this.scrollHeight) + 'px';
+        });
+    </script>
+</body>
+</html>

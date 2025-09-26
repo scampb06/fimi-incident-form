@@ -231,8 +231,10 @@ async function extractTextFromPDF(pdfUrl) {
                 proxyUrl = proxy + encodeURIComponent(pdfUrl);
             }
             
-            const timeoutMs = i < 2 ? FAST_TIMEOUT_MS : TIMEOUT_MS; // Use longer timeout for backup proxies
+//          const timeoutMs = i < 2 ? FAST_TIMEOUT_MS : TIMEOUT_MS; // Use longer timeout for backup proxies
+//          My CORS Proxy was timing out on 8s
             
+            const timeoutMs = TIMEOUT_MS; // Use consistent timeout for all proxies
             try {
                 const proxyName = proxy.includes('cors-proxy') ? 'My CORS Proxy' : 
                                 proxy.includes('corsfix.com') ? 'Corsfix' :
