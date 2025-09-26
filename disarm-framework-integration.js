@@ -312,6 +312,165 @@ function closeDISARMModal(modal) {
     console.log('Final TTPs:', ttpsList);
 }
 
+// Open technique selector for individual technique selection
+function openTechniqueSelector() {
+    // Create modal for technique selector
+    const modal = document.createElement('div');
+    modal.id = 'techniqueSelectorModal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0,0,0,0.8);
+        z-index: 1000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    `;
+    
+    const modalContent = document.createElement('div');
+    modalContent.style.cssText = `
+        background: white;
+        width: 90%;
+        max-width: 800px;
+        height: 80%;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    `;
+    
+    const modalHeader = document.createElement('div');
+    modalHeader.style.cssText = `
+        padding: 20px;
+        border-bottom: 1px solid #ccc;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f5f5f5;
+    `;
+    
+    const title = document.createElement('h3');
+    title.textContent = 'Select DISARM Technique';
+    title.style.margin = '0';
+    
+    const closeButton = document.createElement('button');
+    closeButton.textContent = 'Close';
+    closeButton.style.cssText = `
+        padding: 8px 16px;
+        background: #6c757d;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+    `;
+    closeButton.onclick = () => closeTechniqueSelectorModal(modal);
+    
+    const iframe = document.createElement('iframe');
+    iframe.src = './disarm-technique-selector.html';
+    iframe.style.cssText = `
+        width: 100%;
+        height: 100%;
+        border: none;
+        flex: 1;
+    `;
+    
+    // Listen for technique selection from the iframe
+    function handleTechniqueSelection(event) {
+        if (event.data && event.data.type === 'techniqueSelected') {
+            const { id, name } = event.data;
+            
+            // Determine if this technique should be classified as objective or TTP
+            // Based on DISARM framework: TA01 and TA02 are objectives, others are TTPs
+            // Using known technique mappings for TA01 (Plan Strategy) and TA02 (Plan Objectives)
+            const objectiveTechniques = [
+                'T0072', 'T0073', 'T0074', // TA01 - Plan Strategy
+                'T0002', 'T0003', 'T0004', 'T0080', 'T0081', 'T0082', 'T0083' // TA02 - Plan Objectives
+            ];
+            
+            const baseId = id.split('.')[0]; // Remove sub-technique numbering (e.g., T0014.001 -> T0014)
+            const isObjective = objectiveTechniques.includes(baseId);
+            
+            let addedSuccessfully = false;
+            let addedAs = '';
+            
+            if (isObjective && objectivesList.length < 2) {
+                // Add as objective if we haven't reached the limit
+                const objectiveText = `${id}: ${name}`;
+                if (!objectivesList.some(obj => obj.includes(id))) {
+                    objectivesList.push(objectiveText);
+                    console.log('Added objective:', objectiveText);
+                    addedSuccessfully = true;
+                    addedAs = 'objective';
+                }
+            } else if (!isObjective && ttpsList.length < 4) {
+                // Add as TTP if we haven't reached the limit
+                const ttpText = `${id}: ${name}`;
+                if (!ttpsList.some(ttp => ttp.includes(id))) {
+                    ttpsList.push(ttpText);
+                    console.log('Added TTP:', ttpText);
+                    addedSuccessfully = true;
+                    addedAs = 'TTP';
+                }
+            } else {
+                // Show message about limits or classification
+                if (isObjective && objectivesList.length >= 2) {
+                    alert(`Cannot add more objectives. Current: ${objectivesList.length}/2\n\nTechnique "${id}: ${name}" would be classified as an objective.`);
+                } else if (!isObjective && ttpsList.length >= 4) {
+                    alert(`Cannot add more TTPs. Current: ${ttpsList.length}/4\n\nTechnique "${id}: ${name}" would be classified as a TTP.`);
+                } else {
+                    // This shouldn't happen, but just in case
+                    alert(`Could not add technique "${id}: ${name}"`);
+                }
+                return;
+            }
+            
+            if (addedSuccessfully) {
+                // Update UI
+                updateObjectivesAndTTPsUI();
+                updateSelectionInfo();
+                if (typeof updateCounters === 'function') {
+                    updateCounters();
+                }
+                
+                // Show success message and close modal
+                alert(`✅ Successfully added as ${addedAs}:\n"${id}: ${name}"`);
+                closeTechniqueSelectorModal(modal);
+            }
+        }
+    }
+    
+    // Add event listener for cross-frame communication
+    window.addEventListener('message', handleTechniqueSelection, false);
+    
+    // Store the handler reference to remove it later
+    modal.messageHandler = handleTechniqueSelection;
+    
+    modalHeader.appendChild(title);
+    modalHeader.appendChild(closeButton);
+    modalContent.appendChild(modalHeader);
+    modalContent.appendChild(iframe);
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+    
+    console.log('Technique selector modal opened');
+}
+
+// Close technique selector modal
+function closeTechniqueSelectorModal(modal) {
+    if (modal && modal.parentNode) {
+        // Remove the event listener
+        if (modal.messageHandler) {
+            window.removeEventListener('message', modal.messageHandler, false);
+        }
+        modal.parentNode.removeChild(modal);
+    }
+    console.log('Technique selector modal closed');
+}
+
 // Fetch technique title from DISARM API or fallback
 async function fetchTechniqueTitle(techniqueID) {
     try {

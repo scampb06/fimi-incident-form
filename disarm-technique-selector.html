@@ -290,7 +290,7 @@
                 `<div class="info">Form cleared. Start typing in either field to search techniques.</div>`;
         }
         
-        // Handle form submission (optional)
+        // Handle form submission (send selection to parent window)
         document.getElementById('techniqueForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
@@ -299,7 +299,18 @@
             
             if (id && name && techniqueIdMap.has(id)) {
                 const technique = techniqueIdMap.get(id);
-                alert(`Selected Technique:\nID: ${technique.id}\nName: ${technique.name}`);
+                
+                // Send selection to parent window
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({
+                        type: 'techniqueSelected',
+                        id: technique.id,
+                        name: technique.name
+                    }, '*');
+                } else {
+                    // Fallback for when not in iframe
+                    alert(`Selected Technique:\nID: ${technique.id}\nName: ${technique.name}`);
+                }
             } else {
                 alert('Please select a valid technique from the dropdown.');
             }
