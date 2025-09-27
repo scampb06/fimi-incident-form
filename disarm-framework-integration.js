@@ -394,7 +394,7 @@ function openTechniqueSelector() {
                 // TA01 techniques
                 'T0073', 'T0074',
                 // TA02 techniques  
-                'T0075', 'T0076', 'T0077', 'T0078', 'T0079', 'T0135', 'T0136', 'T0137', 'T0138', 'T0139', 'T0140'
+                'T0002', 'T0066', 'T0075', 'T0076', 'T0077', 'T0078', 'T0079', 'T0135', 'T0136', 'T0137', 'T0138', 'T0139', 'T0140'
             ];
             
             const baseId = id.split('.')[0]; // Remove sub-technique numbering (e.g., T0135.001 -> T0135)
