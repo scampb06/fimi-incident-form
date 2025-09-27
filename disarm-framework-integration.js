@@ -63,9 +63,7 @@ async function uploadNavigatorFile() {
 
 // Interactive DISARM Framework Selection
 function openDISARMFramework() {
-    // Reset the global lists
-    objectivesList = [];
-    ttpsList = [];
+    // Note: We don't reset the global lists here so that new selections append to existing techniques
     
     // Add message listener for iframe communication
     window.addEventListener('message', function(event) {
@@ -159,7 +157,19 @@ function openDISARMFramework() {
         margin: 0 20px;
         text-align: center;
     `;
-    selectionInfo.textContent = 'Objectives: 0/2 | TTPs: 0/4';
+    // Initialize with current counts and appropriate styling
+    const currentObjCount = objectivesList.length;
+    const currentTtpCount = ttpsList.length;
+    selectionInfo.textContent = `Objectives: ${currentObjCount} (rec: 2) | TTPs: ${currentTtpCount} (rec: 4)`;
+    
+    // Set initial color based on current counts
+    if (currentObjCount > 2 || currentTtpCount > 4) {
+        selectionInfo.style.color = '#dc3545'; // Red when exceeding recommended limits
+    } else if (currentObjCount === 2 || currentTtpCount === 4) {
+        selectionInfo.style.color = '#28a745'; // Green when at recommended limit
+    } else {
+        selectionInfo.style.color = '#666'; // Default gray
+    }
     
     const closeButton = document.createElement('button');
     closeButton.textContent = 'Done';
