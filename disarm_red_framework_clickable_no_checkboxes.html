@@ -110,6 +110,11 @@ function handleTechniqueClickNoCheckbox(element) {
     // Currently selected, so unselect it
     element.classList.remove('technique-selected');
     
+    // Reset inline styles to allow CSS to take over
+    element.style.backgroundColor = '';
+    element.style.color = '';
+    element.style.fontWeight = '';
+    
     // Hide the text element
     if (textElement) {
       textElement.style.display = 'none';
@@ -129,6 +134,11 @@ function handleTechniqueClickNoCheckbox(element) {
   } else {
     // Currently unselected, so select it
     element.classList.add('technique-selected');
+    
+    // Set inline styles for immediate visual feedback (overrides CSS hover)
+    element.style.backgroundColor = '#28a745';
+    element.style.color = 'white';
+    element.style.fontWeight = 'bold';
     
     // Show the text element
     if (textElement) {
