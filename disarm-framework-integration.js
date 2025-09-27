@@ -279,11 +279,15 @@ function updateSelectionInfo() {
     if (selectionInfo) {
         const objectiveCount = objectivesList.length;
         const ttpCount = ttpsList.length;
-        selectionInfo.textContent = `Objectives: ${objectiveCount}/2 | TTPs: ${ttpCount}/4`;
         
-        // Update styling based on limits
-        if (objectiveCount >= 2 || ttpCount >= 4) {
-            selectionInfo.style.color = '#28a745'; // Green when near/at limit
+        // Show actual counts with recommended limits for reference
+        selectionInfo.textContent = `Objectives: ${objectiveCount} (rec: 2) | TTPs: ${ttpCount} (rec: 4)`;
+        
+        // Update styling based on recommended limits
+        if (objectiveCount > 2 || ttpCount > 4) {
+            selectionInfo.style.color = '#dc3545'; // Red when exceeding recommended limits
+        } else if (objectiveCount === 2 || ttpCount === 4) {
+            selectionInfo.style.color = '#28a745'; // Green when at recommended limit
         } else {
             selectionInfo.style.color = '#666'; // Default gray
         }
@@ -400,36 +404,42 @@ function openTechniqueSelector() {
             
             let addedSuccessfully = false;
             let addedAs = '';
+            let warningMessage = '';
             
-            if (isObjective && objectivesList.length < 2) {
-                // Add as objective if we haven't reached the limit
+            if (isObjective) {
+                // Add as objective (check for duplicates)
                 const objectiveText = `${id}: ${name}`;
                 if (!objectivesList.some(obj => obj.includes(id))) {
                     objectivesList.push(objectiveText);
                     console.log('Added objective:', objectiveText);
                     addedSuccessfully = true;
                     addedAs = 'objective';
+                    
+                    // Check if exceeding recommended limit
+                    if (objectivesList.length > 2) {
+                        warningMessage = `\n\n⚠️ Warning: You now have ${objectivesList.length} objectives. The recommended limit is 2 objectives for optimal report structure.`;
+                    }
+                } else {
+                    alert(`Technique "${id}: ${name}" is already added as an objective.`);
+                    return;
                 }
-            } else if (!isObjective && ttpsList.length < 4) {
-                // Add as TTP if we haven't reached the limit
+            } else {
+                // Add as TTP (check for duplicates)
                 const ttpText = `${id}: ${name}`;
                 if (!ttpsList.some(ttp => ttp.includes(id))) {
                     ttpsList.push(ttpText);
                     console.log('Added TTP:', ttpText);
                     addedSuccessfully = true;
                     addedAs = 'TTP';
-                }
-            } else {
-                // Show message about limits or classification
-                if (isObjective && objectivesList.length >= 2) {
-                    alert(`Cannot add more objectives. Current: ${objectivesList.length}/2\n\nTechnique "${id}: ${name}" would be classified as an objective.`);
-                } else if (!isObjective && ttpsList.length >= 4) {
-                    alert(`Cannot add more TTPs. Current: ${ttpsList.length}/4\n\nTechnique "${id}: ${name}" would be classified as a TTP.`);
+                    
+                    // Check if exceeding recommended limit
+                    if (ttpsList.length > 4) {
+                        warningMessage = `\n\n⚠️ Warning: You now have ${ttpsList.length} TTPs. The recommended limit is 4 TTPs for optimal report structure.`;
+                    }
                 } else {
-                    // This shouldn't happen, but just in case
-                    alert(`Could not add technique "${id}: ${name}"`);
+                    alert(`Technique "${id}: ${name}" is already added as a TTP.`);
+                    return;
                 }
-                return;
             }
             
             if (addedSuccessfully) {
@@ -440,8 +450,8 @@ function openTechniqueSelector() {
                     updateCounters();
                 }
                 
-                // Show success message and close modal
-                alert(`✅ Successfully added as ${addedAs}:\n"${id}: ${name}"`);
+                // Show success message with optional warning and close modal
+                alert(`✅ Successfully added as ${addedAs}:\n"${id}: ${name}"${warningMessage}`);
                 closeTechniqueSelectorModal(modal);
             }
         }

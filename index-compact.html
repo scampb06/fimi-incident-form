@@ -792,10 +792,36 @@
             const ttpsCounter = document.getElementById('ttps-counter');
             
             if (objectivesCounter) {
-                objectivesCounter.textContent = `${objectivesList.length}/2`;
+                const objCount = objectivesList.length;
+                objectivesCounter.textContent = `${objCount} (rec: 2)`;
+                
+                // Update color based on count
+                if (objCount > 2) {
+                    objectivesCounter.style.backgroundColor = '#dc3545'; // Red for exceeding
+                    objectivesCounter.style.color = 'white';
+                } else if (objCount === 2) {
+                    objectivesCounter.style.backgroundColor = '#28a745'; // Green for at limit
+                    objectivesCounter.style.color = 'white';
+                } else {
+                    objectivesCounter.style.backgroundColor = '#007cba'; // Default blue
+                    objectivesCounter.style.color = 'white';
+                }
             }
             if (ttpsCounter) {
-                ttpsCounter.textContent = `${ttpsList.length}/4`;
+                const ttpCount = ttpsList.length;
+                ttpsCounter.textContent = `${ttpCount} (rec: 4)`;
+                
+                // Update color based on count
+                if (ttpCount > 4) {
+                    ttpsCounter.style.backgroundColor = '#dc3545'; // Red for exceeding
+                    ttpsCounter.style.color = 'white';
+                } else if (ttpCount === 4) {
+                    ttpsCounter.style.backgroundColor = '#28a745'; // Green for at limit
+                    ttpsCounter.style.color = 'white';
+                } else {
+                    ttpsCounter.style.backgroundColor = '#007cba'; // Default blue
+                    ttpsCounter.style.color = 'white';
+                }
             }
         }
 
