@@ -188,7 +188,7 @@ function openDISARMFramework() {
     
     // Try your own GitHub Pages hosted version first, then fallbacks
     const frameworkUrls = [
-        './disarm_red_framework_clickable.html', // Local hosted version
+        './disarm_red_framework_clickable_no_checkboxes.html', // Local hosted version
         'https://scampb06.github.io/fimi-incident-form/disarm_red_framework_clickable.html', // Your GitHub Pages
         'https://disarmfoundation.github.io/disarm-navigator/', // DISARM Navigator fallback
     ];
