@@ -100,7 +100,7 @@ function handleTechniqueClickNoCheckbox(element) {
   
   // Get technique data
   var techniqueId = element.getAttribute('data-technique');
-  var tactic = element.getAttribute('data-tactic');
+  var tactic = getTacticColumn(element); // Use dynamic tactic calculation
   var techniqueName = element.querySelector('.technique-name').textContent;
   
   // Get the corresponding text element for this technique
