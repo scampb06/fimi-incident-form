@@ -15,12 +15,7 @@
         .technique-selected {
             background-color: #28a745 !important; /* Bright green */
             color: white !important;
-        }
-        
-        /* More specific rule to override column background colors */
-        table tr td.technique-selected {
-            background-color: #28a745 !important; /* Bright green */
-            color: white !important;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -185,16 +180,18 @@ document.addEventListener('DOMContentLoaded', function() {
     td:hover {
       background-color: #e8f5e8 !important;
     }
-    /* Highlight objective columns */
+    /* Highlight objective columns with borders and subtle background */
     table tr td:nth-child(1),
     table tr td:nth-child(2) {
-      border-left: 3px solid #ff9800;
+      border-left: 4px solid #ff9800;
+      border-right: 2px solid #ff9800;
+      box-shadow: inset 0 0 0 1px rgba(255, 152, 0, 0.1);
     }
     table tr td:nth-child(1) {
-      background-color: #fff3e0 !important;
+      background-color: rgba(255, 243, 224, 0.3);
     }
     table tr td:nth-child(2) {
-      background-color: #fff8e1 !important;
+      background-color: rgba(255, 248, 225, 0.3);
     }
   `;
   document.head.appendChild(style);
