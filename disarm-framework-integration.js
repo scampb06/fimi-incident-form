@@ -460,8 +460,10 @@ function openTechniqueSelector() {
                     updateCounters();
                 }
                 
-                // Show success message with optional warning and close modal
-                alert(`✅ Successfully added as ${addedAs}:\n"${id}: ${name}"${warningMessage}`);
+                // Only show warning message if exceeding recommended limits, otherwise just close modal
+                if (warningMessage) {
+                    alert(`Technique "${id}: ${name}" added as ${addedAs}.${warningMessage}`);
+                }
                 closeTechniqueSelectorModal(modal);
             }
         }
