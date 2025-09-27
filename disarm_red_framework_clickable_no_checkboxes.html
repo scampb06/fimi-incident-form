@@ -177,8 +177,13 @@ document.addEventListener('DOMContentLoaded', function() {
       padding: 8px;
       cursor: pointer;
     }
-    td:hover {
+    td:hover:not(.technique-selected) {
       background-color: #e8f5e8 !important;
+    }
+    /* Selected techniques should stay green even when hovered */
+    td.technique-selected:hover {
+      background-color: #28a745 !important;
+      color: white !important;
     }
     /* Highlight objective columns with borders and subtle background */
     table tr td:nth-child(1),
