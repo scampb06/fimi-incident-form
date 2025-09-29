@@ -13,9 +13,22 @@ async function loadUrlsFromGoogleSheets() {
         
         // Call your new endpoint
         const response = await fetch('http://localhost:5239/google-sheets/data');
+        
+        // Check if the response is ok
+        if (!response.ok) {
+            if (response.status === 401) {
+                throw new Error('Authentication required. Please check your API credentials.');
+            } else if (response.status === 404) {
+                throw new Error('Google Sheets endpoint not found. Please check the server is running.');
+            } else {
+                throw new Error(`Server error: ${response.status} ${response.statusText}`);
+            }
+        }
+        
         const result = await response.json();
-        console.log(result.data); // Array of records
-        console.log(result.count); // Number of records
+        console.log('Google Sheets response:', result);
+        console.log('Data array:', result.data); // Array of records
+        console.log('Record count:', result.count); // Number of records
         
         // Clear existing URLs
         urlsList = [];
@@ -23,15 +36,16 @@ async function loadUrlsFromGoogleSheets() {
         // Process the data from Google Sheets
         if (result.data && result.data.length > 0) {
             result.data.forEach(record => {
-                // Assuming the record structure from Google Sheets
-                // Adjust these field names based on your actual Google Sheets structure
+                // Don't make assumptions about record structure
+                // Just store the raw record data and let the user see what's available
                 const urlEntry = {
-                    reportUrl: record.reportUrl || record.Report || '',
-                    threatActor: record.threatActor || record['Threat Actor'] || '',
-                    evidenceUrl: record.evidenceUrl || record.Evidence || '',
-                    authors: record.authors || record.Authors || '',
-                    platforms: record.platforms || record.Platforms || '',
-                    logo: record.logo || record.Logo || ''
+                    reportUrl: '',
+                    threatActor: '',
+                    evidenceUrl: '',
+                    authors: '',
+                    platforms: '',
+                    logo: '',
+                    rawData: record // Store the original record for reference
                 };
                 urlsList.push(urlEntry);
             });
@@ -39,8 +53,10 @@ async function loadUrlsFromGoogleSheets() {
             // Update the UI
             updateUrlsUI();
             
-            // Show success message
-            showUrlsMessage(`Successfully loaded ${result.count} URL records from Google Sheets`, 'success');
+            // Show success message with available fields info
+            const sampleRecord = result.data[0];
+            const availableFields = Object.keys(sampleRecord);
+            showUrlsMessage(`Successfully loaded ${result.count} records from Google Sheets. Available fields: ${availableFields.join(', ')}`, 'success');
         } else {
             showUrlsMessage('No URL data found in Google Sheets', 'warning');
         }
@@ -56,46 +72,59 @@ function updateUrlsUI() {
     const urlsContainer = document.getElementById('urls-container');
     if (urlsContainer) {
         if (urlsList.length > 0) {
-            urlsContainer.innerHTML = urlsList.map((url, index) => `
+            urlsContainer.innerHTML = urlsList.map((url, index) => {
+                // If this entry has raw data from Google Sheets, show it
+                const hasRawData = url.rawData && Object.keys(url.rawData).length > 0;
+                
+                return `
                 <div class="url-entry">
                     <label>URL Entry ${index + 1}:</label>
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                        <div style="flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 15px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px;">
-                            <div>
-                                <label style="font-size: 12px; color: #666; margin-bottom: 2px; display: block;">Report URL:</label>
-                                <input type="text" value="${url.reportUrl}" onchange="updateUrlEntry(${index}, 'reportUrl', this.value)" 
-                                       placeholder="Report URL" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
-                            </div>
-                            <div>
-                                <label style="font-size: 12px; color: #666; margin-bottom: 2px; display: block;">Threat Actor:</label>
-                                <input type="text" value="${url.threatActor}" onchange="updateUrlEntry(${index}, 'threatActor', this.value)" 
-                                       placeholder="Russia, China etc." style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
-                            </div>
-                            <div>
-                                <label style="font-size: 12px; color: #666; margin-bottom: 2px; display: block;">Evidence URL:</label>
-                                <input type="text" value="${url.evidenceUrl}" onchange="updateUrlEntry(${index}, 'evidenceUrl', this.value)" 
-                                       placeholder="Evidence URL" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
-                            </div>
-                            <div>
-                                <label style="font-size: 12px; color: #666; margin-bottom: 2px; display: block;">Authors:</label>
-                                <input type="text" value="${url.authors}" onchange="updateUrlEntry(${index}, 'authors', this.value)" 
-                                       placeholder="Authors" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
-                            </div>
-                            <div>
-                                <label style="font-size: 12px; color: #666; margin-bottom: 2px; display: block;">Platforms:</label>
-                                <input type="text" value="${url.platforms}" onchange="updateUrlEntry(${index}, 'platforms', this.value)" 
-                                       placeholder="e.g. Facebook, X, YouTube" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
-                            </div>
-                            <div>
-                                <label style="font-size: 12px; color: #666; margin-bottom: 2px; display: block;">Logo:</label>
-                                <input type="text" value="${url.logo}" onchange="updateUrlEntry(${index}, 'logo', this.value)" 
-                                       placeholder="Logo URL or path" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
+                        <div style="flex: 1; padding: 15px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px;">
+                            ${hasRawData ? `
+                                <div style="margin-bottom: 15px; padding: 10px; background: #e3f2fd; border-radius: 4px;">
+                                    <strong>Google Sheets Data:</strong>
+                                    <pre style="margin: 5px 0; font-size: 12px; background: white; padding: 8px; border-radius: 3px; overflow-x: auto;">${JSON.stringify(url.rawData, null, 2)}</pre>
+                                </div>
+                            ` : ''}
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div>
+                                    <label style="font-size: 12px; color: #666; margin-bottom: 2px; display: block;">Report URL:</label>
+                                    <input type="text" value="${url.reportUrl}" onchange="updateUrlEntry(${index}, 'reportUrl', this.value)" 
+                                           placeholder="Report URL" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
+                                </div>
+                                <div>
+                                    <label style="font-size: 12px; color: #666; margin-bottom: 2px; display: block;">Threat Actor:</label>
+                                    <input type="text" value="${url.threatActor}" onchange="updateUrlEntry(${index}, 'threatActor', this.value)" 
+                                           placeholder="Russia, China etc." style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
+                                </div>
+                                <div>
+                                    <label style="font-size: 12px; color: #666; margin-bottom: 2px; display: block;">Evidence URL:</label>
+                                    <input type="text" value="${url.evidenceUrl}" onchange="updateUrlEntry(${index}, 'evidenceUrl', this.value)" 
+                                           placeholder="Evidence URL" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
+                                </div>
+                                <div>
+                                    <label style="font-size: 12px; color: #666; margin-bottom: 2px; display: block;">Authors:</label>
+                                    <input type="text" value="${url.authors}" onchange="updateUrlEntry(${index}, 'authors', this.value)" 
+                                           placeholder="Authors" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
+                                </div>
+                                <div>
+                                    <label style="font-size: 12px; color: #666; margin-bottom: 2px; display: block;">Platforms:</label>
+                                    <input type="text" value="${url.platforms}" onchange="updateUrlEntry(${index}, 'platforms', this.value)" 
+                                           placeholder="e.g. Facebook, X, YouTube" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
+                                </div>
+                                <div>
+                                    <label style="font-size: 12px; color: #666; margin-bottom: 2px; display: block;">Logo:</label>
+                                    <input type="text" value="${url.logo}" onchange="updateUrlEntry(${index}, 'logo', this.value)" 
+                                           placeholder="Logo URL or path" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
+                                </div>
                             </div>
                         </div>
                         <button type="button" class="remove-button" onclick="removeUrlFromList(${index})">Remove</button>
                     </div>
                 </div>
-            `).join('');
+                `;
+            }).join('');
         } else {
             // Show empty state with option to add manual entry
             urlsContainer.innerHTML = `
@@ -125,7 +154,7 @@ function removeUrlFromList(index) {
 }
 
 // Add a new empty URL entry
-function addUrlEntry() {
+function addUrl() {
     const newEntry = {
         reportUrl: '',
         threatActor: '',
