@@ -61,6 +61,39 @@ async function uploadNavigatorFile() {
     fileInput.click();
 }
 
+// Helper function to send current selections to iframe
+function sendCurrentSelectionsToIframe(targetWindow) {
+    // Extract technique IDs from current selections
+    const selectedTechniques = [];
+    
+    // Extract from objectives list
+    objectivesList.forEach(obj => {
+        const match = obj.match(/^([T]\d+(?:\.\d+)?)/);
+        if (match) {
+            selectedTechniques.push(match[1]);
+        }
+    });
+    
+    // Extract from TTPs list
+    ttpsList.forEach(ttp => {
+        const match = ttp.match(/^([T]\d+(?:\.\d+)?)/);
+        if (match) {
+            selectedTechniques.push(match[1]);
+        }
+    });
+    
+    // Send initialization message to iframe
+    if (selectedTechniques.length > 0) {
+        console.log('Sending pre-selected techniques to iframe:', selectedTechniques);
+        targetWindow.postMessage({
+            type: 'initializeSelections',
+            selectedTechniques: selectedTechniques
+        }, '*');
+    } else {
+        console.log('No pre-existing selections to highlight');
+    }
+}
+
 // Interactive DISARM Framework Selection
 function openDISARMFramework() {
     // Note: We don't reset the global lists here so that new selections append to existing techniques
@@ -96,6 +129,9 @@ function openDISARMFramework() {
                 updateSelectionInfo();
                 console.log('Removed technique ('+tactic+'):', techniqueId);
             }
+        } else if (event.data && event.data.type === 'frameworkReady') {
+            // Framework is ready, now send current selections
+            sendCurrentSelectionsToIframe(event.source);
         }
     });
     
@@ -255,6 +291,11 @@ function openDISARMFramework() {
             // Cross-origin restriction or successful load
             console.log('Framework loaded (cross-origin or success)');
         }
+        
+        // Also send selections with a delay as fallback in case frameworkReady message isn't received
+        setTimeout(() => {
+            sendCurrentSelectionsToIframe(iframe.contentWindow);
+        }, 2000);
     });
     
     // Set a timeout for loading
