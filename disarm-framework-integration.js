@@ -109,11 +109,8 @@ function openDISARMFramework() {
                     // It's an objective (from TA01 Plan Strategy or TA02 Plan Objectives)
                     if (!objectivesList.some(obj => obj.includes(techniqueId))) {
                         // Remove the technique ID from techniqueName since it's already included
-                        console.log('DEBUG: Original techniqueName:', techniqueName);
                         const cleanTechniqueName = techniqueName.replace(/^T\d+(?:\.\d+)?\s+/, '');
-                        console.log('DEBUG: Clean techniqueName:', cleanTechniqueName);
                         const finalText = `${techniqueId}: ${cleanTechniqueName}`;
-                        console.log('DEBUG: Final objective text:', finalText);
                         objectivesList.push(finalText);
                         console.log('Added objective ('+tactic+'):', finalText);
                     }
@@ -121,11 +118,8 @@ function openDISARMFramework() {
                     // It's a TTP (from TA05+ columns)
                     if (!ttpsList.some(ttp => ttp.includes(techniqueId))) {
                         // Remove the technique ID from techniqueName since it's already included
-                        console.log('DEBUG: Original techniqueName:', techniqueName);
                         const cleanTechniqueName = techniqueName.replace(/^T\d+(?:\.\d+)?\s+/, '');
-                        console.log('DEBUG: Clean techniqueName:', cleanTechniqueName);
                         const finalText = `${techniqueId}: ${cleanTechniqueName}`;
-                        console.log('DEBUG: Final TTP text:', finalText);
                         ttpsList.push(finalText);
                         console.log('Added TTP ('+tactic+'):', finalText);
                     }

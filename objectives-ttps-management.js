@@ -5,16 +5,10 @@
 
 // Update UI with current objectives and TTPs
 function updateObjectivesAndTTPsUI() {
-    console.log('DEBUG: updateObjectivesAndTTPsUI called');
-    console.log('DEBUG: objectivesList:', objectivesList);
-    console.log('DEBUG: ttpsList:', ttpsList);
-    
     // Populate the objectives in the UI
     const objectivesContainer = document.getElementById('objectives-container');
-    console.log('DEBUG: objectivesContainer:', objectivesContainer);
     if (objectivesContainer) {
         if (objectivesList.length > 0) {
-            console.log('DEBUG: Updating objectives container with', objectivesList.length, 'items');
             objectivesContainer.innerHTML = objectivesList.map((obj, index) => `
                 <div class="objective-entry">
                     <label>Objective ${index + 1}:</label>
@@ -26,7 +20,6 @@ function updateObjectivesAndTTPsUI() {
             `).join('');
         } else {
             // Clear container when no objectives
-            console.log('DEBUG: Clearing objectives container');
             objectivesContainer.innerHTML = '';
         }
     }
@@ -63,12 +56,8 @@ function updateObjectivesAndTTPsUI() {
 
 // Remove objective from list by index
 function removeObjectiveFromList(index) {
-    console.log('DEBUG: removeObjectiveFromList called with index:', index);
-    console.log('DEBUG: objectivesList before removal:', objectivesList);
     if (index >= 0 && index < objectivesList.length) {
         const removedObj = objectivesList.splice(index, 1)[0];
-        console.log('DEBUG: Removed objective:', removedObj);
-        console.log('DEBUG: objectivesList after removal:', objectivesList);
         updateObjectivesAndTTPsUI();
         updateSelectionInfo();
         // Update the main form counters
