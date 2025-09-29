@@ -36,15 +36,11 @@ async function loadUrlsFromGoogleSheets() {
         // Process the data from Google Sheets
         if (result.data && result.data.length > 0) {
             result.data.forEach(record => {
-                // Don't make assumptions about record structure
-                // Just store the raw record data and let the user see what's available
+                // Map Google Sheets data to our three-column structure
                 const urlEntry = {
-                    reportUrl: '',
-                    threatActor: '',
-                    evidenceUrl: '',
-                    authors: '',
-                    platforms: '',
-                    logo: '',
+                    url: record.URL || record.url || '',
+                    domain: record.Domain || record.domain || '',
+                    archiveUrl: record['Archive URL'] || record.archiveUrl || record.archive_url || '',
                     rawData: record // Store the original record for reference
                 };
                 urlsList.push(urlEntry);
@@ -77,18 +73,32 @@ function updateUrlsUI() {
                 const hasRawData = url.rawData && Object.keys(url.rawData).length > 0;
                 
                 if (hasRawData) {
-                    // Show only Google Sheets data
+                    // Show Google Sheets data using the same three-column layout
                     return `
                     <div class="url-entry">
                         <label>Record ${index + 1}:</label>
-                        <div style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px;">
-                            <div style="flex: 1; padding: 15px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px;">
-                                <div style="padding: 10px; background: #e3f2fd; border-radius: 4px;">
-                                    <strong>Google Sheets Data:</strong>
-                                    <pre style="margin: 5px 0; font-size: 12px; background: white; padding: 8px; border-radius: 3px; overflow-x: auto;">${JSON.stringify(url.rawData, null, 2)}</pre>
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                            <div style="flex: 1; display: flex; gap: 10px; padding: 15px; background: #e3f2fd; border: 1px solid #90caf9; border-radius: 4px;">
+                                <div style="flex: 1;">
+                                    <label style="font-size: 12px; color: #666; margin-bottom: 2px; display: block;">URL:</label>
+                                    <input type="text" value="${url.url || ''}" onchange="updateUrlEntry(${index}, 'url', this.value)" 
+                                           placeholder="https://example.com" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
+                                </div>
+                                <div style="flex: 1;">
+                                    <label style="font-size: 12px; color: #666; margin-bottom: 2px; display: block;">Domain:</label>
+                                    <input type="text" value="${url.domain || ''}" onchange="updateUrlEntry(${index}, 'domain', this.value)" 
+                                           placeholder="example.com" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
+                                </div>
+                                <div style="flex: 1;">
+                                    <label style="font-size: 12px; color: #666; margin-bottom: 2px; display: block;">Archive URL:</label>
+                                    <input type="text" value="${url.archiveUrl || ''}" onchange="updateUrlEntry(${index}, 'archiveUrl', this.value)" 
+                                           placeholder="https://archive.org/..." style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
                                 </div>
                             </div>
-                            <button type="button" class="remove-button" onclick="removeUrlFromList(${index})">Remove</button>
+                            <button type="button" onclick="removeUrlFromList(${index})" 
+                                    style="background: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                Remove
+                            </button>
                         </div>
                     </div>
                     `;
