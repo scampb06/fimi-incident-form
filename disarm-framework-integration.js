@@ -108,14 +108,18 @@ function openDISARMFramework() {
                 if (isObjective || tactic === 'TA01' || tactic === 'TA02') {
                     // It's an objective (from TA01 Plan Strategy or TA02 Plan Objectives)
                     if (!objectivesList.some(obj => obj.includes(techniqueId))) {
-                        objectivesList.push(`${techniqueId}: ${techniqueName}`);
-                        console.log('Added objective ('+tactic+'):', `${techniqueId}: ${techniqueName}`);
+                        // Remove the technique ID from techniqueName since it's already included
+                        const cleanTechniqueName = techniqueName.replace(/^T\d+(?:\.\d+)?\s+/, '');
+                        objectivesList.push(`${techniqueId}: ${cleanTechniqueName}`);
+                        console.log('Added objective ('+tactic+'):', `${techniqueId}: ${cleanTechniqueName}`);
                     }
                 } else {
                     // It's a TTP (from TA05+ columns)
                     if (!ttpsList.some(ttp => ttp.includes(techniqueId))) {
-                        ttpsList.push(`${techniqueId}: ${techniqueName}`);
-                        console.log('Added TTP ('+tactic+'):', `${techniqueId}: ${techniqueName}`);
+                        // Remove the technique ID from techniqueName since it's already included
+                        const cleanTechniqueName = techniqueName.replace(/^T\d+(?:\.\d+)?\s+/, '');
+                        ttpsList.push(`${techniqueId}: ${cleanTechniqueName}`);
+                        console.log('Added TTP ('+tactic+'):', `${techniqueId}: ${cleanTechniqueName}`);
                     }
                 }
                 updateSelectionInfo();
@@ -459,7 +463,9 @@ function openTechniqueSelector() {
             
             if (isObjective) {
                 // Add as objective (check for duplicates)
-                const objectiveText = `${id}: ${name}`;
+                // Remove the technique ID from name if it's included
+                const cleanName = name.replace(/^T\d+(?:\.\d+)?\s+/, '');
+                const objectiveText = `${id}: ${cleanName}`;
                 if (!objectivesList.some(obj => obj.includes(id))) {
                     objectivesList.push(objectiveText);
                     console.log('Added objective:', objectiveText);
@@ -471,12 +477,14 @@ function openTechniqueSelector() {
                         warningMessage = `\n\n⚠️ Warning: You now have ${objectivesList.length} objectives. The recommended limit is 2 objectives for optimal report structure.`;
                     }
                 } else {
-                    alert(`Technique "${id}: ${name}" is already added as an objective.`);
+                    alert(`Technique "${id}: ${cleanName}" is already added as an objective.`);
                     return;
                 }
             } else {
                 // Add as TTP (check for duplicates)
-                const ttpText = `${id}: ${name}`;
+                // Remove the technique ID from name if it's included
+                const cleanName = name.replace(/^T\d+(?:\.\d+)?\s+/, '');
+                const ttpText = `${id}: ${cleanName}`;
                 if (!ttpsList.some(ttp => ttp.includes(id))) {
                     ttpsList.push(ttpText);
                     console.log('Added TTP:', ttpText);
@@ -488,7 +496,7 @@ function openTechniqueSelector() {
                         warningMessage = `\n\n⚠️ Warning: You now have ${ttpsList.length} TTPs. The recommended limit is 4 TTPs for optimal report structure.`;
                     }
                 } else {
-                    alert(`Technique "${id}: ${name}" is already added as a TTP.`);
+                    alert(`Technique "${id}: ${cleanName}" is already added as a TTP.`);
                     return;
                 }
             }
