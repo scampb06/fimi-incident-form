@@ -41,9 +41,10 @@ async function loadUrlsFromGoogleSheets() {
                     url: record.URL || record.url || '',
                     domain: record.Domain || record.domain || '',
                     archiveUrl: record['Archive URL'] || record.archiveUrl || record.archive_url || '',
-                    rawData: record // Store the original record for reference
+                    isFromGoogleSheets: true // Flag to identify Google Sheets entries
                 };
                 urlsList.push(urlEntry);
+                console.log('Processed Google Sheets entry:', urlEntry);
             });
             
             // Update the UI
@@ -69,10 +70,10 @@ function updateUrlsUI() {
     if (urlsContainer) {
         if (urlsList.length > 0) {
             urlsContainer.innerHTML = urlsList.map((url, index) => {
-                // If this entry has raw data from Google Sheets, show only that
-                const hasRawData = url.rawData && Object.keys(url.rawData).length > 0;
+                // Check if this entry is from Google Sheets
+                const isFromGoogleSheets = url.isFromGoogleSheets === true;
                 
-                if (hasRawData) {
+                if (isFromGoogleSheets) {
                     // Show Google Sheets data using the same three-column layout
                     return `
                     <div class="url-entry">
