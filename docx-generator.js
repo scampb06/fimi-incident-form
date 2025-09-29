@@ -87,17 +87,17 @@ async function downloadAsDocx() {
         // Create content tables
         const { incidentTable, narrativeTable, impactTable, recommendationsTable } = createContentTables(formData, noBorders);
 
-        // Collect evidence data from the new compact form structure
-        const evidenceRows = [{
-            report: document.getElementById('reporturlInput')?.value || "",
-            threat: document.getElementById('threatActor')?.value || "",
-            evidence: document.getElementById('evidenceurlInput')?.value || "",
-            authors: getAuthorsStringFromInlineInputs(),
-            platforms: document.getElementById('platforms')?.value || "", // Will add this field to Assessment section
-            logo: "", // Logo field was removed from compact form
-        }].filter(row => row.report || row.threat || row.evidence || row.authors || row.platforms); // Only include if has data
+        // Collect evidence data from the new URLs structure
+        const evidenceRows = urlsList.map(url => ({
+            report: url.reportUrl || "",
+            threat: url.threatActor || "",
+            evidence: url.evidenceUrl || "",
+            authors: url.authors || "",
+            platforms: url.platforms || "",
+            logo: url.logo || ""
+        })).filter(row => row.report || row.threat || row.evidence || row.authors || row.platforms); // Only include if has data
 
-        console.log("Evidence rows collected successfully.");
+        console.log("Evidence rows collected from URLs container:", evidenceRows.length, "entries");
 
         // Create objectives and footer tables (use global imagelogo or null if not defined)
         const logoToUse = typeof imagelogo !== 'undefined' ? imagelogo : null;

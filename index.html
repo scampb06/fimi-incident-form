@@ -200,47 +200,21 @@
         </div>
        
         <div class="section">
-            <h2>Details</h2>
-            <table id="evidence-table" style="width:100%; border-collapse:collapse;">
-                <thead>
-                    <tr class="header-row">
-                        <th>Report</th>
-                        <th>Threat Actor</th>
-                        <th>Evidence</th>
-                        <th>Authors</th>
-                        <th>Platforms</th>
-                        <th>Logo</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody id="evidence-rows-container">
-                    <tr class="evidence-row">
-                        <td>
-                            <input type="text" id="reporturlInput" class="evidence-report-url" placeholder="URL" 
-                                   title="Please enter a valid URL starting with http:// or https://">
-                        </td>
-                        <td><input type="text" class="evidence-threat" placeholder="Russia, China etc." title="Threat Actor(s)"></td>
-                        <td>
-                            <input type="text" id="evidenceurlInput" class="evidence-evidence-link" placeholder="URL" 
-                                   title="Please enter a valid URL starting with http:// or https://">
-                        </td>
-                        <td>
-                            <div class="evidence-authors"></div>
-                            <button type="button" class="add-button" onclick="addAuthor(this)">Add Author</button>
-                        </td>
-                        <td><input type="text" class="evidence-platforms" placeholder="e.g. Facebook, X, YouTube." title="Platforms"></td>
-                        <td>
-                            <img class="evidence-logo" id="imagePreview" alt="No image uploaded yet" />
-                            <button class="add-button" onclick="triggerFilePicker()">Upload Logo</button>
-                            <input type="file" id="logoFileInput" accept="image/*" title="Please upload a JPEG, PNG, BMP, or GIF image." style="display:none" onchange="previewImage(event)">
-                        </td> 
-                    </tr>
-                </tbody>
-            </table>
+            <h2>URLs and Evidence Details</h2>
+            <div class="help-text urls-help-row">
+                <span>
+                    Load URL data from Google Sheets or add entries manually.
+                </span>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button type="button" class="add-button" onclick="loadUrlsFromGoogleSheets()">Load from Google Sheets</button>
+                    <button type="button" class="add-button" onclick="addUrlEntry()">Add URL Entry</button>
+                </div>
+            </div>
+            <div id="urls-message" style="color: green; margin-top: 5px; text-align: center; display: none;"></div>
+            <div id="urls-container">
+                <!-- URLs will be populated here -->
+            </div>
         </div>
-        <div id="reporturlError" style="color: red; margin-top: 5px; text-align: left;"></div>
-        <div id="evidenceurlError" style="color: red; margin-top: 5px; text-align: left;"></div>        
-        <div id="logo-message" style="color: red; margin-top: 5px; text-align: right;"></div>
         
         <div class="buttons">
             <button type="button" onclick="downloadAsDocx()">Download DOCX</button>
@@ -262,6 +236,7 @@
     <script src="form-data-processing.js" defer></script>
     <script src="disarm-framework-integration.js" defer></script>
     <script src="objectives-ttps-management.js" defer></script>
+    <script src="urls-management.js" defer></script>
     <script src="url-validation.js" defer></script>
     <script src="ui-interactions.js" defer></script>
     <script src="docx-header-tables.js" defer></script>

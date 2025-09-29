@@ -135,3 +135,23 @@ function processObjectivesAndTTPs() {
         ttpsData
     };
 }
+
+// Process URLs data for docx generation
+function processUrlsData() {
+    const urlsData = [];
+
+    // Process each URL entry
+    urlsList.forEach((url, index) => {
+        urlsData.push({
+            number: `${index + 1}`,
+            reportUrl: url.reportUrl || '',
+            threatActor: url.threatActor || '',
+            evidenceUrl: url.evidenceUrl || '',
+            authors: url.authors || '',
+            platforms: url.platforms || '',
+            logo: url.logo || ''
+        });
+    });
+
+    return urlsData;
+}

@@ -583,13 +583,24 @@
             <div class="form-section">
                 <div class="section-header">🔗 Reference URLs</div>
                 
+                <!-- Google Sheets Integration -->
                 <div class="form-row">
                     <div class="form-col">
-                        <div class="form-group">
-                            <label for="evidenceurlInput">Evidence URL:</label>
-                            <input type="url" id="evidenceurlInput" placeholder="https://example.com/evidence">
-                            <div id="evidenceurlError" style="color: red; font-size: 12px; display: none;"></div>
-                        </div>
+                        <button type="button" class="add-field-btn" onclick="loadUrlsFromGoogleSheets()" style="margin-bottom: 15px;">
+                            📊 Load URLs from Google Sheets
+                        </button>
+                    </div>
+                </div>
+
+                <!-- URLs Container -->
+                <div id="urls-container">
+                    <!-- URLs will be dynamically added here -->
+                </div>
+
+                <!-- Add URL Button -->
+                <div class="form-row">
+                    <div class="form-col">
+                        <button type="button" class="add-field-btn" onclick="addUrl()">+ Add URL</button>
                     </div>
                 </div>
             </div>
@@ -637,6 +648,7 @@
     <script src="form-data-processing.js" defer></script>
     <script src="disarm-framework-integration.js" defer></script>
     <script src="objectives-ttps-management.js" defer></script>
+    <script src="urls-management.js" defer></script>
     <script src="url-validation.js" defer></script>
     <script src="ui-interactions.js" defer></script>
     <script src="docx-header-tables.js" defer></script>
