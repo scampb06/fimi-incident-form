@@ -586,25 +586,24 @@
                 <!-- Message container for status updates -->
                 <div id="urls-message" style="display: none; padding: 10px; margin-bottom: 15px; border-radius: 4px; background: #f8f9fa;"></div>
                 
-                <!-- Google Sheets Integration -->
+                <!-- Action Buttons -->
                 <div class="form-row">
                     <div class="form-col">
-                        <button type="button" class="add-field-btn" onclick="loadUrlsFromGoogleSheets()" style="margin-bottom: 15px;">
-                            📊 Load URLs from Google Sheets
-                        </button>
+                        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                            <button type="button" onclick="loadUrlsFromGoogleSheets()" 
+                                    style="background: #007cba; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background-color 0.2s;"
+                                    onmouseover="this.style.background='#005a8a'" 
+                                    onmouseout="this.style.background='#007cba'">
+                                📊 Load URLs from Google Sheets
+                            </button>
+                            <button type="button" class="add-field-btn" onclick="addUrl()">+ Add URL</button>
+                        </div>
                     </div>
                 </div>
 
                 <!-- URLs Container -->
                 <div id="urls-container">
                     <!-- URLs will be dynamically added here -->
-                </div>
-
-                <!-- Add URL Button -->
-                <div class="form-row">
-                    <div class="form-col">
-                        <button type="button" class="add-field-btn" onclick="addUrl()">+ Add URL</button>
-                    </div>
                 </div>
             </div>
 
