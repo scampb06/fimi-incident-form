@@ -98,41 +98,27 @@ function updateUrlsUI() {
                     <div class="url-entry">
                         <label>URL Entry ${index + 1}:</label>
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                            <div style="flex: 1; padding: 15px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px;">
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                                    <div>
-                                        <label style="font-size: 12px; color: #666; margin-bottom: 2px; display: block;">Report URL:</label>
-                                        <input type="text" value="${url.reportUrl}" onchange="updateUrlEntry(${index}, 'reportUrl', this.value)" 
-                                               placeholder="Report URL" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
-                                    </div>
-                                    <div>
-                                        <label style="font-size: 12px; color: #666; margin-bottom: 2px; display: block;">Threat Actor:</label>
-                                        <input type="text" value="${url.threatActor}" onchange="updateUrlEntry(${index}, 'threatActor', this.value)" 
-                                               placeholder="Russia, China etc." style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
-                                    </div>
-                                    <div>
-                                        <label style="font-size: 12px; color: #666; margin-bottom: 2px; display: block;">Evidence URL:</label>
-                                        <input type="text" value="${url.evidenceUrl}" onchange="updateUrlEntry(${index}, 'evidenceUrl', this.value)" 
-                                               placeholder="Evidence URL" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
-                                    </div>
-                                    <div>
-                                        <label style="font-size: 12px; color: #666; margin-bottom: 2px; display: block;">Authors:</label>
-                                        <input type="text" value="${url.authors}" onchange="updateUrlEntry(${index}, 'authors', this.value)" 
-                                               placeholder="Authors" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
-                                    </div>
-                                    <div>
-                                        <label style="font-size: 12px; color: #666; margin-bottom: 2px; display: block;">Platforms:</label>
-                                        <input type="text" value="${url.platforms}" onchange="updateUrlEntry(${index}, 'platforms', this.value)" 
-                                               placeholder="e.g. Facebook, X, YouTube" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
-                                    </div>
-                                    <div>
-                                        <label style="font-size: 12px; color: #666; margin-bottom: 2px; display: block;">Logo:</label>
-                                        <input type="text" value="${url.logo}" onchange="updateUrlEntry(${index}, 'logo', this.value)" 
-                                               placeholder="Logo URL or path" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
-                                    </div>
+                            <div style="flex: 1; display: flex; gap: 10px; padding: 15px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px;">
+                                <div style="flex: 1;">
+                                    <label style="font-size: 12px; color: #666; margin-bottom: 2px; display: block;">URL:</label>
+                                    <input type="text" value="${url.url || ''}" onchange="updateUrlEntry(${index}, 'url', this.value)" 
+                                           placeholder="https://example.com" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
+                                </div>
+                                <div style="flex: 1;">
+                                    <label style="font-size: 12px; color: #666; margin-bottom: 2px; display: block;">Domain:</label>
+                                    <input type="text" value="${url.domain || ''}" onchange="updateUrlEntry(${index}, 'domain', this.value)" 
+                                           placeholder="example.com" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
+                                </div>
+                                <div style="flex: 1;">
+                                    <label style="font-size: 12px; color: #666; margin-bottom: 2px; display: block;">Archive URL:</label>
+                                    <input type="text" value="${url.archiveUrl || ''}" onchange="updateUrlEntry(${index}, 'archiveUrl', this.value)" 
+                                           placeholder="https://archive.org/..." style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
                                 </div>
                             </div>
-                            <button type="button" class="remove-button" onclick="removeUrlFromList(${index})">Remove</button>
+                            <button type="button" onclick="removeUrlFromList(${index})" 
+                                    style="background: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                Remove
+                            </button>
                         </div>
                     </div>
                     `;
@@ -169,12 +155,9 @@ function removeUrlFromList(index) {
 // Add a new empty URL entry
 function addUrl() {
     const newEntry = {
-        reportUrl: '',
-        threatActor: '',
-        evidenceUrl: '',
-        authors: '',
-        platforms: '',
-        logo: ''
+        url: '',
+        domain: '',
+        archiveUrl: ''
     };
     urlsList.push(newEntry);
     updateUrlsUI();
