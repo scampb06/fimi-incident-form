@@ -12,7 +12,7 @@ async function loadUrlsFromGoogleSheets() {
         console.log('Loading URLs from Google Sheets...');
         
         // Call your new endpoint
-        const response = await fetch('https://your-app.azurewebsites.net/google-sheets/data');
+        const response = await fetch('http://localhost:5239/google-sheets/data');
         const result = await response.json();
         console.log(result.data); // Array of records
         console.log(result.count); // Number of records
