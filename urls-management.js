@@ -37,14 +37,26 @@ async function loadUrlsFromGoogleSheets() {
         if (result.data && result.data.length > 0) {
             result.data.forEach(record => {
                 // Map Google Sheets data to our three-column structure
-                const urlEntry = {
+                const newEntry = {
                     url: record.URL || record.url || '',
                     domain: record.Domain || record.domain || '',
                     archiveUrl: record['Archive URL'] || record.archiveUrl || record.archive_url || '',
                     isFromGoogleSheets: true // Flag to identify Google Sheets entries
                 };
-                urlsList.push(urlEntry);
-                console.log('Processed Google Sheets entry:', urlEntry);
+                
+                // Check for duplicates before adding
+                const isDuplicate = urlsList.some(existingEntry => 
+                    existingEntry.url === newEntry.url && 
+                    existingEntry.domain === newEntry.domain && 
+                    existingEntry.archiveUrl === newEntry.archiveUrl
+                );
+                
+                if (!isDuplicate) {
+                    urlsList.push(newEntry);
+                    console.log('Added new Google Sheets entry:', newEntry);
+                } else {
+                    console.log('Skipped duplicate entry:', newEntry);
+                }
             });
             
             // Update the UI
@@ -53,7 +65,20 @@ async function loadUrlsFromGoogleSheets() {
             // Show success message with available fields info
             const sampleRecord = result.data[0];
             const availableFields = Object.keys(sampleRecord);
-            showUrlsMessage(`Successfully loaded ${result.count} records from Google Sheets. Available fields: ${availableFields.join(', ')}`, 'success');
+            const addedCount = result.data.length - result.data.filter(record => {
+                const entry = {
+                    url: record.URL || record.url || '',
+                    domain: record.Domain || record.domain || '',
+                    archiveUrl: record['Archive URL'] || record.archiveUrl || record.archive_url || ''
+                };
+                return urlsList.some(existingEntry => 
+                    existingEntry.url === entry.url && 
+                    existingEntry.domain === entry.domain && 
+                    existingEntry.archiveUrl === entry.archiveUrl
+                );
+            }).length;
+            
+            showUrlsMessage(`Added ${addedCount} new records from Google Sheets (${result.count - addedCount} duplicates skipped). Available fields: ${availableFields.join(', ')}`, 'success');
         } else {
             showUrlsMessage('No URL data found in Google Sheets', 'warning');
         }
@@ -68,81 +93,91 @@ async function loadUrlsFromGoogleSheets() {
 function updateUrlsUI() {
     const urlsContainer = document.getElementById('urls-container');
     if (urlsContainer) {
-        if (urlsList.length > 0) {
-            urlsContainer.innerHTML = urlsList.map((url, index) => {
-                // Check if this entry is from Google Sheets
-                const isFromGoogleSheets = url.isFromGoogleSheets === true;
-                
-                if (isFromGoogleSheets) {
-                    // Show Google Sheets data using the same three-column layout
-                    return `
-                    <div class="url-entry">
-                        <label>Record ${index + 1}:</label>
-                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                            <div style="flex: 1; display: flex; gap: 10px; padding: 15px; background: #e3f2fd; border: 1px solid #90caf9; border-radius: 4px;">
-                                <div style="flex: 1;">
-                                    <label style="font-size: 12px; color: #666; margin-bottom: 2px; display: block;">URL:</label>
-                                    <input type="text" value="${url.url || ''}" onchange="updateUrlEntry(${index}, 'url', this.value)" 
-                                           placeholder="https://example.com" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
-                                </div>
-                                <div style="flex: 1;">
-                                    <label style="font-size: 12px; color: #666; margin-bottom: 2px; display: block;">Domain:</label>
-                                    <input type="text" value="${url.domain || ''}" onchange="updateUrlEntry(${index}, 'domain', this.value)" 
-                                           placeholder="example.com" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
-                                </div>
-                                <div style="flex: 1;">
-                                    <label style="font-size: 12px; color: #666; margin-bottom: 2px; display: block;">Archive URL:</label>
-                                    <input type="text" value="${url.archiveUrl || ''}" onchange="updateUrlEntry(${index}, 'archiveUrl', this.value)" 
-                                           placeholder="https://archive.org/..." style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
-                                </div>
+        // Always show headers and at least one entry
+        let html = `
+            <!-- Column Headers -->
+            <div style="display: flex; gap: 10px; margin-bottom: 10px; padding: 0 15px;">
+                <div style="flex: 1;">
+                    <label style="font-size: 14px; font-weight: bold; color: #333; display: block;">URL:</label>
+                </div>
+                <div style="flex: 1;">
+                    <label style="font-size: 14px; font-weight: bold; color: #333; display: block;">Domain:</label>
+                </div>
+                <div style="flex: 1;">
+                    <label style="font-size: 14px; font-weight: bold; color: #333; display: block;">Archive URL:</label>
+                </div>
+                <div style="width: 80px;"></div> <!-- Space for remove button -->
+            </div>
+        `;
+        
+        // If no entries exist, show one empty entry
+        if (urlsList.length === 0) {
+            html += `
+                <div class="url-entry">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                        <div style="flex: 1; display: flex; gap: 10px; padding: 15px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px;">
+                            <div style="flex: 1;">
+                                <input type="text" value="" onchange="updateUrlEntry(0, 'url', this.value)" 
+                                       placeholder="https://example.com" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
                             </div>
-                            <button type="button" onclick="removeUrlFromList(${index})" 
-                                    style="background: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
-                                Remove
-                            </button>
-                        </div>
-                    </div>
-                    `;
-                } else {
-                    // Show manual entry form for entries without raw data
-                    return `
-                    <div class="url-entry">
-                        <label>URL Entry ${index + 1}:</label>
-                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                            <div style="flex: 1; display: flex; gap: 10px; padding: 15px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px;">
-                                <div style="flex: 1;">
-                                    <label style="font-size: 12px; color: #666; margin-bottom: 2px; display: block;">URL:</label>
-                                    <input type="text" value="${url.url || ''}" onchange="updateUrlEntry(${index}, 'url', this.value)" 
-                                           placeholder="https://example.com" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
-                                </div>
-                                <div style="flex: 1;">
-                                    <label style="font-size: 12px; color: #666; margin-bottom: 2px; display: block;">Domain:</label>
-                                    <input type="text" value="${url.domain || ''}" onchange="updateUrlEntry(${index}, 'domain', this.value)" 
-                                           placeholder="example.com" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
-                                </div>
-                                <div style="flex: 1;">
-                                    <label style="font-size: 12px; color: #666; margin-bottom: 2px; display: block;">Archive URL:</label>
-                                    <input type="text" value="${url.archiveUrl || ''}" onchange="updateUrlEntry(${index}, 'archiveUrl', this.value)" 
-                                           placeholder="https://archive.org/..." style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
-                                </div>
+                            <div style="flex: 1;">
+                                <input type="text" value="" onchange="updateUrlEntry(0, 'domain', this.value)" 
+                                       placeholder="example.com" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
                             </div>
-                            <button type="button" onclick="removeUrlFromList(${index})" 
-                                    style="background: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
-                                Remove
-                            </button>
+                            <div style="flex: 1;">
+                                <input type="text" value="" onchange="updateUrlEntry(0, 'archiveUrl', this.value)" 
+                                       placeholder="https://archive.org/..." style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
+                            </div>
                         </div>
+                        <button type="button" onclick="removeUrlFromList(0)" 
+                                style="background: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                            Remove
+                        </button>
                     </div>
-                    `;
-                }
-            }).join('');
-        } else {
-            // Show empty state with option to add manual entry
-            urlsContainer.innerHTML = `
-                <div class="empty-urls-message" style="text-align: center; padding: 20px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px;">
-                    <p style="margin: 0; color: #666;">No URL entries loaded. Load from Google Sheets or add manually.</p>
                 </div>
             `;
+            
+            // Initialize the empty entry in the array
+            urlsList.push({
+                url: '',
+                domain: '',
+                archiveUrl: ''
+            });
+        } else {
+            // Show all existing entries
+            html += urlsList.map((url, index) => {
+                const isFromGoogleSheets = url.isFromGoogleSheets === true;
+                const backgroundColor = isFromGoogleSheets ? '#e3f2fd' : '#f9f9f9';
+                const borderColor = isFromGoogleSheets ? '#90caf9' : '#ddd';
+                
+                return `
+                <div class="url-entry">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                        <div style="flex: 1; display: flex; gap: 10px; padding: 15px; background: ${backgroundColor}; border: 1px solid ${borderColor}; border-radius: 4px;">
+                            <div style="flex: 1;">
+                                <input type="text" value="${url.url || ''}" onchange="updateUrlEntry(${index}, 'url', this.value)" 
+                                       placeholder="https://example.com" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
+                            </div>
+                            <div style="flex: 1;">
+                                <input type="text" value="${url.domain || ''}" onchange="updateUrlEntry(${index}, 'domain', this.value)" 
+                                       placeholder="example.com" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
+                            </div>
+                            <div style="flex: 1;">
+                                <input type="text" value="${url.archiveUrl || ''}" onchange="updateUrlEntry(${index}, 'archiveUrl', this.value)" 
+                                       placeholder="https://archive.org/..." style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
+                            </div>
+                        </div>
+                        <button type="button" onclick="removeUrlFromList(${index})" 
+                                style="background: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                            Remove
+                        </button>
+                    </div>
+                </div>
+                `;
+            }).join('');
         }
+        
+        urlsContainer.innerHTML = html;
     }
 }
 
@@ -158,6 +193,9 @@ function updateUrlEntry(index, field, value) {
 function removeUrlFromList(index) {
     if (index >= 0 && index < urlsList.length) {
         const removedUrl = urlsList.splice(index, 1)[0];
+        
+        // If we removed the last entry and the list is empty, we'll let updateUrlsUI() handle showing an empty entry
+        
         updateUrlsUI();
         console.log(`Removed URL entry:`, removedUrl);
     }
@@ -199,5 +237,7 @@ function showUrlsMessage(message, type = 'info') {
 
 // Initialize URLs management on page load
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize with empty array - updateUrlsUI will show the initial empty entry
+    urlsList = [];
     updateUrlsUI();
 });
