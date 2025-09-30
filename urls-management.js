@@ -30,8 +30,8 @@ async function loadUrlsFromGoogleSheets() {
         console.log('Data array:', result.data); // Array of records
         console.log('Record count:', result.count); // Number of records
         
-        // Clear existing URLs
-        urlsList = [];
+        // DO NOT clear existing URLs - preserve what's already there
+        // urlsList = []; // REMOVED - this was overwriting existing entries
         
         // Process the data from Google Sheets
         if (result.data && result.data.length > 0) {
