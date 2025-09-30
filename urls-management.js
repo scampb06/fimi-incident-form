@@ -117,19 +117,19 @@ function updateUrlsUI() {
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
                         <div style="flex: 1; display: flex; gap: 10px; padding: 15px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px;">
                             <div style="flex: 1;">
-                                <input type="text" value="" onchange="updateUrlEntry(0, 'url', this.value)" 
+                                <input type="text" value="" onchange="handleEmptyEntryChange(0, 'url', this.value)" 
                                        placeholder="https://example.com" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
                             </div>
                             <div style="flex: 1;">
-                                <input type="text" value="" onchange="updateUrlEntry(0, 'domain', this.value)" 
+                                <input type="text" value="" onchange="handleEmptyEntryChange(0, 'domain', this.value)" 
                                        placeholder="example.com" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
                             </div>
                             <div style="flex: 1;">
-                                <input type="text" value="" onchange="updateUrlEntry(0, 'archiveUrl', this.value)" 
+                                <input type="text" value="" onchange="handleEmptyEntryChange(0, 'archiveUrl', this.value)" 
                                        placeholder="https://archive.org/..." style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
                             </div>
                         </div>
-                        <button type="button" onclick="removeUrlFromList(0)" 
+                        <button type="button" onclick="removeEmptyEntry()" 
                                 style="background: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
                             Remove
                         </button>
@@ -137,12 +137,7 @@ function updateUrlsUI() {
                 </div>
             `;
             
-            // Initialize the empty entry in the array
-            urlsList.push({
-                url: '',
-                domain: '',
-                archiveUrl: ''
-            });
+            // DO NOT automatically add to urlsList here - only add when user actually enters data
         } else {
             // Show all existing entries
             html += urlsList.map((url, index) => {
@@ -187,6 +182,27 @@ function updateUrlEntry(index, field, value) {
         urlsList[index][field] = value;
         console.log(`Updated URL entry ${index} field ${field}:`, value);
     }
+}
+
+// Handle changes to the empty entry (when urlsList.length === 0)
+function handleEmptyEntryChange(index, field, value) {
+    // If this is the first input in an empty list, create the first real entry
+    if (urlsList.length === 0) {
+        const newEntry = {
+            url: '',
+            domain: '',
+            archiveUrl: ''
+        };
+        newEntry[field] = value;
+        urlsList.push(newEntry);
+        updateUrlsUI(); // Refresh to show as a real entry
+    }
+}
+
+// Remove the empty entry (when urlsList.length === 0)
+function removeEmptyEntry() {
+    // For empty entry, just clear the input fields by refreshing
+    updateUrlsUI();
 }
 
 // Remove URL from list by index
