@@ -8,10 +8,153 @@ let urlsList = [];
 
 // Function to load URLs from Google Sheets
 async function loadUrlsFromGoogleSheets() {
+    // Open the interim editing window first
+    openGoogleSheetsEditingWindow();
+}
+
+// Function to open the Google Sheets editing window
+function openGoogleSheetsEditingWindow() {
+    // Create the popup window similar to DISARM Framework
+    const popup = window.open('', 'googleSheetsEditor', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+    
+    popup.document.write(`
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Add Trusted URLs</title>
+            <style>
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                    margin: 0;
+                    padding: 20px;
+                    background-color: #f5f5f5;
+                }
+                .header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 20px;
+                    padding-bottom: 15px;
+                    border-bottom: 2px solid #ddd;
+                }
+                .title {
+                    font-size: 24px;
+                    font-weight: bold;
+                    color: #333;
+                    margin: 0;
+                }
+                .done-button {
+                    background: #007cba;
+                    color: white;
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 16px;
+                    font-weight: bold;
+                    transition: background-color 0.2s;
+                }
+                .done-button:hover {
+                    background: #005a8a;
+                }
+                .instructions {
+                    font-size: 16px;
+                    color: #666;
+                    margin-bottom: 20px;
+                    line-height: 1.4;
+                }
+                .google-sheets-container {
+                    width: 100%;
+                    height: calc(100vh - 150px);
+                    border: 1px solid #ccc;
+                    border-radius: 4px;
+                    background: white;
+                }
+                .google-sheets-iframe {
+                    width: 100%;
+                    height: 100%;
+                    border: none;
+                    border-radius: 4px;
+                }
+                .loading-message {
+                    text-align: center;
+                    padding: 40px;
+                    font-size: 18px;
+                    color: #666;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1 class="title">Add Trusted URLs</h1>
+                <button class="done-button" onclick="handleDoneClick()">Done</button>
+            </div>
+            
+            <div class="instructions">
+                Add URLs using the columns below. Press Done when you are finished.
+            </div>
+            
+            <div class="google-sheets-container">
+                <div class="loading-message" id="loadingMessage">
+                    Loading Google Sheets editor...
+                </div>
+                <iframe id="googleSheetsFrame" class="google-sheets-iframe" style="display: none;"></iframe>
+            </div>
+
+            <script>
+                let googleSheetsUrl = '';
+                
+                // Load the Google Sheets editing URL
+                async function loadGoogleSheetsEditor() {
+                    try {
+                        // Call endpoint to get the editable Google Sheets URL
+                        const response = await fetch('http://localhost:5239/google-sheets/edit-url');
+                        if (response.ok) {
+                            const result = await response.json();
+                            googleSheetsUrl = result.editUrl || result.url;
+                            
+                            const iframe = document.getElementById('googleSheetsFrame');
+                            const loadingMessage = document.getElementById('loadingMessage');
+                            
+                            iframe.src = googleSheetsUrl;
+                            iframe.style.display = 'block';
+                            loadingMessage.style.display = 'none';
+                        } else {
+                            document.getElementById('loadingMessage').innerHTML = 
+                                'Unable to load Google Sheets editor. Please check your connection and try again.';
+                        }
+                    } catch (error) {
+                        console.error('Error loading Google Sheets editor:', error);
+                        document.getElementById('loadingMessage').innerHTML = 
+                            'Error loading Google Sheets editor: ' + error.message;
+                    }
+                }
+                
+                // Handle the Done button click
+                function handleDoneClick() {
+                    // Close this window and trigger the data loading in the parent
+                    window.opener.loadUrlsFromGoogleSheetsData();
+                    window.close();
+                }
+                
+                // Load the editor when the page loads
+                window.addEventListener('load', loadGoogleSheetsEditor);
+            </script>
+        </body>
+        </html>
+    `);
+    
+    popup.document.close();
+}
+
+// Function to actually load the data from Google Sheets (called after editing)
+async function loadUrlsFromGoogleSheetsData() {
     try {
         console.log('Loading URLs from Google Sheets...');
         
-        // Call your new endpoint
+        // Call your existing endpoint to get the data
         const response = await fetch('http://localhost:5239/google-sheets/data');
         
         // Check if the response is ok
