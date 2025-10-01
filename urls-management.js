@@ -111,9 +111,27 @@ function openGoogleSheetsEditingWindow() {
                     try {
                         // Call endpoint to get the editable Google Sheets URL
                         // const response = await fetch('http://localhost:5239/google-sheets/edit-url');
-                        const response = await fetch('http://localhost:5239/google-sheets/create');
+                        // replace with a POST for the create endpoint
+                        const response = await fetch('http://localhost:5239/google-sheets/create', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        });
                         if (response.ok) {
                             const result = await response.json();
+                            /* add these lines for create endpoint
+                            if (result.spreadsheetId && result.gid) {
+                                // Success - sheet was created
+                                console.log('Sheet created:', result.editUrl);
+                                console.log('Spreadsheet ID:', result.spreadsheetId);
+                                console.log('GID:', result.gid);
+                            } else if (result.manualInstructions) {
+                                // Storage quota exceeded - show manual instructions
+                                console.log('Manual creation required:', result.message);
+                                console.log('Instructions:', result.manualInstructions);
+                            }
+                            */
                             googleSheetsUrl = result.editUrl || result.url;
                             
                             const iframe = document.getElementById('googleSheetsFrame');
