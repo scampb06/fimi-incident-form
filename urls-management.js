@@ -110,7 +110,8 @@ function openGoogleSheetsEditingWindow() {
                 async function loadGoogleSheetsEditor() {
                     try {
                         // Call endpoint to get the editable Google Sheets URL
-                        const response = await fetch('http://localhost:5239/google-sheets/edit-url');
+                        // const response = await fetch('http://localhost:5239/google-sheets/edit-url');
+                        const response = await fetch('http://localhost:5239/google-sheets/create');
                         if (response.ok) {
                             const result = await response.json();
                             googleSheetsUrl = result.editUrl || result.url;
