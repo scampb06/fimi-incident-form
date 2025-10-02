@@ -114,7 +114,7 @@ function openGoogleSheetsEditingWindow() {
                         // Call endpoint to get the editable Google Sheets URL
                         // const response = await fetch('http://localhost:5239/google-sheets/edit-url');
                         // replace with a POST for the create endpoint
-                        const response = await fetch('http://localhost:5239/google-sheets/create', {
+                        const response = await fetch('http://localhost:5239/google-sheets/create-auto', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
