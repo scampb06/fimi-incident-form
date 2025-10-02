@@ -109,6 +109,8 @@ function openGoogleSheetsEditingWindow() {
                 // Load the Google Sheets editing URL
                 async function loadGoogleSheetsEditor() {
                     try {
+                        console.log('Attempting to load Google Sheets editor...');
+                        
                         // Call endpoint to get the editable Google Sheets URL
                         // const response = await fetch('http://localhost:5239/google-sheets/edit-url');
                         // replace with a POST for the create endpoint
@@ -118,8 +120,14 @@ function openGoogleSheetsEditingWindow() {
                                 'Content-Type': 'application/json'
                             }
                         });
+                        
+                        console.log('Response status:', response.status);
+                        console.log('Response ok:', response.ok);
+                        
                         if (response.ok) {
                             const result = await response.json();
+                            console.log('API Response:', result);
+                            
                             /* add these lines for create endpoint
                             if (result.spreadsheetId && result.gid) {
                                 // Success - sheet was created
@@ -133,6 +141,11 @@ function openGoogleSheetsEditingWindow() {
                             }
                             */
                             googleSheetsUrl = result.editUrl || result.url;
+                            console.log('Using Google Sheets URL:', googleSheetsUrl);
+                            
+                            if (!googleSheetsUrl) {
+                                throw new Error('No editUrl or url found in response');
+                            }
                             
                             const iframe = document.getElementById('googleSheetsFrame');
                             const loadingMessage = document.getElementById('loadingMessage');
@@ -140,14 +153,30 @@ function openGoogleSheetsEditingWindow() {
                             iframe.src = googleSheetsUrl;
                             iframe.style.display = 'block';
                             loadingMessage.style.display = 'none';
+                            
+                            // Add iframe load event listener to detect issues
+                            iframe.onload = function() {
+                                console.log('Iframe loaded successfully');
+                            };
+                            
+                            iframe.onerror = function() {
+                                console.error('Iframe failed to load');
+                                document.getElementById('loadingMessage').innerHTML = 
+                                    'Failed to load Google Sheets. The URL may not allow iframe embedding.';
+                                document.getElementById('loadingMessage').style.display = 'block';
+                                iframe.style.display = 'none';
+                            };
+                            
                         } else {
+                            const errorText = await response.text();
+                            console.error('API Error Response:', errorText);
                             document.getElementById('loadingMessage').innerHTML = 
-                                'Unable to load Google Sheets editor. Please check your connection and try again.';
+                                'Unable to load Google Sheets editor. Status: ' + response.status + '<br>Error: ' + errorText;
                         }
                     } catch (error) {
                         console.error('Error loading Google Sheets editor:', error);
                         document.getElementById('loadingMessage').innerHTML = 
-                            'Error loading Google Sheets editor: ' + error.message;
+                            'Error loading Google Sheets editor: ' + error.message + '<br><br>Check the browser console for more details.';
                     }
                 }
                 
