@@ -206,14 +206,14 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                 
                 // Handle the Archive button click
                 async function archiveUnarchiveUrls() {
-                    // Get the button element once and reuse it
-                    const archiveButton = document.querySelector('button[onclick="archiveUnarchiveUrls()"]');
+                    // Get the button element once and store in window property to avoid redeclaration
+                    window.archiveButton = document.querySelector('button[onclick="archiveUnarchiveUrls()"]');
                     
                     try {
                         // Show loading state
-                        if (archiveButton) {
-                            archiveButton.disabled = true;
-                            archiveButton.textContent = 'Archiving...';
+                        if (window.archiveButton) {
+                            window.archiveButton.disabled = true;
+                            window.archiveButton.textContent = 'Archiving...';
                         }
                         
                         console.log('Archiving URLs for:', window.userGoogleSheetsUrl);
@@ -234,9 +234,9 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                         console.log('Archive response:', result);
                         
                         // Re-enable the button immediately after successful response
-                        if (archiveButton) {
-                            archiveButton.disabled = false;
-                            archiveButton.textContent = 'Archive unarchived URLs';
+                        if (window.archiveButton) {
+                            window.archiveButton.disabled = false;
+                            window.archiveButton.textContent = 'Archive unarchived URLs';
                         }
                         
                         // Show success message to user using the correct response format
@@ -250,17 +250,17 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                         console.error('Error archiving URLs:', error);
                         
                         // Re-enable the button immediately after error
-                        if (archiveButton) {
-                            archiveButton.disabled = false;
-                            archiveButton.textContent = 'Archive unarchived URLs';
+                        if (window.archiveButton) {
+                            window.archiveButton.disabled = false;
+                            window.archiveButton.textContent = 'Archive unarchived URLs';
                         }
                         
                         alert(\`Error: \${error.message}\`);
                     } finally {
                         // Final safety reset (just in case)
-                        if (archiveButton) {
-                            archiveButton.disabled = false;
-                            archiveButton.textContent = 'Archive unarchived URLs';
+                        if (window.archiveButton) {
+                            window.archiveButton.disabled = false;
+                            window.archiveButton.textContent = 'Archive unarchived URLs';
                         }
                     }
                 }
