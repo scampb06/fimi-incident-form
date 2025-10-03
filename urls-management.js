@@ -350,7 +350,8 @@ async function loadUrlsFromGoogleSheetsData(googleSheetsUrl) {
             // Show success message with correct counts
             const sampleRecord = result.data[0];
             const availableFields = Object.keys(sampleRecord);
-            const duplicateCount = result.count - addedCount;
+            const processedCount = result.data.length; // Total records we tried to process
+            const duplicateCount = processedCount - addedCount;
             
             showUrlsMessage(`Added ${addedCount} new records from Google Sheets (${duplicateCount} duplicates skipped). Available fields: ${availableFields.join(', ')}`, 'success');
         } else {
