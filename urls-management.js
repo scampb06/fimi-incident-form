@@ -318,6 +318,7 @@ async function loadUrlsFromGoogleSheetsData(googleSheetsUrl) {
         // Process the data from Google Sheets
         if (result.data && result.data.length > 0) {
             let addedCount = 0; // Track actually added entries
+            const initialUrlsCount = urlsList.length; // Store initial count for comparison
             
             result.data.forEach(record => {
                 // Map Google Sheets data to our three-column structure
@@ -328,7 +329,13 @@ async function loadUrlsFromGoogleSheetsData(googleSheetsUrl) {
                     isFromGoogleSheets: true // Flag to identify Google Sheets entries
                 };
                 
-                // Check for duplicates before adding
+                // Skip empty entries
+                if (!newEntry.url && !newEntry.domain && !newEntry.archiveUrl) {
+                    console.log('Skipped empty entry');
+                    return;
+                }
+                
+                // Check for duplicates against current urlsList
                 const isDuplicate = urlsList.some(existingEntry => 
                     existingEntry.url === newEntry.url && 
                     existingEntry.domain === newEntry.domain && 
@@ -353,7 +360,13 @@ async function loadUrlsFromGoogleSheetsData(googleSheetsUrl) {
             const processedCount = result.data.length; // Total records we tried to process
             const duplicateCount = processedCount - addedCount;
             
-            showUrlsMessage(`Added ${addedCount} new records from Google Sheets (${duplicateCount} duplicates skipped). Available fields: ${availableFields.join(', ')}`, 'success');
+            // Verify our math with actual list changes
+            const finalUrlsCount = urlsList.length;
+            const actualAdded = finalUrlsCount - initialUrlsCount;
+            
+            console.log(`Debug: Initial count: ${initialUrlsCount}, Final count: ${finalUrlsCount}, Calculated added: ${addedCount}, Actual added: ${actualAdded}`);
+            
+            showUrlsMessage(`Added ${actualAdded} new records from Google Sheets (${duplicateCount} duplicates skipped). Available fields: ${availableFields.join(', ')}`, 'success');
         } else {
             showUrlsMessage('No URL data found in Google Sheets', 'warning');
         }
