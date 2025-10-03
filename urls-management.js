@@ -112,9 +112,14 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                     font-size: 16px;
                     font-weight: bold;
                     transition: background-color 0.2s;
+                    white-space: nowrap;
                 }
                 .done-button:hover {
                     background: #005a8a;
+                }
+                .done-button:disabled {
+                    background: #6c757d;
+                    cursor: not-allowed;
                 }
                 .instructions {
                     font-size: 16px;
@@ -146,11 +151,14 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
         <body>
             <div class="header">
                 <h1 class="title">Add Trusted URLs</h1>
-                <button class="done-button" onclick="handleDoneClick()">Done</button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="done-button" onclick="archiveUnarchiveUrls()" style="background: #28a745;">Archive unarchived URLs</button>
+                    <button class="done-button" onclick="handleDoneClick()">Done</button>
+                </div>
             </div>
             
             <div class="instructions">
-                Add URLs using the columns below (URL, Domain, Archive URL). Press Done when you are finished.
+                Add URLs below under the column headings "URL", "Domain" and "Archive URL". Press Done when you are finished.
             </div>
             
             <div class="google-sheets-container">
@@ -193,6 +201,50 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                         console.error('Error loading Google Sheets editor:', error);
                         document.getElementById('loadingMessage').innerHTML = 
                             'Error loading Google Sheets editor: ' + error.message;
+                    }
+                }
+                
+                // Handle the Archive button click
+                async function archiveUnarchiveUrls() {
+                    try {
+                        // Disable the button and show loading state
+                        const archiveButton = event.target;
+                        const originalText = archiveButton.textContent;
+                        archiveButton.disabled = true;
+                        archiveButton.textContent = 'Archiving...';
+                        
+                        console.log('Archiving URLs for:', window.userGoogleSheetsUrl);
+                        
+                        // Call the archive endpoint
+                        const response = await fetch(\`http://localhost:5239/google-sheets/archive-urls?url=\${encodeURIComponent(window.userGoogleSheetsUrl)}\`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error(\`Archive request failed: \${response.status} \${response.statusText}\`);
+                        }
+                        
+                        const result = await response.json();
+                        console.log('Archive response:', result);
+                        
+                        // Show success message to user using the correct response format
+                        const totalRecords = result.totalRecords || 0;
+                        const archivedCount = result.archivedCount || 0;
+                        const message = result.message || 'Archive operation completed';
+                        
+                        alert(message + '\\n\\nTotal records processed: ' + totalRecords + '\\nURLs archived: ' + archivedCount);
+                        
+                    } catch (error) {
+                        console.error('Error archiving URLs:', error);
+                        alert(\`Error: \${error.message}\`);
+                    } finally {
+                        // Re-enable the button
+                        const archiveButton = event.target;
+                        archiveButton.disabled = false;
+                        archiveButton.textContent = originalText;
                     }
                 }
                 
