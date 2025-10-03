@@ -161,17 +161,18 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
             </div>
 
             <script>
-                const userGoogleSheetsUrl = '${userProvidedUrl}';
+                // Use window property to avoid redeclaration issues
+                window.userGoogleSheetsUrl = '${userProvidedUrl}';
                 
                 // Load the Google Sheets editing URL
                 function loadGoogleSheetsEditor() {
                     try {
-                        console.log('Loading user-provided Google Sheets URL:', userGoogleSheetsUrl);
+                        console.log('Loading user-provided Google Sheets URL:', window.userGoogleSheetsUrl);
                         
                         const iframe = document.getElementById('googleSheetsFrame');
                         const loadingMessage = document.getElementById('loadingMessage');
                         
-                        iframe.src = userGoogleSheetsUrl;
+                        iframe.src = window.userGoogleSheetsUrl;
                         iframe.style.display = 'block';
                         loadingMessage.style.display = 'none';
                         
@@ -198,7 +199,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                 // Handle the Done button click
                 function handleDoneClick() {
                     // Close this window and trigger the data loading in the parent
-                    window.opener.loadUrlsFromGoogleSheetsData(userGoogleSheetsUrl);
+                    window.opener.loadUrlsFromGoogleSheetsData(window.userGoogleSheetsUrl);
                     window.close();
                 }
                 
