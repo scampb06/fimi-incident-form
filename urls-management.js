@@ -226,6 +226,8 @@ async function loadUrlsFromGoogleSheetsData(googleSheetsUrl) {
         if (!response.ok) {
             if (response.status === 401) {
                 throw new Error('Authentication required. Please check your API credentials.');
+            } else if (response.status === 403) {
+                throw new Error('The FIMI Incident Report Generator needs permission to read your Google Sheet. Please share the sheet with gsheets-service@spheric-baton-459622-f4.iam.gserviceaccount.com');    
             } else if (response.status === 404) {
                 throw new Error('Google Sheets endpoint not found. Please check the server is running.');
             } else if (response.status === 400) {
