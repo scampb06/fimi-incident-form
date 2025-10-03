@@ -207,8 +207,8 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                 // Handle the Archive button click
                 async function archiveUnarchiveUrls() {
                     try {
-                        // Disable the button and show loading state
-                        const archiveButton = event.target;
+                        // Get the button element and show loading state
+                        const archiveButton = document.querySelector('button[onclick="archiveUnarchiveUrls()"]');
                         const originalText = archiveButton.textContent;
                         archiveButton.disabled = true;
                         archiveButton.textContent = 'Archiving...';
@@ -242,9 +242,11 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                         alert(\`Error: \${error.message}\`);
                     } finally {
                         // Re-enable the button
-                        const archiveButton = event.target;
-                        archiveButton.disabled = false;
-                        archiveButton.textContent = originalText;
+                        const archiveButton = document.querySelector('button[onclick="archiveUnarchiveUrls()"]');
+                        if (archiveButton) {
+                            archiveButton.disabled = false;
+                            archiveButton.textContent = 'Archive unarchived URLs';
+                        }
                     }
                 }
                 
