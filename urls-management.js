@@ -317,6 +317,8 @@ async function loadUrlsFromGoogleSheetsData(googleSheetsUrl) {
         
         // Process the data from Google Sheets
         if (result.data && result.data.length > 0) {
+            let addedCount = 0; // Track actually added entries
+            
             result.data.forEach(record => {
                 // Map Google Sheets data to our three-column structure
                 const newEntry = {
@@ -335,6 +337,7 @@ async function loadUrlsFromGoogleSheetsData(googleSheetsUrl) {
                 
                 if (!isDuplicate) {
                     urlsList.push(newEntry);
+                    addedCount++; // Increment only when actually added
                     console.log('Added new Google Sheets entry:', newEntry);
                 } else {
                     console.log('Skipped duplicate entry:', newEntry);
@@ -344,23 +347,12 @@ async function loadUrlsFromGoogleSheetsData(googleSheetsUrl) {
             // Update the UI
             updateUrlsUI();
             
-            // Show success message with available fields info
+            // Show success message with correct counts
             const sampleRecord = result.data[0];
             const availableFields = Object.keys(sampleRecord);
-            const addedCount = result.data.length - result.data.filter(record => {
-                const entry = {
-                    url: record.URL || record.url || '',
-                    domain: record.Domain || record.domain || '',
-                    archiveUrl: record['Archive URL'] || record.archiveUrl || record.archive_url || ''
-                };
-                return urlsList.some(existingEntry => 
-                    existingEntry.url === entry.url && 
-                    existingEntry.domain === entry.domain && 
-                    existingEntry.archiveUrl === entry.archiveUrl
-                );
-            }).length;
+            const duplicateCount = result.count - addedCount;
             
-            showUrlsMessage(`Added ${addedCount} new records from Google Sheets (${result.count - addedCount} duplicates skipped). Available fields: ${availableFields.join(', ')}`, 'success');
+            showUrlsMessage(`Added ${addedCount} new records from Google Sheets (${duplicateCount} duplicates skipped). Available fields: ${availableFields.join(', ')}`, 'success');
         } else {
             showUrlsMessage('No URL data found in Google Sheets', 'warning');
         }
