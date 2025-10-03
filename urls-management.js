@@ -205,7 +205,10 @@ async function loadUrlsFromGoogleSheetsData() {
         console.log('Loading URLs from Google Sheets...');
         
         // Call your existing endpoint to get the data
-        const response = await fetch('http://localhost:5239/google-sheets/data');
+        // const response = await fetch('http://localhost:5239/google-sheets/data');
+
+        const googleSheetsUrl = "https://docs.google.com/spreadsheets/d/1ANQ1KwhBRIFVEVNnZm-2JHazh7YkWVoubIdlD1ePYF8/edit?gid=2098282666#gid=2098282666";
+        const response = await fetch(`http://localhost:5239/google-sheets/data-for-url?url=${encodeURIComponent(googleSheetsUrl)}`);
         
         // Check if the response is ok
         if (!response.ok) {
