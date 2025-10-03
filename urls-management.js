@@ -445,6 +445,15 @@ function addUrl() {
 // Show message to user
 function showUrlsMessage(message, type = 'info') {
     const messageContainer = document.getElementById('urls-message');
+    
+    // For error and warning messages, show popup for better visibility
+    if (type === 'error' || type === 'warning') {
+        // Show popup alert for errors and warnings so user has time to read
+        const messageType = type === 'error' ? 'Error' : 'Warning';
+        alert(`${messageType}: ${message}`);
+    }
+    
+    // Still show the temporary message in the container for all message types
     if (messageContainer) {
         const colors = {
             success: '#28a745',
@@ -457,10 +466,11 @@ function showUrlsMessage(message, type = 'info') {
         messageContainer.textContent = message;
         messageContainer.style.display = 'block';
         
-        // Hide message after 5 seconds
+        // Hide message after 5 seconds (or longer for success messages)
+        const hideDelay = type === 'success' ? 8000 : 5000;
         setTimeout(() => {
             messageContainer.style.display = 'none';
-        }, 5000);
+        }, hideDelay);
     }
 }
 
