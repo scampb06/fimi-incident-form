@@ -230,6 +230,13 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                         const result = await response.json();
                         console.log('Archive response:', result);
                         
+                        // Re-enable the button immediately after successful response
+                        const archiveButton = document.querySelector('button[onclick="archiveUnarchiveUrls()"]');
+                        if (archiveButton) {
+                            archiveButton.disabled = false;
+                            archiveButton.textContent = 'Archive unarchived URLs';
+                        }
+                        
                         // Show success message to user using the correct response format
                         const totalRecords = result.totalRecords || 0;
                         const archivedCount = result.archivedCount || 0;
@@ -239,6 +246,14 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                         
                     } catch (error) {
                         console.error('Error archiving URLs:', error);
+                        
+                        // Re-enable the button immediately after error
+                        const archiveButton = document.querySelector('button[onclick="archiveUnarchiveUrls()"]');
+                        if (archiveButton) {
+                            archiveButton.disabled = false;
+                            archiveButton.textContent = 'Archive unarchived URLs';
+                        }
+                        
                         alert(\`Error: \${error.message}\`);
                     } finally {
                         // Re-enable the button
