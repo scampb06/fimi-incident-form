@@ -6,14 +6,71 @@
 // Global array to store URLs data
 let urlsList = [];
 
+// Function to validate Google Sheets URL
+function validateGoogleSheetsUrl(url) {
+    if (!url || url.trim() === '') {
+        return { valid: false, message: 'Please enter a Google Sheets URL' };
+    }
+    
+    // Check if it's a valid URL format
+    try {
+        new URL(url);
+    } catch (e) {
+        return { valid: false, message: 'Please enter a valid URL' };
+    }
+    
+    // Check if it's a Google Sheets URL
+    if (!url.includes('docs.google.com/spreadsheets')) {
+        return { valid: false, message: 'Please enter a valid Google Sheets URL (must contain docs.google.com/spreadsheets)' };
+    }
+    
+    return { valid: true, message: '' };
+}
+
+// Function to show validation error for Google Sheets URL
+function showGoogleSheetsUrlError(message) {
+    const errorDiv = document.getElementById('googleSheetsUrlError');
+    const urlInput = document.getElementById('googleSheetsUrl');
+    
+    if (errorDiv && urlInput) {
+        errorDiv.textContent = message;
+        errorDiv.style.display = message ? 'block' : 'none';
+        urlInput.style.borderColor = message ? '#dc3545' : '#ddd';
+    }
+}
+
+// Function to clear validation error for Google Sheets URL
+function clearGoogleSheetsUrlError() {
+    showGoogleSheetsUrlError('');
+}
+
 // Function to load URLs from Google Sheets
 async function loadUrlsFromGoogleSheets() {
-    // Open the interim editing window first
-    openGoogleSheetsEditingWindow();
+    const urlInput = document.getElementById('googleSheetsUrl');
+    if (!urlInput) {
+        alert('Google Sheets URL input field not found');
+        return;
+    }
+    
+    const googleSheetsUrl = urlInput.value.trim();
+    
+    // Validate the URL
+    const validation = validateGoogleSheetsUrl(googleSheetsUrl);
+    if (!validation.valid) {
+        showGoogleSheetsUrlError(validation.message);
+        urlInput.focus();
+        return;
+    }
+    
+    // Clear any previous validation errors
+    clearGoogleSheetsUrlError();
+    
+    // Open the interim editing window with the user-provided URL
+    openGoogleSheetsEditingWindow(googleSheetsUrl);
 }
 
 // Function to open the Google Sheets editing window
-function openGoogleSheetsEditingWindow() {
+function openGoogleSheetsEditingWindow(userProvidedUrl) {
     // Create the popup window similar to DISARM Framework
     const popup = window.open('', 'googleSheetsEditor', 'width=1200,height=800,scrollbars=yes,resizable=yes');
     
@@ -93,7 +150,7 @@ function openGoogleSheetsEditingWindow() {
             </div>
             
             <div class="instructions">
-                Add URLs using the columns below. Press Done when you are finished.
+                Add URLs using the columns below (URL, Domain, Archive URL). Press Done when you are finished.
             </div>
             
             <div class="google-sheets-container">
@@ -104,88 +161,44 @@ function openGoogleSheetsEditingWindow() {
             </div>
 
             <script>
-                let googleSheetsUrl = '';
+                const userGoogleSheetsUrl = '${userProvidedUrl}';
                 
                 // Load the Google Sheets editing URL
-                async function loadGoogleSheetsEditor() {
+                function loadGoogleSheetsEditor() {
                     try {
-                        console.log('Attempting to load Google Sheets editor...');
+                        console.log('Loading user-provided Google Sheets URL:', userGoogleSheetsUrl);
                         
-                        // Call endpoint to get the editable Google Sheets URL
-                         const response = await fetch('http://localhost:5239/google-sheets/edit-url');
-                        // replace with a POST for the create endpoint
-                        /*
-                        const response = await fetch('http://localhost:5239/google-sheets/create-auto', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            }
-                        });
-                        */
+                        const iframe = document.getElementById('googleSheetsFrame');
+                        const loadingMessage = document.getElementById('loadingMessage');
                         
-                        console.log('Response status:', response.status);
-                        console.log('Response ok:', response.ok);
+                        iframe.src = userGoogleSheetsUrl;
+                        iframe.style.display = 'block';
+                        loadingMessage.style.display = 'none';
                         
-                        if (response.ok) {
-                            const result = await response.json();
-                            console.log('API Response:', result);
-                            
-                            /* add these lines for create endpoint
-                            if (result.spreadsheetId && result.gid) {
-                                // Success - sheet was created
-                                console.log('Sheet created:', result.editUrl);
-                                console.log('Spreadsheet ID:', result.spreadsheetId);
-                                console.log('GID:', result.gid);
-                            } else if (result.manualInstructions) {
-                                // Storage quota exceeded - show manual instructions
-                                console.log('Manual creation required:', result.message);
-                                console.log('Instructions:', result.manualInstructions);
-                            }
-                            */
-                            googleSheetsUrl = result.editUrl || result.url;
-                            console.log('Using Google Sheets URL:', googleSheetsUrl);
-                            
-                            if (!googleSheetsUrl) {
-                                throw new Error('No editUrl or url found in response');
-                            }
-                            
-                            const iframe = document.getElementById('googleSheetsFrame');
-                            const loadingMessage = document.getElementById('loadingMessage');
-                            
-                            iframe.src = googleSheetsUrl;
-                            iframe.style.display = 'block';
-                            loadingMessage.style.display = 'none';
-                            
-                            // Add iframe load event listener to detect issues
-                            iframe.onload = function() {
-                                console.log('Iframe loaded successfully');
-                            };
-                            
-                            iframe.onerror = function() {
-                                console.error('Iframe failed to load');
-                                document.getElementById('loadingMessage').innerHTML = 
-                                    'Failed to load Google Sheets. The URL may not allow iframe embedding.';
-                                document.getElementById('loadingMessage').style.display = 'block';
-                                iframe.style.display = 'none';
-                            };
-                            
-                        } else {
-                            const errorText = await response.text();
-                            console.error('API Error Response:', errorText);
+                        // Add iframe load event listener to detect issues
+                        iframe.onload = function() {
+                            console.log('Iframe loaded successfully');
+                        };
+                        
+                        iframe.onerror = function() {
+                            console.error('Iframe failed to load');
                             document.getElementById('loadingMessage').innerHTML = 
-                                'Unable to load Google Sheets editor. Status: ' + response.status + '<br>Error: ' + errorText;
-                        }
+                                'Failed to load Google Sheets. The URL may not allow iframe embedding or may be incorrect.';
+                            document.getElementById('loadingMessage').style.display = 'block';
+                            iframe.style.display = 'none';
+                        };
+                        
                     } catch (error) {
                         console.error('Error loading Google Sheets editor:', error);
                         document.getElementById('loadingMessage').innerHTML = 
-                            'Error loading Google Sheets editor: ' + error.message + '<br><br>Check the browser console for more details.';
+                            'Error loading Google Sheets editor: ' + error.message;
                     }
                 }
                 
                 // Handle the Done button click
                 function handleDoneClick() {
                     // Close this window and trigger the data loading in the parent
-                    window.opener.loadUrlsFromGoogleSheetsData();
+                    window.opener.loadUrlsFromGoogleSheetsData(userGoogleSheetsUrl);
                     window.close();
                 }
                 
@@ -200,15 +213,13 @@ function openGoogleSheetsEditingWindow() {
 }
 
 // Function to actually load the data from Google Sheets (called after editing)
-async function loadUrlsFromGoogleSheetsData() {
+async function loadUrlsFromGoogleSheetsData(googleSheetsUrl) {
     try {
         console.log('Loading URLs from Google Sheets...');
+        console.log('Using URL:', googleSheetsUrl);
         
-        // Call your existing endpoint to get the data
-        // const response = await fetch('http://localhost:5239/google-sheets/data');
-
-        const googleSheetsUrl = "https://docs.google.com/spreadsheets/d/1ANQ1KwhBRIFVEVNnZm-2JHazh7YkWVoubIdlD1ePYF8/edit?gid=2098282666#gid=2098282666";
-        const response = await fetch(`http://localhost:5239/google-sheets/data-for-url?url=${encodeURIComponent(googleSheetsUrl)}`);
+        // Call the new endpoint with the user-provided URL
+        const response = await fetch(`http://localhost:5239/google-sheets/data-from-url?url=${encodeURIComponent(googleSheetsUrl)}`);
         
         // Check if the response is ok
         if (!response.ok) {
@@ -216,6 +227,9 @@ async function loadUrlsFromGoogleSheetsData() {
                 throw new Error('Authentication required. Please check your API credentials.');
             } else if (response.status === 404) {
                 throw new Error('Google Sheets endpoint not found. Please check the server is running.');
+            } else if (response.status === 400) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(`Invalid request: ${errorData.message || 'Please check the Google Sheets URL'}`);
             } else {
                 throw new Error(`Server error: ${response.status} ${response.statusText}`);
             }
@@ -281,7 +295,7 @@ async function loadUrlsFromGoogleSheetsData() {
         
     } catch (error) {
         console.error('Error loading URLs from Google Sheets:', error);
-        showUrlsMessage('Failed to load URLs from Google Sheets. Please check your connection.', 'error');
+        showUrlsMessage(`Failed to load URLs from Google Sheets: ${error.message}`, 'error');
     }
 }
 
@@ -452,4 +466,34 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize with empty array - updateUrlsUI will show the initial empty entry
     urlsList = [];
     updateUrlsUI();
+    
+    // Add real-time validation for Google Sheets URL input
+    const googleSheetsUrlInput = document.getElementById('googleSheetsUrl');
+    if (googleSheetsUrlInput) {
+        googleSheetsUrlInput.addEventListener('input', function() {
+            const url = this.value.trim();
+            if (url === '') {
+                clearGoogleSheetsUrlError();
+            } else {
+                const validation = validateGoogleSheetsUrl(url);
+                if (!validation.valid) {
+                    showGoogleSheetsUrlError(validation.message);
+                } else {
+                    clearGoogleSheetsUrlError();
+                }
+            }
+        });
+        
+        googleSheetsUrlInput.addEventListener('blur', function() {
+            const url = this.value.trim();
+            if (url !== '') {
+                const validation = validateGoogleSheetsUrl(url);
+                if (!validation.valid) {
+                    showGoogleSheetsUrlError(validation.message);
+                } else {
+                    clearGoogleSheetsUrlError();
+                }
+            }
+        });
+    }
 });

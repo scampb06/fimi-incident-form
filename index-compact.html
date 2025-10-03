@@ -589,15 +589,21 @@
                 <!-- Action Buttons -->
                 <div class="form-row">
                     <div class="form-col">
-                        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <div style="display: flex; gap: 10px; align-items: flex-end; margin-bottom: 15px;">
+                            <div style="flex: 1;">
+                                <label for="googleSheetsUrl" style="font-size: 14px; font-weight: bold; color: #333; display: block; margin-bottom: 5px;">Google Sheet:</label>
+                                <input type="url" id="googleSheetsUrl" placeholder="https://docs.google.com/spreadsheets/d/..." 
+                                       style="width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box;">
+                                <div id="googleSheetsUrlError" style="color: red; font-size: 12px; margin-top: 2px; display: none;"></div>
+                            </div>
                             <button type="button" onclick="loadUrlsFromGoogleSheets()" 
-                                    style="background: #007cba; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background-color 0.2s;"
+                                    style="background: #007cba; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background-color 0.2s; white-space: nowrap;"
                                     onmouseover="this.style.background='#005a8a'" 
                                     onmouseout="this.style.background='#007cba'">
                                 📊 Load URLs from Google Sheets
                             </button>
                             <button type="button" onclick="addUrl()" 
-                                    style="background: #28a745; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background-color 0.2s;"
+                                    style="background: #28a745; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background-color 0.2s; white-space: nowrap;"
                                     onmouseover="this.style.background='#218838'" 
                                     onmouseout="this.style.background='#28a745'">
                                 + Add URL
