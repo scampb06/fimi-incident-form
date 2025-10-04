@@ -219,7 +219,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                         console.log('Archiving URLs for:', window.userGoogleSheetsUrl);
                         
                         // Call the archive endpoint
-                        const response = await fetch(\`http://localhost:5239/google-sheets/archive-urls?url=\${encodeURIComponent(window.userGoogleSheetsUrl)}\`, {
+                        const response = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/archive-urls?url=\${encodeURIComponent(window.userGoogleSheetsUrl)}\`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
@@ -289,7 +289,7 @@ async function loadUrlsFromGoogleSheetsData(googleSheetsUrl) {
         console.log('Using URL:', googleSheetsUrl);
         
         // Call the new endpoint with the user-provided URL
-        const response = await fetch(`http://localhost:5239/google-sheets/data-for-url?url=${encodeURIComponent(googleSheetsUrl)}`);
+        const response = await fetch(`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/data-for-url?url=${encodeURIComponent(googleSheetsUrl)}`);
         
         // Check if the response is ok
         if (!response.ok) {
