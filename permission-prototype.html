@@ -359,8 +359,8 @@
                 return '#';
             }
             
-            // Generate the sharing dialog URL
-            return `https://docs.google.com/spreadsheets/d/${sheetId}/share`;
+            // Generate the sharing dialog URL using the correct format
+            return `https://docs.google.com/spreadsheets/d/${sheetId}/edit?usp=sharing`;
         }
         
         // Copy email to clipboard
@@ -556,7 +556,7 @@
         
         // Initialize with a sample URL for testing
         window.addEventListener('load', function() {
-            const sampleUrl = 'https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit';
+            const sampleUrl = 'https://docs.google.com/spreadsheets/d/1TjSzGPa7xkZsfP22VhpOb0pxK4QlcpfnbPWZgR9KYHA/edit';
             document.getElementById('testUrl').value = sampleUrl;
             updateSharingUrl();
         });
