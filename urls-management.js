@@ -323,13 +323,14 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                             <div style="margin-bottom: 25px;">
                                 <h3 style="color: #333; margin-bottom: 15px;">🔗 Step 1: Share your Google Sheet with write access</h3>
                                 <p style="margin-bottom: 15px; color: #666; line-height: 1.5;">
-                                    Click the button below to open the sharing settings for your Google Sheet:
+                                    Click the link below to open the sharing settings for your Google Sheet:
                                 </p>
                                 
-                                <button onclick="openArchiveSharingSettings('\${sheetId}')" 
-                                        style="background: #1a73e8; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-size: 16px; display: flex; align-items: center; gap: 8px; margin-bottom: 15px; width: 100%; justify-content: center;">
+                                <a href="https://docs.google.com/spreadsheets/d/\${sheetId}/edit?usp=sharing" 
+                                   target="_blank" rel="noopener noreferrer"
+                                   style="background: #1a73e8; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-size: 16px; display: flex; align-items: center; gap: 8px; margin-bottom: 15px; width: 100%; justify-content: center; text-decoration: none;">
                                     📤 Open Google Sheets Sharing Settings
-                                </button>
+                                </a>
                                 
                                 <div style="background: #f8f9fa; border-radius: 6px; padding: 15px; margin-bottom: 15px;">
                                     <p style="margin: 0 0 10px 0; font-weight: bold; color: #333;">In the sharing dialog:</p>
@@ -389,27 +390,6 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                         console.error('Error extracting sheet ID:', error);
                         return null;
                     }
-                }
-                
-                // Open Google Sheets sharing settings for archive
-                function openArchiveSharingSettings(sheetId) {
-                    console.log('openArchiveSharingSettings called with sheetId:', sheetId);
-                    
-                    if (!sheetId) {
-                        console.error('No sheetId provided to openArchiveSharingSettings');
-                        alert('Unable to extract sheet ID from URL');
-                        return;
-                    }
-                    
-                    // Use the sharing-specific URL that opens the sharing dialog directly
-                    const sharingUrl = \`https://docs.google.com/spreadsheets/d/\${sheetId}/edit?usp=sharing\`;
-                    console.log('Opening sharing URL:', sharingUrl);
-                    
-                    // Show alert to confirm what URL we're opening
-                    alert('Debug: Opening sharing URL: ' + sharingUrl);
-                    
-                    window.open(sharingUrl, '_blank', 'width=1000,height=700');
-                    console.log('window.open called for sharing URL');
                 }
                 
                 // Copy service account email to clipboard for archive
