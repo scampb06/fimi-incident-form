@@ -227,7 +227,14 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                         });
                         
                         if (!response.ok) {
-                            throw new Error(\`Archive request failed: \${response.status} \${response.statusText}\`);
+                            if (response.status === 403) {
+                                // Handle 403 permission error with guided sharing workflow
+                                console.log('403 Permission error detected during archiving - showing permission helper dialog');
+                                showArchivePermissionDialog(window.userGoogleSheetsUrl);
+                                return; // Exit early to show the dialog instead of throwing error
+                            } else {
+                                throw new Error(\`Archive request failed: \${response.status} \${response.statusText}\`);
+                            }
                         }
                         
                         const result = await response.json();
@@ -265,6 +272,276 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                     }
                 }
                 
+                // Show permission helper dialog for archive operation
+                function showArchivePermissionDialog(googleSheetsUrl) {
+                    // Extract sheet ID for the sharing URL
+                    const sheetId = extractSheetId(googleSheetsUrl);
+                    
+                    // Create modal overlay
+                    const modalOverlay = document.createElement('div');
+                    modalOverlay.id = 'archive-permission-modal-overlay';
+                    modalOverlay.style.cssText = \`
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background: rgba(0, 0, 0, 0.5);
+                        z-index: 9999;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                    \`;
+                    
+                    // Create modal content
+                    const modalContent = document.createElement('div');
+                    modalContent.style.cssText = \`
+                        background: white;
+                        border-radius: 8px;
+                        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+                        max-width: 600px;
+                        width: 90%;
+                        max-height: 90vh;
+                        overflow-y: auto;
+                        position: relative;
+                    \`;
+                    
+                    modalContent.innerHTML = \`
+                        <div style="padding: 30px;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+                                <h2 style="margin: 0; color: #333; font-size: 24px;">📋 Permission Required for Archiving</h2>
+                                <button onclick="closeArchivePermissionDialog()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">&times;</button>
+                            </div>
+                            
+                            <div style="background: #fff3cd; border: 1px solid #ffeeba; border-radius: 6px; padding: 15px; margin-bottom: 20px;">
+                                <p style="margin: 0; color: #856404;">
+                                    <strong>⚠️ Archive Access Denied:</strong> The service needs write permission to update your Google Sheet with archive URLs.
+                                </p>
+                            </div>
+
+                            <div style="margin-bottom: 25px;">
+                                <h3 style="color: #333; margin-bottom: 15px;">🔗 Step 1: Share your Google Sheet with write access</h3>
+                                <p style="margin-bottom: 15px; color: #666; line-height: 1.5;">
+                                    Click the button below to open the sharing settings for your Google Sheet:
+                                </p>
+                                
+                                <button onclick="openArchiveSharingSettings('\${sheetId}')" 
+                                        style="background: #1a73e8; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-size: 16px; display: flex; align-items: center; gap: 8px; margin-bottom: 15px; width: 100%; justify-content: center;">
+                                    📤 Open Google Sheets Sharing Settings
+                                </button>
+                                
+                                <div style="background: #f8f9fa; border-radius: 6px; padding: 15px; margin-bottom: 15px;">
+                                    <p style="margin: 0 0 10px 0; font-weight: bold; color: #333;">In the sharing dialog:</p>
+                                    <ol style="margin: 0; padding-left: 20px; color: #666; line-height: 1.6;">
+                                        <li>Click "Add people and groups"</li>
+                                        <li>Copy and paste this email: <strong style="background: #e9ecef; padding: 2px 6px; border-radius: 3px; font-family: monospace;">gsheets-service@spheric-baton-459622-f4.iam.gserviceaccount.com</strong></li>
+                                        <li>Set permission to <strong>"Editor"</strong> (not Viewer)</li>
+                                        <li>Click "Send" or "Share"</li>
+                                    </ol>
+                                </div>
+                                
+                                <button onclick="copyArchiveServiceAccountEmail()" 
+                                        style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px; margin: 0 auto;">
+                                    📋 Copy Service Account Email
+                                </button>
+                            </div>
+
+                            <div style="margin-bottom: 25px;">
+                                <h3 style="color: #333; margin-bottom: 15px;">✅ Step 2: Retry archiving</h3>
+                                <p style="margin-bottom: 15px; color: #666; line-height: 1.5;">
+                                    After sharing the sheet with Editor permissions, click the button below to retry archiving:
+                                </p>
+                                
+                                <button onclick="retryArchivingAfterSharing('\${googleSheetsUrl}')" 
+                                        style="background: #17a2b8; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-size: 16px; display: flex; align-items: center; gap: 8px; margin-bottom: 15px; width: 100%; justify-content: center;">
+                                    🔄 Retry Archiving URLs
+                                </button>
+                                
+                                <div id="archive-retry-status" style="margin-top: 10px; padding: 10px; border-radius: 4px; display: none;"></div>
+                            </div>
+
+                            <div style="border-top: 1px solid #dee2e6; padding-top: 20px;">
+                                <p style="margin: 0; color: #666; font-size: 14px; text-align: center;">
+                                    Need help? This process grants our service account write access to your Google Sheet so we can add archive URLs to your data.
+                                </p>
+                            </div>
+                        </div>
+                    \`;
+                    
+                    modalOverlay.appendChild(modalContent);
+                    document.body.appendChild(modalOverlay);
+                    
+                    // Close modal when clicking outside
+                    modalOverlay.addEventListener('click', function(e) {
+                        if (e.target === modalOverlay) {
+                            closeArchivePermissionDialog();
+                        }
+                    });
+                }
+                
+                // Extract sheet ID from Google Sheets URL
+                function extractSheetId(url) {
+                    try {
+                        const match = url.match(/\\/spreadsheets\\/d\\/([a-zA-Z0-9-_]+)/);
+                        return match ? match[1] : null;
+                    } catch (error) {
+                        console.error('Error extracting sheet ID:', error);
+                        return null;
+                    }
+                }
+                
+                // Open Google Sheets sharing settings for archive
+                function openArchiveSharingSettings(sheetId) {
+                    if (!sheetId) {
+                        alert('Unable to extract sheet ID from URL');
+                        return;
+                    }
+                    
+                    const sharingUrl = \`https://docs.google.com/spreadsheets/d/\${sheetId}/edit#gid=0\`;
+                    window.open(sharingUrl, '_blank', 'width=1000,height=700');
+                }
+                
+                // Copy service account email to clipboard for archive
+                function copyArchiveServiceAccountEmail() {
+                    const email = 'gsheets-service@spheric-baton-459622-f4.iam.gserviceaccount.com';
+                    
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(email).then(() => {
+                            showArchiveCopyFeedback();
+                        }).catch(err => {
+                            console.error('Failed to copy with Clipboard API:', err);
+                            fallbackArchiveCopyText(email);
+                        });
+                    } else {
+                        fallbackArchiveCopyText(email);
+                    }
+                }
+                
+                // Fallback copy method for archive
+                function fallbackArchiveCopyText(text) {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = text;
+                    textArea.style.position = 'fixed';
+                    textArea.style.opacity = '0';
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    
+                    try {
+                        const successful = document.execCommand('copy');
+                        if (successful) {
+                            showArchiveCopyFeedback();
+                        } else {
+                            alert('Copy failed. Please manually copy: ' + text);
+                        }
+                    } catch (err) {
+                        console.error('Fallback copy failed:', err);
+                        alert('Copy failed. Please manually copy: ' + text);
+                    }
+                    
+                    document.body.removeChild(textArea);
+                }
+                
+                // Show copy feedback for archive
+                function showArchiveCopyFeedback() {
+                    const button = event.target;
+                    const originalText = button.innerHTML;
+                    button.innerHTML = '✅ Copied!';
+                    button.style.background = '#28a745';
+                    
+                    setTimeout(() => {
+                        button.innerHTML = originalText;
+                        button.style.background = '#28a745';
+                    }, 2000);
+                }
+                
+                // Retry archiving after sharing
+                async function retryArchivingAfterSharing(googleSheetsUrl) {
+                    const button = event.target;
+                    const statusDiv = document.getElementById('archive-retry-status');
+                    
+                    try {
+                        // Update button state
+                        button.disabled = true;
+                        button.innerHTML = '🔄 Testing and archiving...';
+                        
+                        // Show checking status
+                        statusDiv.style.display = 'block';
+                        statusDiv.style.background = '#d1ecf1';
+                        statusDiv.style.color = '#0c5460';
+                        statusDiv.style.border = '1px solid #bee5eb';
+                        statusDiv.innerHTML = '🔍 Checking permissions and retrying archive...';
+                        
+                        // Call the archive endpoint again
+                        const response = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/archive-urls?url=\${encodeURIComponent(googleSheetsUrl)}\`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            const result = await response.json();
+                            
+                            // Success!
+                            statusDiv.style.background = '#d4edda';
+                            statusDiv.style.color = '#155724';
+                            statusDiv.style.border = '1px solid #c3e6cb';
+                            
+                            const totalRecords = result.totalRecords || 0;
+                            const archivedCount = result.archivedCount || 0;
+                            const message = result.message || 'Archive operation completed';
+                            
+                            statusDiv.innerHTML = \`✅ Success! \${message}. Total records: \${totalRecords}, URLs archived: \${archivedCount}\`;
+                            
+                            // Close the permission dialog after success
+                            setTimeout(() => {
+                                closeArchivePermissionDialog();
+                            }, 3000);
+                            
+                        } else if (response.status === 403) {
+                            // Still no permission
+                            statusDiv.style.background = '#f8d7da';
+                            statusDiv.style.color = '#721c24';
+                            statusDiv.style.border = '1px solid #f5c6cb';
+                            statusDiv.innerHTML = '❌ Still no write access. Please make sure you shared the sheet with Editor permissions.';
+                        } else {
+                            // Other error
+                            statusDiv.style.background = '#f8d7da';
+                            statusDiv.style.color = '#721c24';
+                            statusDiv.style.border = '1px solid #f5c6cb';
+                            statusDiv.innerHTML = \`❌ Archive failed: \${response.status} \${response.statusText}\`;
+                        }
+                        
+                    } catch (error) {
+                        console.error('Error during archive retry:', error);
+                        statusDiv.style.display = 'block';
+                        statusDiv.style.background = '#f8d7da';
+                        statusDiv.style.color = '#721c24';
+                        statusDiv.style.border = '1px solid #f5c6cb';
+                        statusDiv.innerHTML = \`❌ Error: \${error.message}\`;
+                    } finally {
+                        // Reset button
+                        button.disabled = false;
+                        button.innerHTML = '🔄 Retry Archiving URLs';
+                    }
+                }
+                
+                // Close archive permission dialog
+                function closeArchivePermissionDialog() {
+                    const modal = document.getElementById('archive-permission-modal-overlay');
+                    if (modal) {
+                        modal.remove();
+                    }
+                    
+                    // Re-enable the main archive button
+                    if (window.archiveButton) {
+                        window.archiveButton.disabled = false;
+                        window.archiveButton.textContent = 'Archive unarchived URLs';
+                    }
+                }
+                
                 // Handle the Done button click
                 function handleDoneClick() {
                     // Close this window and trigger the data loading in the parent
@@ -296,7 +573,7 @@ async function loadUrlsFromGoogleSheetsData(googleSheetsUrl) {
             if (response.status === 401) {
                 throw new Error('Authentication required. Please check your API credentials.');
             } else if (response.status === 403) {
-                throw new Error('The FIMI Incident Report Generator needs permission to read your Google Sheet. Please share the sheet with gsheets-service@spheric-baton-459622-f4.iam.gserviceaccount.com');    
+                throw new Error('Permission denied. Please ensure the Google Sheet is shared with the service account or is publicly accessible.');
             } else if (response.status === 404) {
                 throw new Error('Google Sheets endpoint not found. Please check the server is running.');
             } else if (response.status === 400) {
