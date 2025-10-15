@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Sheets Permission Granter</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .button {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        .button:hover { background: #3367d6; }
+        .button:disabled { background: #ccc; cursor: not-allowed; }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .info { color: #17a2b8; }
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: monospace;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .step {
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Google Sheets Permission Granter</h1>
+        <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+            <h4 style="margin-top: 0; color: #856404;">⚠️ Important Security Note</h4>
+            <p style="margin-bottom: 0; color: #856404;">
+                <strong>What this tool actually does:</strong> Grants write permission to <code>gsheets-service@spheric-baton-459622-f4.iam.gserviceaccount.com</code> for ONLY the specific Google Sheet you specify below.
+                <br><br>
+                <strong>OAuth Warning:</strong> Google's consent screen will show "access to all Drive files" - this is a limitation of Google's OAuth system. Our code only modifies the specific file you authorize. You can revoke access anytime in your Google Account settings.
+            </p>
+        </div>
+        <div style="background: #d1ecf1; border: 1px solid #bee5eb; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+            <h4 style="margin-top: 0; color: #0c5460;">💡 Alternative: Manual Sharing</h4>
+            <p style="margin-bottom: 5px; color: #0c5460;">
+                <strong>If you prefer not to use OAuth, you can manually share your Google Sheet:</strong>
+            </p>
+            <ol style="margin: 10px 0; color: #0c5460;">
+                <li>Open your Google Sheet</li>
+                <li>Click "Share" (top-right corner)</li>
+                <li>Add email: <code>gsheets-service@spheric-baton-459622-f4.iam.gserviceaccount.com</code></li>
+                <li>Set permission to "Editor"</li>
+                <li>Click "Send"</li>
+            </ol>
+        </div>
+        
+        <div id="step1" class="step">
+            <h3>Step 1: Enter Google Sheets URL</h3>
+            <input type="text" id="sheetsUrl" placeholder="https://docs.google.com/spreadsheets/d/..." 
+                   value="https://docs.google.com/spreadsheets/d/1PPKk2QSxGtg77jeQApDcMFFsEuQyiAszCGdXEsV9Iag">
+            <button class="button" onclick="extractFileId()">Extract File ID</button>
+        </div>
+
+        <div id="step2" class="step" style="display: none;">
+            <h3>Step 2: File Information</h3>
+            <div class="code-block">
+                <strong>File ID:</strong> <span id="fileId"></span><br>
+                <strong>Service Account:</strong> gsheets-service@spheric-baton-459622-f4.iam.gserviceaccount.com
+            </div>
+            <button class="button" onclick="authenticateAndGrant()">Grant Permission via Google Drive API</button>
+        </div>
+
+        <div id="step3" class="step" style="display: none;">
+            <h3>Step 3: Authentication & Permission Granting</h3>
+            <div id="status"></div>
+        </div>
+
+        <div id="debug" style="margin-top: 30px;">
+            <h4>Debug Information:</h4>
+            <div id="debugLog" class="code-block" style="height: 200px; overflow-y: auto;"></div>
+        </div>
+    </div>
+
+    <!-- Google APIs -->
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client"></script>
+
+    <script>
+        // Configuration - REPLACE WITH YOUR ACTUAL VALUES
+        const CLIENT_ID = '219133013008-loe4a70f895pcr4154s8qs23pun99sqa.apps.googleusercontent.com'; // Replace with your real Client ID
+        const API_KEY = 'YOUR_GOOGLE_API_KEY_HERE'; // Optional for this use case
+        const SERVICE_ACCOUNT_EMAIL = 'gsheets-service@spheric-baton-459622-f4.iam.gserviceaccount.com';
+        
+        const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
+        const SCOPES = 'https://www.googleapis.com/auth/drive';
+
+        let tokenClient;
+        let gapi_inited = false;
+        let gis_inited = false;
+        let currentFileId = null;
+
+        // Debug logging
+        function debugLog(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const debugDiv = document.getElementById('debugLog');
+            debugDiv.innerHTML += `[${timestamp}] ${message}<br>`;
+            debugDiv.scrollTop = debugDiv.scrollHeight;
+            console.log(message);
+        }
+
+        // Initialize Google APIs
+        function gapiLoaded() {
+            gapi.load('client', initializeGapi);
+        }
+
+        async function initializeGapi() {
+            await gapi.client.init({
+                // apiKey: API_KEY, // Not strictly needed for OAuth flow
+                discoveryDocs: [DISCOVERY_DOC],
+            });
+            gapi_inited = true;
+            debugLog('GAPI initialized');
+            maybeEnableButtons();
+        }
+
+        function gisLoaded() {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CLIENT_ID,
+                scope: SCOPES,
+                ux_mode: 'popup', // Use popup mode to avoid redirect issues
+                auto_select: true, // Automatically select logged-in account
+                callback: '', // Will be set during request
+            });
+            gis_inited = true;
+            debugLog('GIS initialized with popup mode and auto-select');
+            maybeEnableButtons();
+        }
+
+        function maybeEnableButtons() {
+            if (gapi_inited && gis_inited) {
+                debugLog('✅ Google APIs ready');
+            }
+        }
+
+        // Extract file ID from Google Sheets URL
+        function extractFileId() {
+            const url = document.getElementById('sheetsUrl').value.trim();
+            if (!url) {
+                alert('Please enter a Google Sheets URL');
+                return;
+            }
+
+            // Extract file ID from various Google Sheets URL formats
+            const patterns = [
+                /\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/,
+                /id=([a-zA-Z0-9-_]+)/,
+                /spreadsheets\/d\/([a-zA-Z0-9-_]+)\/edit/
+            ];
+
+            let fileId = null;
+            for (const pattern of patterns) {
+                const match = url.match(pattern);
+                if (match) {
+                    fileId = match[1];
+                    break;
+                }
+            }
+
+            if (!fileId) {
+                alert('Could not extract file ID from URL. Please check the URL format.');
+                return;
+            }
+
+            currentFileId = fileId;
+            document.getElementById('fileId').textContent = fileId;
+            document.getElementById('step2').style.display = 'block';
+            debugLog(`Extracted file ID: ${fileId}`);
+        }
+
+        // Main function to authenticate and grant permission
+        async function authenticateAndGrant() {
+            if (!gapi_inited || !gis_inited) {
+                alert('Google APIs not initialized yet. Please wait and try again.');
+                return;
+            }
+
+            if (!currentFileId) {
+                alert('No file ID available. Please extract file ID first.');
+                return;
+            }
+
+            document.getElementById('step3').style.display = 'block';
+            updateStatus('Requesting authorization...', 'info');
+
+            // Request access token
+            tokenClient.callback = async (response) => {
+                if (response.error !== undefined) {
+                    updateStatus(`Authorization error: ${response.error}`, 'error');
+                    debugLog(`Authorization error: ${JSON.stringify(response)}`);
+                    return;
+                }
+
+                debugLog('✅ Authorization successful');
+                updateStatus('Authorization successful. Granting permission...', 'info');
+
+                try {
+                    // Grant permission to service account
+                    const result = await grantPermission(currentFileId, SERVICE_ACCOUNT_EMAIL);
+                    updateStatus('✅ Permission granted successfully!', 'success');
+                    debugLog(`Permission granted: ${JSON.stringify(result)}`);
+                } catch (error) {
+                    updateStatus(`❌ Failed to grant permission: ${error.message}`, 'error');
+                    debugLog(`Permission error: ${error.message}`);
+                }
+            };
+
+            // Check if user is already authorized
+            if (gapi.client.getToken() === null) {
+                // First time - need consent
+                tokenClient.requestAccessToken({
+                    prompt: 'consent'
+                });
+            } else {
+                // Already authorized - just get new token
+                tokenClient.requestAccessToken({
+                    prompt: ''
+                });
+            }
+        }
+
+        // Grant permission using Google Drive API
+        async function grantPermission(fileId, emailAddress) {
+            debugLog(`Granting permission to ${emailAddress} for file ${fileId}`);
+            
+            const permission = {
+                type: 'user',
+                role: 'writer',
+                emailAddress: emailAddress
+            };
+
+            const response = await gapi.client.drive.permissions.create({
+                fileId: fileId,
+                resource: permission,
+                sendNotificationEmail: false  // Don't spam the service account
+            });
+
+            debugLog(`Drive API response: ${JSON.stringify(response)}`);
+            return response;
+        }
+
+        // Update status display
+        function updateStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="${type}">${message}</div>`;
+            debugLog(message);
+        }
+
+        // Initialize when page loads
+        window.addEventListener('load', () => {
+            debugLog('Page loaded. Initializing Google APIs...');
+            
+            // Check configuration
+            if (CLIENT_ID.includes('YOUR_GOOGLE_CLIENT_ID_HERE')) {
+                updateStatus('❌ Please configure CLIENT_ID in the script', 'error');
+                return;
+            }
+            
+            // Check if APIs are loaded
+            if (typeof gapi !== 'undefined') {
+                gapiLoaded();
+            } else {
+                debugLog('❌ GAPI not loaded');
+            }
+            
+            if (typeof google !== 'undefined') {
+                gisLoaded();
+            } else {
+                debugLog('❌ GIS not loaded');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Permission Helper Prototype</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .dialog {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+        }
+        
+        .dialog-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .icon {
+            width: 24px;
+            height: 24px;
+            background: #ffc107;
+            border-radius: 50%;
+            margin-right: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .dialog-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin: 0;
+        }
+        
+        .dialog-content {
+            margin-bottom: 20px;
+            line-height: 1.5;
+            color: #666;
+        }
+        
+        .step {
+            margin: 16px 0;
+            padding: 12px;
+            background: #f8f9fa;
+            border-left: 3px solid #007cba;
+            border-radius: 4px;
+        }
+        
+        .step-number {
+            font-weight: bold;
+            color: #007cba;
+        }
+        
+        .copy-section {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 8px 0;
+            padding: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        
+        .email-text {
+            flex: 1;
+            background: none;
+            border: none;
+            font-family: monospace;
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .copy-button {
+            background: #007cba;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background-color 0.2s;
+        }
+        
+        .copy-button:hover {
+            background: #005a8a;
+        }
+        
+        .copy-button.copied {
+            background: #28a745;
+        }
+        
+        .share-button {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        
+        .share-button:hover {
+            background: #3367d6;
+        }
+        
+        .progress-section {
+            margin: 20px 0;
+            padding: 16px;
+            background: #e3f2fd;
+            border-radius: 4px;
+            border: 1px solid #90caf9;
+        }
+        
+        .progress-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ccc;
+            border-top: 2px solid #007cba;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .progress-text {
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .success-section {
+            margin: 20px 0;
+            padding: 16px;
+            background: #d4edda;
+            border-radius: 4px;
+            border: 1px solid #c3e6cb;
+            display: none;
+        }
+        
+        .success-icon {
+            color: #28a745;
+            margin-right: 8px;
+        }
+        
+        .error-section {
+            margin: 20px 0;
+            padding: 16px;
+            background: #f8d7da;
+            border-radius: 4px;
+            border: 1px solid #f5c6cb;
+            display: none;
+        }
+        
+        .error-icon {
+            color: #dc3545;
+            margin-right: 8px;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        
+        .button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        
+        .button-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .button-secondary:hover {
+            background: #545b62;
+        }
+        
+        .button-primary {
+            background: #007cba;
+            color: white;
+        }
+        
+        .button-primary:hover {
+            background: #005a8a;
+        }
+        
+        .button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .test-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
+        }
+        
+        .test-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="dialog">
+        <div class="dialog-header">
+            <div class="icon">!</div>
+            <h2 class="dialog-title">Permission Required</h2>
+        </div>
+        
+        <div class="dialog-content">
+            <p>The FIMI Incident Report Generator needs permission to read your Google Sheet. Please follow these steps to grant access:</p>
+        </div>
+        
+        <div class="step">
+            <div class="step-number">Step 1:</div>
+            Copy the service account email address:
+            <div class="copy-section">
+                <input type="text" class="email-text" value="gsheets-service@spheric-baton-459622-f4.iam.gserviceaccount.com" readonly>
+                <button class="copy-button" onclick="copyEmail()">Copy</button>
+            </div>
+        </div>
+        
+        <div class="step">
+            <div class="step-number">Step 2:</div>
+            Click the button below to open your Google Sheet's sharing settings:
+            <br><br>
+            <a href="#" class="share-button" onclick="openSharingDialog()" target="_blank">Open Sharing Settings</a>
+        </div>
+        
+        <div class="step">
+            <div class="step-number">Step 3:</div>
+            In the sharing dialog:
+            <ul style="margin: 8px 0; padding-left: 20px;">
+                <li>Paste the email address from Step 1</li>
+                <li>Set permission to "Editor" or "Viewer" (Editor recommended)</li>
+                <li>Click "Send" or "Share"</li>
+            </ul>
+        </div>
+        
+        <div class="progress-section" id="progressSection" style="display: none;">
+            <div class="progress-header">
+                <div class="spinner"></div>
+                <div class="progress-text">Checking permissions...</div>
+            </div>
+            <div style="font-size: 12px; color: #666; margin-top: 4px;">
+                This may take a few moments after you share the document.
+            </div>
+        </div>
+        
+        <div class="success-section" id="successSection">
+            <div style="display: flex; align-items: center;">
+                <span class="success-icon">✓</span>
+                <strong>Permission granted successfully!</strong>
+            </div>
+            <div style="margin-top: 8px; font-size: 14px;">
+                The service account now has access to your Google Sheet.
+            </div>
+        </div>
+        
+        <div class="error-section" id="errorSection">
+            <div style="display: flex; align-items: center;">
+                <span class="error-icon">✗</span>
+                <strong>Permission check failed</strong>
+            </div>
+            <div style="margin-top: 8px; font-size: 14px;" id="errorMessage">
+                Unable to verify permissions. Please try again.
+            </div>
+        </div>
+        
+        <div class="button-group">
+            <button class="button button-secondary" onclick="closeDialog()">Cancel</button>
+            <button class="button button-primary" onclick="startPermissionCheck()" id="retryButton">Check Permissions</button>
+        </div>
+    </div>
+    
+    <!-- Test Section -->
+    <div class="test-section">
+        <h3>Prototype Testing</h3>
+        <p>Enter a Google Sheets URL to test the sharing URL generation:</p>
+        <input type="text" class="test-input" id="testUrl" placeholder="https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit">
+        <button class="button button-primary" onclick="updateSharingUrl()">Update Sharing URL</button>
+        <div style="margin-top: 10px; font-size: 12px; color: #666;">
+            Current sharing URL: <span id="currentSharingUrl">Not set</span>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentSheetUrl = '';
+        let checkingPermissions = false;
+        let permissionCheckInterval = null;
+        
+        // Extract sheet ID from Google Sheets URL
+        function extractSheetId(url) {
+            if (!url) return null;
+            
+            // Handle various Google Sheets URL formats
+            const patterns = [
+                /\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/,  // Standard format
+                /\/spreadsheets\/u\/\d+\/d\/([a-zA-Z0-9-_]+)/,  // With user prefix
+                /key=([a-zA-Z0-9-_]+)/  // Legacy format
+            ];
+            
+            for (const pattern of patterns) {
+                const match = url.match(pattern);
+                if (match) {
+                    return match[1];
+                }
+            }
+            
+            return null;
+        }
+        
+        // Generate sharing URL for Google Sheets
+        function generateSharingUrl(sheetUrl) {
+            const sheetId = extractSheetId(sheetUrl);
+            if (!sheetId) {
+                console.error('Could not extract sheet ID from URL:', sheetUrl);
+                return '#';
+            }
+            
+            // Generate the sharing dialog URL
+            return `https://docs.google.com/spreadsheets/d/${sheetId}/share`;
+        }
+        
+        // Copy email to clipboard
+        async function copyEmail() {
+            const emailInput = document.querySelector('.email-text');
+            const copyButton = document.querySelector('.copy-button');
+            
+            try {
+                await navigator.clipboard.writeText(emailInput.value);
+                copyButton.textContent = 'Copied!';
+                copyButton.classList.add('copied');
+                
+                setTimeout(() => {
+                    copyButton.textContent = 'Copy';
+                    copyButton.classList.remove('copied');
+                }, 2000);
+                
+                console.log('Email copied to clipboard');
+            } catch (err) {
+                console.error('Failed to copy email:', err);
+                
+                // Fallback: select the text
+                emailInput.select();
+                emailInput.setSelectionRange(0, 99999); // For mobile devices
+                
+                try {
+                    document.execCommand('copy');
+                    copyButton.textContent = 'Copied!';
+                    copyButton.classList.add('copied');
+                    
+                    setTimeout(() => {
+                        copyButton.textContent = 'Copy';
+                        copyButton.classList.remove('copied');
+                    }, 2000);
+                } catch (fallbackErr) {
+                    console.error('Fallback copy also failed:', fallbackErr);
+                    alert('Please manually copy the email address');
+                }
+            }
+        }
+        
+        // Open sharing dialog
+        function openSharingDialog() {
+            if (!currentSheetUrl) {
+                alert('Please set a Google Sheets URL in the test section first');
+                return;
+            }
+            
+            const sharingUrl = generateSharingUrl(currentSheetUrl);
+            if (sharingUrl === '#') {
+                alert('Invalid Google Sheets URL. Please check the URL format.');
+                return;
+            }
+            
+            console.log('Opening sharing dialog:', sharingUrl);
+            window.open(sharingUrl, '_blank', 'width=600,height=400');
+            
+            // Auto-start permission checking after a short delay
+            setTimeout(() => {
+                startPermissionCheck();
+            }, 2000);
+        }
+        
+        // Start checking for permissions
+        function startPermissionCheck() {
+            if (checkingPermissions) return;
+            
+            checkingPermissions = true;
+            
+            // Show progress section
+            document.getElementById('progressSection').style.display = 'block';
+            document.getElementById('successSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'none';
+            document.getElementById('retryButton').disabled = true;
+            
+            console.log('Starting permission check for:', currentSheetUrl);
+            
+            // Simulate permission checking with periodic attempts
+            let attemptCount = 0;
+            const maxAttempts = 30; // Check for up to 2 minutes (30 * 4 seconds)
+            
+            permissionCheckInterval = setInterval(async () => {
+                attemptCount++;
+                console.log(`Permission check attempt ${attemptCount}/${maxAttempts}`);
+                
+                try {
+                    const hasPermission = await checkSheetPermissions(currentSheetUrl);
+                    
+                    if (hasPermission) {
+                        // Success!
+                        clearInterval(permissionCheckInterval);
+                        checkingPermissions = false;
+                        
+                        document.getElementById('progressSection').style.display = 'none';
+                        document.getElementById('successSection').style.display = 'block';
+                        document.getElementById('retryButton').disabled = false;
+                        document.getElementById('retryButton').textContent = 'Try Again';
+                        
+                        console.log('Permission granted successfully!');
+                        return;
+                    }
+                    
+                    if (attemptCount >= maxAttempts) {
+                        throw new Error('Permission check timed out. Please verify the sheet was shared correctly.');
+                    }
+                    
+                } catch (error) {
+                    console.error('Permission check error:', error);
+                    
+                    if (attemptCount >= maxAttempts) {
+                        // Stop checking and show error
+                        clearInterval(permissionCheckInterval);
+                        checkingPermissions = false;
+                        
+                        document.getElementById('progressSection').style.display = 'none';
+                        document.getElementById('errorSection').style.display = 'block';
+                        document.getElementById('errorMessage').textContent = error.message;
+                        document.getElementById('retryButton').disabled = false;
+                        document.getElementById('retryButton').textContent = 'Retry Check';
+                    }
+                }
+            }, 4000); // Check every 4 seconds
+        }
+        
+        // Mock function to check sheet permissions
+        // In real implementation, this would call your backend API
+        async function checkSheetPermissions(sheetUrl) {
+            console.log('Checking permissions for:', sheetUrl);
+            
+            try {
+                // Simulate API call to your backend
+                const encodedUrl = encodeURIComponent(sheetUrl);
+                const response = await fetch(`http://localhost:5239/google-sheets/check-permissions?url=${encodedUrl}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    return result.hasPermission === true;
+                } else if (response.status === 403) {
+                    // Still no permission
+                    return false;
+                } else {
+                    throw new Error(`API call failed: ${response.status} ${response.statusText}`);
+                }
+                
+            } catch (error) {
+                console.log('API not available, simulating permission check...');
+                
+                // For prototype: simulate random success after some attempts
+                const randomSuccess = Math.random() > 0.7; // 30% chance of success each check
+                return randomSuccess;
+            }
+        }
+        
+        // Close dialog
+        function closeDialog() {
+            if (permissionCheckInterval) {
+                clearInterval(permissionCheckInterval);
+            }
+            checkingPermissions = false;
+            
+            // In real implementation, this would close the modal/dialog
+            console.log('Dialog closed');
+            alert('In the real implementation, this dialog would close and return to the main application.');
+        }
+        
+        // Test function to update sharing URL
+        function updateSharingUrl() {
+            const testUrlInput = document.getElementById('testUrl');
+            const newUrl = testUrlInput.value.trim();
+            
+            if (!newUrl) {
+                alert('Please enter a Google Sheets URL');
+                return;
+            }
+            
+            currentSheetUrl = newUrl;
+            const sharingUrl = generateSharingUrl(newUrl);
+            
+            document.getElementById('currentSharingUrl').textContent = sharingUrl;
+            
+            // Update the sharing button
+            const shareButton = document.querySelector('.share-button');
+            shareButton.href = sharingUrl;
+            
+            console.log('Updated sharing URL:', sharingUrl);
+            alert('Sharing URL updated! You can now test the "Open Sharing Settings" button.');
+        }
+        
+        // Initialize with a sample URL for testing
+        window.addEventListener('load', function() {
+            const sampleUrl = 'https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit';
+            document.getElementById('testUrl').value = sampleUrl;
+            updateSharingUrl();
+        });
+    </script>
+</body>
+</html>
