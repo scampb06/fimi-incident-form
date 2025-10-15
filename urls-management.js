@@ -393,14 +393,23 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                 
                 // Open Google Sheets sharing settings for archive
                 function openArchiveSharingSettings(sheetId) {
+                    console.log('openArchiveSharingSettings called with sheetId:', sheetId);
+                    
                     if (!sheetId) {
+                        console.error('No sheetId provided to openArchiveSharingSettings');
                         alert('Unable to extract sheet ID from URL');
                         return;
                     }
                     
                     // Use the sharing-specific URL that opens the sharing dialog directly
                     const sharingUrl = \`https://docs.google.com/spreadsheets/d/\${sheetId}/edit?usp=sharing\`;
+                    console.log('Opening sharing URL:', sharingUrl);
+                    
+                    // Show alert to confirm what URL we're opening
+                    alert('Debug: Opening sharing URL: ' + sharingUrl);
+                    
                     window.open(sharingUrl, '_blank', 'width=1000,height=700');
+                    console.log('window.open called for sharing URL');
                 }
                 
                 // Copy service account email to clipboard for archive
