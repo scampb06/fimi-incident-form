@@ -398,7 +398,8 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                         return;
                     }
                     
-                    const sharingUrl = \`https://docs.google.com/spreadsheets/d/\${sheetId}/edit#gid=0\`;
+                    // Use the sharing-specific URL that opens the sharing dialog directly
+                    const sharingUrl = \`https://docs.google.com/spreadsheets/d/\${sheetId}/edit?usp=sharing\`;
                     window.open(sharingUrl, '_blank', 'width=1000,height=700');
                 }
                 
