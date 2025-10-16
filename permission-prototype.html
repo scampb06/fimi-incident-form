@@ -318,9 +318,34 @@
         <h3>Prototype Testing</h3>
         <p>Enter a Google Sheets URL to test the sharing URL generation:</p>
         <input type="text" class="test-input" id="testUrl" placeholder="https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit">
+        
+        <p style="margin-top: 15px;">Select URL pattern to test:</p>
+        <select id="urlPattern" class="test-input" onchange="updateSharingUrl()">
+            <option value="usp=sharing">?usp=sharing (Original)</option>
+            <option value="share action">#action=share (Fragment)</option>
+            <option value="sharing=true">?sharing=true (Custom param)</option>
+            <option value="usp=share">?usp=share (Short version)</option>
+            <option value="authuser&usp=sharing">?authuser=0&usp=sharing (With auth)</option>
+            <option value="sharedialog=true">?sharedialog=true (Dialog param)</option>
+            <option value="dialog=share">?dialog=share (Dialog action)</option>
+        </select>
+        
         <button class="button button-primary" onclick="updateSharingUrl()">Update Sharing URL</button>
         <div style="margin-top: 10px; font-size: 12px; color: #666;">
             Current sharing URL: <span id="currentSharingUrl">Not set</span>
+        </div>
+        
+        <div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px; font-size: 12px;">
+            <strong>Research Notes:</strong>
+            <ul style="margin: 5px 0; padding-left: 20px;">
+                <li><strong>usp=sharing:</strong> Traditional Google sharing parameter</li>
+                <li><strong>#action=share:</strong> URL fragment approach</li>
+                <li><strong>?sharing=true:</strong> Alternative boolean parameter</li>
+                <li><strong>?usp=share:</strong> Shortened version of usp=sharing</li>
+                <li><strong>?authuser=0&usp=sharing:</strong> With explicit user context</li>
+                <li><strong>?sharedialog=true:</strong> Direct dialog parameter</li>
+                <li><strong>?dialog=share:</strong> Generic dialog parameter</li>
+            </ul>
         </div>
     </div>
 
@@ -359,8 +384,25 @@
                 return '#';
             }
             
-            // Generate the sharing dialog URL using the correct format
-            return `https://docs.google.com/spreadsheets/d/${sheetId}/edit?usp=sharing`;
+            // Try different URL patterns to trigger sharing dialog
+            // Test each one to see which works best
+            const urlPatterns = {
+                'usp=sharing': `https://docs.google.com/spreadsheets/d/${sheetId}/edit?usp=sharing`,
+                'share action': `https://docs.google.com/spreadsheets/d/${sheetId}/edit#action=share`,
+                'sharing=true': `https://docs.google.com/spreadsheets/d/${sheetId}/edit?sharing=true`,
+                'usp=share': `https://docs.google.com/spreadsheets/d/${sheetId}/edit?usp=share`,
+                'authuser&usp=sharing': `https://docs.google.com/spreadsheets/d/${sheetId}/edit?authuser=0&usp=sharing`,
+                'sharedialog=true': `https://docs.google.com/spreadsheets/d/${sheetId}/edit?sharedialog=true`,
+                'dialog=share': `https://docs.google.com/spreadsheets/d/${sheetId}/edit?dialog=share`
+            };
+            
+            // Get selected pattern from dropdown (default to usp=sharing)
+            const selectedPattern = document.getElementById('urlPattern')?.value || 'usp=sharing';
+            
+            const generatedUrl = urlPatterns[selectedPattern] || urlPatterns['usp=sharing'];
+            console.log(`Using URL pattern "${selectedPattern}":`, generatedUrl);
+            
+            return generatedUrl;
         }
         
         // Copy email to clipboard
