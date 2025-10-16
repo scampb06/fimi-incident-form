@@ -161,47 +161,57 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                 Add URLs below under the column headings "URL", "Domain" and "Archive URL". Press Done when you are finished.
             </div>
             
-            <div class="google-sheets-container">
+                    <div class="google-sheets-container">
                 <div class="loading-message" id="loadingMessage">
-                    Loading Google Sheets editor...
+                    <p style="font-size: 18px; margin-bottom: 20px;">Opening Google Sheets in a new tab...</p>
+                    <p style="font-size: 14px; color: #666; margin-bottom: 30px;">Your Google Sheet will open in a new tab where you can edit it normally. The Share button will be fully functional there.</p>
+                    <button onclick="openGoogleSheetsInTab()" style="background: #1a73e8; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 16px; margin-bottom: 20px;">
+                        🔗 Open Google Sheets in New Tab
+                    </button>
+                    <p style="font-size: 14px; color: #666;">After editing your sheet, return to this window and click "Done" to load the updated data.</p>
                 </div>
-                <iframe id="googleSheetsFrame" class="google-sheets-iframe" style="display: none;"></iframe>
-            </div>
-
-            <script>
+            </div>            <script>
                 // Use window property to avoid redeclaration issues
                 window.userGoogleSheetsUrl = '${userProvidedUrl}';
                 
-                // Load the Google Sheets editing URL
-                function loadGoogleSheetsEditor() {
+                // Open Google Sheets in a new tab instead of iframe
+                function openGoogleSheetsInTab() {
                     try {
-                        console.log('Loading user-provided Google Sheets URL:', window.userGoogleSheetsUrl);
+                        console.log('Opening Google Sheets URL in new tab:', window.userGoogleSheetsUrl);
+                        window.open(window.userGoogleSheetsUrl, '_blank');
                         
-                        const iframe = document.getElementById('googleSheetsFrame');
+                        // Update the loading message to confirm action
                         const loadingMessage = document.getElementById('loadingMessage');
-                        
-                        iframe.src = window.userGoogleSheetsUrl;
-                        iframe.style.display = 'block';
-                        loadingMessage.style.display = 'none';
-                        
-                        // Add iframe load event listener to detect issues
-                        iframe.onload = function() {
-                            console.log('Iframe loaded successfully');
-                        };
-                        
-                        iframe.onerror = function() {
-                            console.error('Iframe failed to load');
-                            document.getElementById('loadingMessage').innerHTML = 
-                                'Failed to load Google Sheets. The URL may not allow iframe embedding or may be incorrect.';
-                            document.getElementById('loadingMessage').style.display = 'block';
-                            iframe.style.display = 'none';
-                        };
+                        if (loadingMessage) {
+                            loadingMessage.innerHTML = 
+                                '<p style="font-size: 18px; margin-bottom: 20px; color: #28a745;">✓ Google Sheets opened in new tab!</p>' +
+                                '<p style="font-size: 14px; color: #666; margin-bottom: 20px;">' +
+                                'Your Google Sheet is now open in a new tab where you can:<br>' +
+                                '• Edit your data normally<br>' +
+                                '• Use the Share button (it will be blue and clickable)<br>' +
+                                '• Make any other changes needed' +
+                                '</p>' +
+                                '<p style="font-size: 14px; color: #333; font-weight: bold;">' +
+                                'When you are finished editing, return to this window and click "Done" below to load the updated data.' +
+                                '</p>';
+                        }
                         
                     } catch (error) {
-                        console.error('Error loading Google Sheets editor:', error);
-                        document.getElementById('loadingMessage').innerHTML = 
-                            'Error loading Google Sheets editor: ' + error.message;
+                        console.error('Error opening Google Sheets in new tab:', error);
+                        const loadingMessage = document.getElementById('loadingMessage');
+                        if (loadingMessage) {
+                            loadingMessage.innerHTML = 
+                                'Error opening Google Sheets: ' + error.message;
+                        }
                     }
+                }
+                
+                // Auto-open the Google Sheets tab when the window loads
+                function loadGoogleSheetsEditor() {
+                    // Automatically open in new tab after a short delay
+                    setTimeout(() => {
+                        openGoogleSheetsInTab();
+                    }, 500);
                 }
                 
                 // Handle the Archive button click
