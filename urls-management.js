@@ -536,21 +536,22 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                 // Copy service account email to clipboard for archive
                 function copyArchiveServiceAccountEmail() {
                     const email = 'gsheets-service@spheric-baton-459622-f4.iam.gserviceaccount.com';
+                    const button = event.target; // Get the button that was clicked
                     
                     if (navigator.clipboard && navigator.clipboard.writeText) {
                         navigator.clipboard.writeText(email).then(() => {
-                            showArchiveCopyFeedback();
+                            showArchiveCopyFeedback(button);
                         }).catch(err => {
                             console.error('Failed to copy with Clipboard API:', err);
-                            fallbackArchiveCopyText(email);
+                            fallbackArchiveCopyText(email, button);
                         });
                     } else {
-                        fallbackArchiveCopyText(email);
+                        fallbackArchiveCopyText(email, button);
                     }
                 }
                 
                 // Fallback copy method for archive
-                function fallbackArchiveCopyText(text) {
+                function fallbackArchiveCopyText(text, button) {
                     const textArea = document.createElement('textarea');
                     textArea.value = text;
                     textArea.style.position = 'fixed';
@@ -562,7 +563,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                     try {
                         const successful = document.execCommand('copy');
                         if (successful) {
-                            showArchiveCopyFeedback();
+                            showArchiveCopyFeedback(button);
                         } else {
                             alert('Copy failed. Please manually copy: ' + text);
                         }
@@ -575,8 +576,9 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                 }
                 
                 // Show copy feedback for archive
-                function showArchiveCopyFeedback() {
-                    const button = event.target;
+                function showArchiveCopyFeedback(button) {
+                    if (!button) return; // Safety check
+                    
                     const originalText = button.innerHTML;
                     button.innerHTML = '✅ Copied!';
                     button.style.background = '#28a745';
