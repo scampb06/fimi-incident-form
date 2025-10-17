@@ -211,7 +211,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                         // First, get the count of URLs to estimate time
                         console.log('Getting URL count for time estimation...');
                         
-                        // Clean the URL - remove any fragment identifiers (#gid=0) that can cause issues
+                        // Clean the URL - remove only fragment identifiers (#gid=0) but keep query parameters (?gid=0) that the server might need
                         const cleanUrl = window.userGoogleSheetsUrl.split('#')[0];
                         console.log('Original URL:', window.userGoogleSheetsUrl);
                         console.log('Cleaned URL for API calls:', cleanUrl);
@@ -612,7 +612,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                         statusDiv.style.border = '1px solid #bee5eb';
                         statusDiv.innerHTML = '🔍 Checking permissions and retrying archive...';
                         
-                        // Clean the URL - remove any fragment identifiers (#gid=0) that can cause issues
+                        // Clean the URL - remove only fragment identifiers (#gid=0) but keep query parameters (?gid=0) that the server might need
                         const cleanUrl = googleSheetsUrl.split('#')[0];
                         console.log('Original URL:', googleSheetsUrl);
                         console.log('Cleaned URL:', cleanUrl);
