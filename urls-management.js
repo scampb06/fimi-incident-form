@@ -208,13 +208,30 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                     window.archiveButton = document.querySelector('button[onclick="archiveUnarchiveUrls()"]');
                     
                     try {
-                        // Show loading state
-                        if (window.archiveButton) {
-                            window.archiveButton.disabled = true;
-                            window.archiveButton.textContent = 'Archiving...';
+                        // First, get the count of URLs to estimate time
+                        console.log('Getting URL count for time estimation...');
+                        const countResponse = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/data-for-url?url=\${encodeURIComponent(window.userGoogleSheetsUrl)}\`);
+                        
+                        let estimatedUrls = 0;
+                        if (countResponse.ok) {
+                            const countData = await countResponse.json();
+                            estimatedUrls = countData.count || 0;
+                            console.log('Estimated URLs to process:', estimatedUrls);
                         }
                         
+                        // Show loading state with progress
+                        if (window.archiveButton) {
+                            window.archiveButton.disabled = true;
+                        }
+                        
+                        // Create progress display
+                        showArchiveProgress(estimatedUrls);
+                        
                         console.log('Archiving URLs for:', window.userGoogleSheetsUrl);
+                        
+                        // Start the progress timer
+                        const startTime = Date.now();
+                        const progressTimer = startArchiveProgressTimer(estimatedUrls, startTime);
                         
                         // Call the archive endpoint
                         const response = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/archive-urls?url=\${encodeURIComponent(window.userGoogleSheetsUrl)}\`, {
@@ -224,19 +241,30 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                             }
                         });
                         
+                        // Clear the progress timer
+                        clearInterval(progressTimer);
+                        
+                        // Clear the progress timer
+                        clearInterval(progressTimer);
+                        
                         if (!response.ok) {
                             if (response.status === 403) {
                                 // Handle 403 permission error with guided sharing workflow
                                 console.log('403 Permission error detected during archiving - showing permission helper dialog');
+                                hideArchiveProgress();
                                 showArchivePermissionDialog(window.userGoogleSheetsUrl);
                                 return; // Exit early to show the dialog instead of throwing error
                             } else {
+                                hideArchiveProgress();
                                 throw new Error(\`Archive request failed: \${response.status} \${response.statusText}\`);
                             }
                         }
                         
                         const result = await response.json();
                         console.log('Archive response:', result);
+                        
+                        // Hide progress and show completion
+                        hideArchiveProgress();
                         
                         // Re-enable the button immediately after successful response
                         if (window.archiveButton) {
@@ -248,11 +276,15 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                         const totalRecords = result.totalRecords || 0;
                         const archivedCount = result.archivedCount || 0;
                         const message = result.message || 'Archive operation completed';
+                        const elapsedTime = Math.round((Date.now() - startTime) / 1000);
                         
-                        alert(message + '\\n\\nTotal records processed: ' + totalRecords + '\\nURLs archived: ' + archivedCount);
+                        alert(message + '\\n\\nTotal records processed: ' + totalRecords + '\\nURLs archived: ' + archivedCount + '\\nTime taken: ' + elapsedTime + ' seconds');
                         
                     } catch (error) {
                         console.error('Error archiving URLs:', error);
+                        
+                        // Hide progress on error
+                        hideArchiveProgress();
                         
                         // Re-enable the button immediately after error
                         if (window.archiveButton) {
@@ -263,10 +295,98 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                         alert(\`Error: \${error.message}\`);
                     } finally {
                         // Final safety reset (just in case)
+                        hideArchiveProgress();
                         if (window.archiveButton) {
                             window.archiveButton.disabled = false;
                             window.archiveButton.textContent = 'Archive unarchived URLs';
                         }
+                    }
+                }
+                
+                // Show archive progress with timer
+                function showArchiveProgress(estimatedUrls) {
+                    // Create or update progress display
+                    let progressDiv = document.getElementById('archive-progress-display');
+                    if (!progressDiv) {
+                        progressDiv = document.createElement('div');
+                        progressDiv.id = 'archive-progress-display';
+                        progressDiv.style.cssText = \`
+                            position: fixed;
+                            top: 50%;
+                            left: 50%;
+                            transform: translate(-50%, -50%);
+                            background: white;
+                            border: 2px solid #007cba;
+                            border-radius: 8px;
+                            padding: 30px;
+                            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+                            z-index: 10000;
+                            min-width: 350px;
+                            text-align: center;
+                            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                        \`;
+                        document.body.appendChild(progressDiv);
+                    }
+                    
+                    const estimatedTimeText = estimatedUrls > 0 ? 
+                        \`Estimated: \${Math.round(estimatedUrls * 1.5)} seconds (\${estimatedUrls} URLs × 1.5s each)\` : 
+                        'Calculating estimated time...';
+                    
+                    progressDiv.innerHTML = \`
+                        <div style="margin-bottom: 20px;">
+                            <h3 style="margin: 0 0 15px 0; color: #333; font-size: 20px;">🔄 Archiving URLs</h3>
+                            <div style="font-size: 16px; color: #666; margin-bottom: 10px;">Processing your URLs...</div>
+                            <div style="font-size: 14px; color: #888;">\${estimatedTimeText}</div>
+                        </div>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <div style="width: 100%; height: 6px; background: #e0e0e0; border-radius: 3px; overflow: hidden;">
+                                <div id="archive-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #007cba, #28a745); transition: width 0.3s ease;"></div>
+                            </div>
+                        </div>
+                        
+                        <div id="archive-timer-display" style="font-size: 18px; font-weight: bold; color: #007cba;">
+                            Elapsed: 0s | Remaining: calculating...
+                        </div>
+                        
+                        <div style="margin-top: 20px; font-size: 12px; color: #999;">
+                            This process archives each URL individually for better reliability
+                        </div>
+                    \`;
+                }
+                
+                // Start the progress timer
+                function startArchiveProgressTimer(estimatedUrls, startTime) {
+                    const averageTimePerUrl = 1.5; // seconds
+                    const estimatedTotalTime = estimatedUrls * averageTimePerUrl;
+                    
+                    return setInterval(() => {
+                        const elapsedSeconds = Math.round((Date.now() - startTime) / 1000);
+                        const progressPercent = Math.min((elapsedSeconds / estimatedTotalTime) * 100, 95); // Cap at 95% until complete
+                        const remainingSeconds = Math.max(estimatedTotalTime - elapsedSeconds, 0);
+                        
+                        // Update progress bar
+                        const progressBar = document.getElementById('archive-progress-bar');
+                        if (progressBar) {
+                            progressBar.style.width = progressPercent + '%';
+                        }
+                        
+                        // Update timer display
+                        const timerDisplay = document.getElementById('archive-timer-display');
+                        if (timerDisplay) {
+                            const remainingText = remainingSeconds > 0 ? 
+                                \`\${Math.round(remainingSeconds)}s remaining\` : 
+                                'Almost done...';
+                            timerDisplay.textContent = \`Elapsed: \${elapsedSeconds}s | \${remainingText}\`;
+                        }
+                    }, 1000);
+                }
+                
+                // Hide archive progress
+                function hideArchiveProgress() {
+                    const progressDiv = document.getElementById('archive-progress-display');
+                    if (progressDiv) {
+                        progressDiv.remove();
                     }
                 }
                 
