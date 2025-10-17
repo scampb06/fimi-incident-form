@@ -240,7 +240,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                         const progressTimer = startArchiveProgressTimer(estimatedUrls, startTime);
                         
                         // Call the archive endpoint with cleaned URL
-                        const response = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}\`, {
+                        const response = await fetch(\`http://localhost:5239/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}\`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
@@ -618,7 +618,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                         console.log('Cleaned URL:', cleanUrl);
                         
                         // Call the archive endpoint again with cleaned URL
-                        const response = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}\`, {
+                        const response = await fetch(\`http://localhost:5239/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}\`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
