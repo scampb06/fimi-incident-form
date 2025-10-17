@@ -432,16 +432,33 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                                 <button onclick="closeArchivePermissionDialog()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">&times;</button>
                             </div>
                             
-                            <div style="background: #fff3cd; border: 1px solid #ffeeba; border-radius: 6px; padding: 15px; margin-bottom: 20px;">
+                            <div style="background: #fff3cd; border: 1px solid #ffeeba; border-radius: 6px; padding: 15px; margin-bottom: 25px;">
                                 <p style="margin: 0; color: #856404;">
                                     <strong>⚠️ Archive Access Denied:</strong> The service needs write permission to update your Google Sheet with archive URLs.
                                 </p>
                             </div>
 
                             <div style="margin-bottom: 25px;">
-                                <h3 style="color: #333; margin-bottom: 15px;">🔗 Step 1: Share your Google Sheet with write access</h3>
+                                <h3 style="color: #333; margin-bottom: 15px;">� Step 1: Copy the service account email</h3>
                                 <p style="margin-bottom: 15px; color: #666; line-height: 1.5;">
-                                    Click the button below to open the sharing settings for your Google Sheet:
+                                    First, copy this service account email to your clipboard:
+                                </p>
+                                
+                                <div style="background: #f8f9fa; border-radius: 6px; padding: 15px; margin-bottom: 15px; text-align: center;">
+                                    <p style="margin: 0 0 15px 0; font-family: monospace; background: #e9ecef; padding: 10px; border-radius: 4px; font-size: 14px; word-break: break-all;">
+                                        gsheets-service@spheric-baton-459622-f4.iam.gserviceaccount.com
+                                    </p>
+                                    <button onclick="copyArchiveServiceAccountEmail()" 
+                                            style="background: #28a745; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-size: 16px; display: flex; align-items: center; gap: 8px; margin: 0 auto;">
+                                        📋 Copy Service Account Email
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div style="margin-bottom: 25px;">
+                                <h3 style="color: #333; margin-bottom: 15px;">�🔗 Step 2: Share your Google Sheet with write access</h3>
+                                <p style="margin-bottom: 15px; color: #666; line-height: 1.5;">
+                                    Now open the sharing settings for your Google Sheet and add the service account:
                                 </p>
                                 
                                 <button onclick="openArchiveSharingSettings('\${sheetId}')" 
@@ -453,20 +470,15 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                                     <p style="margin: 0 0 10px 0; font-weight: bold; color: #333;">In the sharing dialog:</p>
                                     <ol style="margin: 0; padding-left: 20px; color: #666; line-height: 1.6;">
                                         <li>Click "Add people and groups"</li>
-                                        <li>Copy and paste this email: <strong style="background: #e9ecef; padding: 2px 6px; border-radius: 3px; font-family: monospace;">gsheets-service@spheric-baton-459622-f4.iam.gserviceaccount.com</strong></li>
+                                        <li>Paste the copied service account email</li>
                                         <li>Set permission to <strong>"Editor"</strong> (not Viewer)</li>
                                         <li>Click "Send" or "Share"</li>
                                     </ol>
                                 </div>
-                                
-                                <button onclick="copyArchiveServiceAccountEmail()" 
-                                        style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px; margin: 0 auto;">
-                                    📋 Copy Service Account Email
-                                </button>
                             </div>
 
                             <div style="margin-bottom: 25px;">
-                                <h3 style="color: #333; margin-bottom: 15px;">✅ Step 2: Retry archiving</h3>
+                                <h3 style="color: #333; margin-bottom: 15px;">✅ Step 3: Retry archiving</h3>
                                 <p style="margin-bottom: 15px; color: #666; line-height: 1.5;">
                                     After sharing the sheet with Editor permissions, click the button below to retry archiving:
                                 </p>
@@ -481,7 +493,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
 
                             <div style="border-top: 1px solid #dee2e6; padding-top: 20px;">
                                 <p style="margin: 0; color: #666; font-size: 14px; text-align: center;">
-                                    Need help? This process grants our service account write access to your Google Sheet so we can add archive URLs to your data.
+                                    💡 <strong>Why do we need this?</strong> Our service account needs write access to add archive URLs to your Google Sheet automatically.
                                 </p>
                             </div>
                         </div>
