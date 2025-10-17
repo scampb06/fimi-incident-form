@@ -210,7 +210,13 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                     try {
                         // First, get the count of URLs to estimate time
                         console.log('Getting URL count for time estimation...');
-                        const countResponse = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/data-for-url?url=\${encodeURIComponent(window.userGoogleSheetsUrl)}\`);
+                        
+                        // Clean the URL - remove any fragment identifiers (#gid=0) that can cause issues
+                        const cleanUrl = window.userGoogleSheetsUrl.split('#')[0];
+                        console.log('Original URL:', window.userGoogleSheetsUrl);
+                        console.log('Cleaned URL for API calls:', cleanUrl);
+                        
+                        const countResponse = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/data-for-url?url=\${encodeURIComponent(cleanUrl)}\`);
                         
                         let estimatedUrls = 0;
                         if (countResponse.ok) {
@@ -227,14 +233,14 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                         // Create progress display
                         showArchiveProgress(estimatedUrls);
                         
-                        console.log('Archiving URLs for:', window.userGoogleSheetsUrl);
+                        console.log('Archiving URLs for:', cleanUrl);
                         
                         // Start the progress timer
                         const startTime = Date.now();
                         const progressTimer = startArchiveProgressTimer(estimatedUrls, startTime);
                         
-                        // Call the archive endpoint
-                        const response = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/archive-urls?url=\${encodeURIComponent(window.userGoogleSheetsUrl)}\`, {
+                        // Call the archive endpoint with cleaned URL
+                        const response = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}\`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
@@ -606,8 +612,13 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                         statusDiv.style.border = '1px solid #bee5eb';
                         statusDiv.innerHTML = '🔍 Checking permissions and retrying archive...';
                         
-                        // Call the archive endpoint again
-                        const response = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/archive-urls?url=\${encodeURIComponent(googleSheetsUrl)}\`, {
+                        // Clean the URL - remove any fragment identifiers (#gid=0) that can cause issues
+                        const cleanUrl = googleSheetsUrl.split('#')[0];
+                        console.log('Original URL:', googleSheetsUrl);
+                        console.log('Cleaned URL:', cleanUrl);
+                        
+                        // Call the archive endpoint again with cleaned URL
+                        const response = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}\`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
