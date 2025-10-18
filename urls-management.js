@@ -223,15 +223,23 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                         console.log('Checking service account permissions...');
                         const permissionResponse = await fetch(\`http://localhost:5239/google-sheets/check-permissions?url=\${encodeURIComponent(cleanUrl)}&checkWrite=true\`);
                         
-                        if (!permissionResponse.ok) {
+                        let hasPermission = false;
+                        
+                        if (permissionResponse.ok) {
+                            const permissionData = await permissionResponse.json();
+                            console.log('Permission check response:', permissionData);
+                            hasPermission = permissionData.hasPermission === true;
+                        } else if (permissionResponse.status === 403) {
+                            // 403 on permission check means no access to sheet - this is expected when sheet not shared
+                            console.log('Permission check returned 403 - sheet not shared with service account');
+                            hasPermission = false;
+                        } else {
+                            // Other errors (500, 404, etc.) are unexpected
                             throw new Error(\`Permission check failed: \${permissionResponse.status} \${permissionResponse.statusText}\`);
                         }
                         
-                        const permissionData = await permissionResponse.json();
-                        console.log('Permission check response:', permissionData);
-                        
                         // If no write permission, show the permission dialog immediately
-                        if (!permissionData.hasPermission) {
+                        if (!hasPermission) {
                             console.log('No write permission detected - showing permission helper dialog');
                             showArchivePermissionDialog(window.userGoogleSheetsUrl);
                             return; // Exit early to show the dialog
@@ -636,15 +644,23 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                         // Step 1: Check permissions first
                         const permissionResponse = await fetch(\`http://localhost:5239/google-sheets/check-permissions?url=\${encodeURIComponent(cleanUrl)}&checkWrite=true\`);
                         
-                        if (!permissionResponse.ok) {
+                        let hasPermission = false;
+                        
+                        if (permissionResponse.ok) {
+                            const permissionData = await permissionResponse.json();
+                            console.log('Permission check response:', permissionData);
+                            hasPermission = permissionData.hasPermission === true;
+                        } else if (permissionResponse.status === 403) {
+                            // 403 on permission check means no access to sheet - still no permission granted
+                            console.log('Permission check still returns 403 - sheet still not shared with service account');
+                            hasPermission = false;
+                        } else {
+                            // Other errors (500, 404, etc.) are unexpected
                             throw new Error(\`Permission check failed: \${permissionResponse.status} \${permissionResponse.statusText}\`);
                         }
                         
-                        const permissionData = await permissionResponse.json();
-                        console.log('Permission check response:', permissionData);
-                        
                         // If still no write permission, show error
-                        if (!permissionData.hasPermission) {
+                        if (!hasPermission) {
                             statusDiv.style.background = '#f8d7da';
                             statusDiv.style.color = '#721c24';
                             statusDiv.style.border = '1px solid #f5c6cb';
