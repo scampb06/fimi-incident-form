@@ -668,9 +668,28 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                             return;
                         }
                         
-                        // Step 2: Permissions confirmed, proceed with archiving
-                        button.innerHTML = '🔄 Archiving URLs...';
-                        statusDiv.innerHTML = '✅ Permissions confirmed! Starting archive process...';
+                        // Step 2: Permissions confirmed! Close dialog and start full archive process
+                        console.log('Permissions confirmed! Closing dialog and starting archive with progress timer...');
+                        
+                        // Close the permission dialog immediately
+                        closeArchivePermissionDialog();
+                        
+                        // Get URL count for time estimation
+                        const countResponse = await fetch(\`http://localhost:5239/google-sheets/data-for-url?url=\${encodeURIComponent(cleanUrl)}\`);
+                        
+                        let estimatedUrls = 0;
+                        if (countResponse.ok) {
+                            const countData = await countResponse.json();
+                            estimatedUrls = countData.count || 0;
+                            console.log('Estimated URLs to process:', estimatedUrls);
+                        }
+                        
+                        // Show progress display with timer
+                        showArchiveProgress(estimatedUrls);
+                        
+                        // Start the progress timer
+                        const startTime = Date.now();
+                        const progressTimer = startArchiveProgressTimer(estimatedUrls, startTime);
                         
                         // Call the archive endpoint with cleaned URL
                         const response = await fetch(\`http://localhost:5239/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}\`, {
@@ -680,31 +699,26 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                             }
                         });
                         
+                        // Clear the progress timer
+                        clearInterval(progressTimer);
+                        
                         if (response.ok) {
                             const result = await response.json();
                             
-                            // Success!
-                            statusDiv.style.background = '#d4edda';
-                            statusDiv.style.color = '#155724';
-                            statusDiv.style.border = '1px solid #c3e6cb';
+                            // Success! Hide progress and show completion
+                            hideArchiveProgress();
                             
                             const totalRecords = result.totalRecords || 0;
                             const archivedCount = result.archivedCount || 0;
                             const message = result.message || 'Archive operation completed';
+                            const elapsedTime = Math.round((Date.now() - startTime) / 1000);
                             
-                            statusDiv.innerHTML = \`✅ Success! \${message}. Total records: \${totalRecords}, URLs archived: \${archivedCount}\`;
-                            
-                            // Close the permission dialog after success
-                            setTimeout(() => {
-                                closeArchivePermissionDialog();
-                            }, 3000);
+                            alert(message + '\\n\\nTotal records processed: ' + totalRecords + '\\nURLs archived: ' + archivedCount + '\\nTime taken: ' + elapsedTime + ' seconds');
                             
                         } else {
                             // Archive failed for other reasons
-                            statusDiv.style.background = '#f8d7da';
-                            statusDiv.style.color = '#721c24';
-                            statusDiv.style.border = '1px solid #f5c6cb';
-                            statusDiv.innerHTML = \`❌ Archive failed: \${response.status} \${response.statusText}\`;
+                            hideArchiveProgress();
+                            throw new Error(\`Archive request failed: \${response.status} \${response.statusText}\`);
                         }
                         
                     } catch (error) {
