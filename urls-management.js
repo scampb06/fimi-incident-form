@@ -208,15 +208,42 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                     window.archiveButton = document.querySelector('button[onclick="archiveUnarchiveUrls()"]');
                     
                     try {
-                        // First, get the count of URLs to estimate time
-                        console.log('Getting URL count for time estimation...');
-                        
                         // Clean the URL - remove only fragment identifiers (#gid=0) but keep query parameters (?gid=0) that the server might need
                         const cleanUrl = window.userGoogleSheetsUrl.split('#')[0];
                         console.log('Original URL:', window.userGoogleSheetsUrl);
                         console.log('Cleaned URL for API calls:', cleanUrl);
                         
-                        const countResponse = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/data-for-url?url=\${encodeURIComponent(cleanUrl)}\`);
+                        // Disable button and show checking status
+                        if (window.archiveButton) {
+                            window.archiveButton.disabled = true;
+                            window.archiveButton.textContent = 'Checking permissions...';
+                        }
+                        
+                        // Step 1: Check permissions first
+                        console.log('Checking service account permissions...');
+                        const permissionResponse = await fetch(\`http://localhost:5239/google-sheets/check-permissions?url=\${encodeURIComponent(cleanUrl)}&checkWrite=true\`);
+                        
+                        if (!permissionResponse.ok) {
+                            throw new Error(\`Permission check failed: \${permissionResponse.status} \${permissionResponse.statusText}\`);
+                        }
+                        
+                        const permissionData = await permissionResponse.json();
+                        console.log('Permission check response:', permissionData);
+                        
+                        // If no write permission, show the permission dialog immediately
+                        if (!permissionData.hasPermission) {
+                            console.log('No write permission detected - showing permission helper dialog');
+                            showArchivePermissionDialog(window.userGoogleSheetsUrl);
+                            return; // Exit early to show the dialog
+                        }
+                        
+                        // Step 2: Get URL count for time estimation (only if we have permission)
+                        console.log('Permission confirmed! Getting URL count for time estimation...');
+                        if (window.archiveButton) {
+                            window.archiveButton.textContent = 'Getting URL count...';
+                        }
+                        
+                        const countResponse = await fetch(\`http://localhost:5239/google-sheets/data-for-url?url=\${encodeURIComponent(cleanUrl)}\`);
                         
                         let estimatedUrls = 0;
                         if (countResponse.ok) {
@@ -225,9 +252,9 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                             console.log('Estimated URLs to process:', estimatedUrls);
                         }
                         
-                        // Show loading state with progress
+                        // Step 3: Show progress and start archiving (only if we have permission)
                         if (window.archiveButton) {
-                            window.archiveButton.disabled = true;
+                            window.archiveButton.textContent = 'Archiving URLs...';
                         }
                         
                         // Create progress display
@@ -250,20 +277,9 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                         // Clear the progress timer
                         clearInterval(progressTimer);
                         
-                        // Clear the progress timer
-                        clearInterval(progressTimer);
-                        
                         if (!response.ok) {
-                            if (response.status === 403) {
-                                // Handle 403 permission error with guided sharing workflow
-                                console.log('403 Permission error detected during archiving - showing permission helper dialog');
-                                hideArchiveProgress();
-                                showArchivePermissionDialog(window.userGoogleSheetsUrl);
-                                return; // Exit early to show the dialog instead of throwing error
-                            } else {
-                                hideArchiveProgress();
-                                throw new Error(\`Archive request failed: \${response.status} \${response.statusText}\`);
-                            }
+                            hideArchiveProgress();
+                            throw new Error(\`Archive request failed: \${response.status} \${response.statusText}\`);
                         }
                         
                         const result = await response.json();
@@ -287,7 +303,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                         alert(message + '\\n\\nTotal records processed: ' + totalRecords + '\\nURLs archived: ' + archivedCount + '\\nTime taken: ' + elapsedTime + ' seconds');
                         
                     } catch (error) {
-                        console.error('Error archiving URLs:', error);
+                        console.error('Error during archive process:', error);
                         
                         // Hide progress on error
                         hideArchiveProgress();
@@ -603,21 +619,44 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                     try {
                         // Update button state
                         button.disabled = true;
-                        button.innerHTML = '🔄 Testing and archiving...';
+                        button.innerHTML = '🔄 Checking permissions...';
                         
                         // Show checking status
                         statusDiv.style.display = 'block';
                         statusDiv.style.background = '#d1ecf1';
                         statusDiv.style.color = '#0c5460';
                         statusDiv.style.border = '1px solid #bee5eb';
-                        statusDiv.innerHTML = '🔍 Checking permissions and retrying archive...';
+                        statusDiv.innerHTML = '🔍 Checking if permissions were granted...';
                         
                         // Clean the URL - remove only fragment identifiers (#gid=0) but keep query parameters (?gid=0) that the server might need
                         const cleanUrl = googleSheetsUrl.split('#')[0];
                         console.log('Original URL:', googleSheetsUrl);
                         console.log('Cleaned URL:', cleanUrl);
                         
-                        // Call the archive endpoint again with cleaned URL
+                        // Step 1: Check permissions first
+                        const permissionResponse = await fetch(\`http://localhost:5239/google-sheets/check-permissions?url=\${encodeURIComponent(cleanUrl)}&checkWrite=true\`);
+                        
+                        if (!permissionResponse.ok) {
+                            throw new Error(\`Permission check failed: \${permissionResponse.status} \${permissionResponse.statusText}\`);
+                        }
+                        
+                        const permissionData = await permissionResponse.json();
+                        console.log('Permission check response:', permissionData);
+                        
+                        // If still no write permission, show error
+                        if (!permissionData.hasPermission) {
+                            statusDiv.style.background = '#f8d7da';
+                            statusDiv.style.color = '#721c24';
+                            statusDiv.style.border = '1px solid #f5c6cb';
+                            statusDiv.innerHTML = '❌ Still no write access. Please make sure you shared the sheet with Editor permissions and try again.';
+                            return;
+                        }
+                        
+                        // Step 2: Permissions confirmed, proceed with archiving
+                        button.innerHTML = '🔄 Archiving URLs...';
+                        statusDiv.innerHTML = '✅ Permissions confirmed! Starting archive process...';
+                        
+                        // Call the archive endpoint with cleaned URL
                         const response = await fetch(\`http://localhost:5239/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}\`, {
                             method: 'POST',
                             headers: {
@@ -644,14 +683,8 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                                 closeArchivePermissionDialog();
                             }, 3000);
                             
-                        } else if (response.status === 403) {
-                            // Still no permission
-                            statusDiv.style.background = '#f8d7da';
-                            statusDiv.style.color = '#721c24';
-                            statusDiv.style.border = '1px solid #f5c6cb';
-                            statusDiv.innerHTML = '❌ Still no write access. Please make sure you shared the sheet with Editor permissions.';
                         } else {
-                            // Other error
+                            // Archive failed for other reasons
                             statusDiv.style.background = '#f8d7da';
                             statusDiv.style.color = '#721c24';
                             statusDiv.style.border = '1px solid #f5c6cb';
