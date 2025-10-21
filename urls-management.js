@@ -221,7 +221,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                         
                         // Step 1: Check permissions first
                         console.log('Checking service account permissions...');
-                        const permissionResponse = await fetch(\`http://localhost:5239/google-sheets/check-permissions?url=\${encodeURIComponent(cleanUrl)}&checkWrite=true\`);
+                        const permissionResponse = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/check-permissions?url=\${encodeURIComponent(cleanUrl)}&checkWrite=true\`);
                         
                         let hasPermission = false;
                         
@@ -251,7 +251,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                             window.archiveButton.textContent = 'Getting URL count...';
                         }
                         
-                        const countResponse = await fetch(\`http://localhost:5239/google-sheets/data-for-url?url=\${encodeURIComponent(cleanUrl)}\`);
+                        const countResponse = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/data-for-url?url=\${encodeURIComponent(cleanUrl)}\`);
                         
                         let estimatedUrls = 0;
                         if (countResponse.ok) {
@@ -275,7 +275,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                         const progressTimer = startArchiveProgressTimer(estimatedUrls, startTime);
                         
                         // Call the archive endpoint with cleaned URL
-                        const response = await fetch(\`http://localhost:5239/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}\`, {
+                        const response = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}\`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
@@ -642,7 +642,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                         console.log('Cleaned URL:', cleanUrl);
                         
                         // Step 1: Check permissions first
-                        const permissionResponse = await fetch(\`http://localhost:5239/google-sheets/check-permissions?url=\${encodeURIComponent(cleanUrl)}&checkWrite=true\`);
+                        const permissionResponse = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/check-permissions?url=\${encodeURIComponent(cleanUrl)}&checkWrite=true\`);
                         
                         let hasPermission = false;
                         
@@ -675,7 +675,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                         closeArchivePermissionDialog();
                         
                         // Get URL count for time estimation
-                        const countResponse = await fetch(\`http://localhost:5239/google-sheets/data-for-url?url=\${encodeURIComponent(cleanUrl)}\`);
+                        const countResponse = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/data-for-url?url=\${encodeURIComponent(cleanUrl)}\`);
                         
                         let estimatedUrls = 0;
                         if (countResponse.ok) {
@@ -692,7 +692,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                         const progressTimer = startArchiveProgressTimer(estimatedUrls, startTime);
                         
                         // Call the archive endpoint with cleaned URL
-                        const response = await fetch(\`http://localhost:5239/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}\`, {
+                        const response = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}\`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
