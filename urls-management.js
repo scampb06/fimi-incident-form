@@ -359,7 +359,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                     }
                     
                     const estimatedTimeText = estimatedUrls > 0 ? 
-                        \`Estimated: \${Math.round(estimatedUrls * 1.5)} seconds (\${estimatedUrls} URLs × 1.5s each)\` : 
+                        \`Estimated: \${Math.round(estimatedUrls * 2)} seconds (\${estimatedUrls} URLs × 2s each)\` : 
                         'Calculating estimated time...';
                     
                     progressDiv.innerHTML = \`
@@ -387,7 +387,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                 
                 // Start the progress timer
                 function startArchiveProgressTimer(estimatedUrls, startTime) {
-                    const averageTimePerUrl = 1.5; // seconds
+                    const averageTimePerUrl = 2; // seconds
                     const estimatedTotalTime = estimatedUrls * averageTimePerUrl;
                     
                     return setInterval(() => {
