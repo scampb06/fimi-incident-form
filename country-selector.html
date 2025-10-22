@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Country Selector</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            box-sizing: border-box;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        
+        .selected {
+            background-color: #e8f5e8 !important;
+            border-color: #28a745 !important;
+        }
+        
+        .btn {
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 15px;
+            margin-right: 10px;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        
+        .select-btn {
+            background: #28a745;
+            color: white;
+        }
+        
+        .select-btn:hover {
+            background: #218838;
+        }
+        
+        .select-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .clear-btn {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .clear-btn:hover {
+            background: #c82333;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 15px;
+        }
+        
+        .info {
+            background: #e8f4f8;
+            border: 1px solid #bee5eb;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            margin-top: 20px;
+        }
+        
+        /* Style for datalist dropdown appearance */
+        datalist {
+            position: absolute;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Country Selector</h1>
+        
+        <form id="countryForm">
+            <div class="form-group">
+                <label for="countryCode">Country Code:</label>
+                <input 
+                    type="text" 
+                    id="countryCode" 
+                    name="countryCode" 
+                    list="countryCodeList"
+                    placeholder="Start typing country code (e.g., US, GB, FR)..."
+                    autocomplete="off"
+                >
+                <datalist id="countryCodeList">
+                    <!-- Options will be populated dynamically -->
+                </datalist>
+            </div>
+            
+            <div class="form-group">
+                <label for="countryName">Country Name:</label>
+                <input 
+                    type="text" 
+                    id="countryName" 
+                    name="countryName" 
+                    list="countryNameList"
+                    placeholder="Start typing country name (e.g., United States, United Kingdom)..."
+                    autocomplete="off"
+                >
+                <datalist id="countryNameList">
+                    <!-- Options will be populated dynamically -->
+                </datalist>
+            </div>
+            
+            <div class="button-group">
+                <button type="submit" class="btn select-btn" id="selectBtn" disabled>Select Country</button>
+                <button type="button" class="btn clear-btn" onclick="clearForm()">Clear Form</button>
+            </div>
+        </form>
+        
+        <div id="status" class="loading">Loading countries...</div>
+    </div>
+
+    <script>
+        let countries = [];
+        let countryCodeMap = new Map(); // Map code to country object
+        let countryNameMap = new Map(); // Map name to country object
+        
+        // Load countries from JSON file
+        async function loadCountries() {
+            try {
+                const response = await fetch('countries.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                countries = await response.json();
+                
+                // Create lookup maps
+                countries.forEach(country => {
+                    countryCodeMap.set(country.id, country);
+                    countryNameMap.set(country.name, country);
+                });
+                
+                // Populate datalists
+                populateDataLists();
+                
+                document.getElementById('status').innerHTML = 
+                    `<div class="info">✓ Loaded ${countries.length} countries. Start typing in either field to search.</div>`;
+                
+            } catch (error) {
+                console.error('Error loading countries:', error);
+                document.getElementById('status').innerHTML = 
+                    `<div class="error">❌ Error loading countries: ${error.message}<br><br>
+                    Make sure 'countries.json' exists in the same directory as this HTML file.<br>
+                    You can generate it using the convert_countries_to_json.py script.</div>`;
+            }
+        }
+        
+        // Populate datalist elements with all countries
+        function populateDataLists() {
+            const codeDatalist = document.getElementById('countryCodeList');
+            const nameDatalist = document.getElementById('countryNameList');
+            
+            // Use DocumentFragment for better performance
+            const codeFragment = document.createDocumentFragment();
+            const nameFragment = document.createDocumentFragment();
+            
+            countries.forEach(country => {
+                // Create option for code datalist
+                const codeOption = document.createElement('option');
+                codeOption.value = country.id;
+                codeOption.textContent = `${country.id} - ${country.name}`;
+                codeFragment.appendChild(codeOption);
+                
+                // Create option for name datalist
+                const nameOption = document.createElement('option');
+                nameOption.value = country.name;
+                nameOption.textContent = `${country.name} (${country.id})`;
+                nameFragment.appendChild(nameOption);
+            });
+            
+            // Append fragments to datalists
+            codeDatalist.appendChild(codeFragment);
+            nameDatalist.appendChild(nameFragment);
+        }
+        
+        // Handle country code input changes
+        document.getElementById('countryCode').addEventListener('input', function(e) {
+            const selectedCode = e.target.value.trim().toUpperCase();
+            const countryNameField = document.getElementById('countryName');
+            
+            // Clear previous selection styling
+            e.target.classList.remove('selected');
+            countryNameField.classList.remove('selected');
+            
+            if (selectedCode && countryCodeMap.has(selectedCode)) {
+                const country = countryCodeMap.get(selectedCode);
+                countryNameField.value = country.name;
+                
+                // Add selection styling
+                e.target.classList.add('selected');
+                countryNameField.classList.add('selected');
+                
+                // Update status
+                document.getElementById('status').innerHTML = 
+                    `<div class="info">✓ Selected: <strong>${country.id}</strong> - ${country.name}</div>`;
+            } else {
+                // Clear name field if code doesn't match exactly
+                if (selectedCode && !isPartialMatch(selectedCode, 'code')) {
+                    countryNameField.value = '';
+                }
+            }
+            
+            // Update button state
+            updateSelectButtonState();
+        });
+        
+        // Handle country name input changes
+        document.getElementById('countryName').addEventListener('input', function(e) {
+            const selectedName = e.target.value.trim();
+            const countryCodeField = document.getElementById('countryCode');
+            
+            // Clear previous selection styling
+            e.target.classList.remove('selected');
+            countryCodeField.classList.remove('selected');
+            
+            if (selectedName && countryNameMap.has(selectedName)) {
+                const country = countryNameMap.get(selectedName);
+                countryCodeField.value = country.id;
+                
+                // Add selection styling
+                e.target.classList.add('selected');
+                countryCodeField.classList.add('selected');
+                
+                // Update status
+                document.getElementById('status').innerHTML = 
+                    `<div class="info">✓ Selected: <strong>${country.id}</strong> - ${country.name}</div>`;
+            } else {
+                // Clear code field if name doesn't match exactly
+                if (selectedName && !isPartialMatch(selectedName, 'name')) {
+                    countryCodeField.value = '';
+                }
+            }
+            
+            // Update button state
+            updateSelectButtonState();
+        });
+        
+        // Check if input is a partial match (user is still typing)
+        function isPartialMatch(input, type) {
+            if (type === 'code') {
+                return countries.some(c => c.id.toLowerCase().startsWith(input.toLowerCase()));
+            } else {
+                return countries.some(c => c.name.toLowerCase().includes(input.toLowerCase()));
+            }
+        }
+        
+        // Update Select button state based on current selection
+        function updateSelectButtonState() {
+            const selectBtn = document.getElementById('selectBtn');
+            const code = document.getElementById('countryCode').value.trim().toUpperCase();
+            const name = document.getElementById('countryName').value.trim();
+            
+            // Enable button only if both code and name are filled and match a valid country
+            const isValidSelection = code && name && countryCodeMap.has(code) && countryCodeMap.get(code).name === name;
+            
+            selectBtn.disabled = !isValidSelection;
+            selectBtn.textContent = isValidSelection ? 'Select Country' : 'Select a country first';
+        }
+        
+        // Clear form function
+        function clearForm() {
+            document.getElementById('countryCode').value = '';
+            document.getElementById('countryName').value = '';
+            document.getElementById('countryCode').classList.remove('selected');
+            document.getElementById('countryName').classList.remove('selected');
+            document.getElementById('status').innerHTML = 
+                `<div class="info">Form cleared. Start typing in either field to search countries.</div>`;
+            
+            // Update button state
+            updateSelectButtonState();
+        }
+        
+        // Handle form submission (send selection to parent window)
+        document.getElementById('countryForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const code = document.getElementById('countryCode').value.trim().toUpperCase();
+            const name = document.getElementById('countryName').value.trim();
+            
+            if (code && name && countryCodeMap.has(code)) {
+                const country = countryCodeMap.get(code);
+                
+                // Send selection to parent window
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({
+                        type: 'countrySelected',
+                        id: country.id,
+                        name: country.name
+                    }, '*');
+                } else {
+                    // Fallback for when not in iframe
+                    alert(`Selected Country:\nCode: ${country.id}\nName: ${country.name}`);
+                }
+            } else {
+                alert('Please select a valid country from the dropdown.');
+            }
+        });
+        
+        // Load countries when page loads
+        document.addEventListener('DOMContentLoaded', loadCountries);
+    </script>
+</body>
+</html>
