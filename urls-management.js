@@ -152,6 +152,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
             <div class="header">
                 <h1 class="title">Add Trusted URLs</h1>
                 <div style="display: flex; gap: 10px;">
+                    <button class="done-button" onclick="extractUnspecifiedDomains()" style="background: #28a745;">Extract unspecified domains</button>
                     <button class="done-button" onclick="archiveUnarchiveUrls()" style="background: #28a745;">Archive unarchived URLs</button>
                     <button class="done-button" onclick="handleDoneClick()">Done</button>
                 </div>
@@ -329,6 +330,131 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                         if (window.archiveButton) {
                             window.archiveButton.disabled = false;
                             window.archiveButton.textContent = 'Archive unarchived URLs';
+                        }
+                    }
+                }
+                
+                // Handle the Extract Unspecified Domains button click
+                async function extractUnspecifiedDomains() {
+                    // Get the button element once and store in window property to avoid redeclaration
+                    window.extractDomainsButton = document.querySelector('button[onclick="extractUnspecifiedDomains()"]');
+                    
+                    try {
+                        // Clean the URL - remove only fragment identifiers (#gid=0) but keep query parameters (?gid=0) that the server might need
+                        const cleanUrl = window.userGoogleSheetsUrl.split('#')[0];
+                        console.log('Original URL:', window.userGoogleSheetsUrl);
+                        console.log('Cleaned URL for API calls:', cleanUrl);
+                        
+                        // Disable button and show checking status
+                        if (window.extractDomainsButton) {
+                            window.extractDomainsButton.disabled = true;
+                            window.extractDomainsButton.textContent = 'Checking permissions...';
+                        }
+                        
+                        // Step 1: Check permissions first
+                        console.log('Checking service account permissions...');
+                        const permissionResponse = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/check-permissions?url=\${encodeURIComponent(cleanUrl)}&checkWrite=true\`);
+                        
+                        let hasPermission = false;
+                        
+                        if (permissionResponse.ok) {
+                            const permissionData = await permissionResponse.json();
+                            console.log('Permission check response:', permissionData);
+                            hasPermission = permissionData.hasPermission === true;
+                        } else if (permissionResponse.status === 403) {
+                            // 403 on permission check means no access to sheet - this is expected when sheet not shared
+                            console.log('Permission check returned 403 - sheet not shared with service account');
+                            hasPermission = false;
+                        } else {
+                            // Other errors (500, 404, etc.) are unexpected
+                            throw new Error(\`Permission check failed: \${permissionResponse.status} \${permissionResponse.statusText}\`);
+                        }
+                        
+                        // If no write permission, show the permission dialog immediately
+                        if (!hasPermission) {
+                            console.log('No write permission detected - showing permission helper dialog');
+                            showExtractDomainsPermissionDialog(window.userGoogleSheetsUrl);
+                            return; // Exit early to show the dialog
+                        }
+                        
+                        // Step 2: Extract domains (we have permission)
+                        console.log('Permission confirmed! Extracting domains...');
+                        if (window.extractDomainsButton) {
+                            window.extractDomainsButton.textContent = 'Extracting domains...';
+                        }
+                        
+                        console.log('Extracting domains for:', cleanUrl);
+                        
+                        // Call the extract-domains endpoint with cleaned URL
+                        const response = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/extract-domains?url=\${encodeURIComponent(cleanUrl)}\`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        if (!response.ok) {
+                            // Handle different error types
+                            if (response.status === 400) {
+                                const errorData = await response.json().catch(() => ({}));
+                                const errorMessage = errorData.detail?.message || errorData.message || 'Bad request - please check the Google Sheets URL';
+                                throw new Error(errorMessage);
+                            } else {
+                                throw new Error(\`Extract domains request failed: \${response.status} \${response.statusText}\`);
+                            }
+                        }
+                        
+                        const result = await response.json();
+                        console.log('Extract domains response:', result);
+                        
+                        // Re-enable the button immediately after successful response
+                        if (window.extractDomainsButton) {
+                            window.extractDomainsButton.disabled = false;
+                            window.extractDomainsButton.textContent = 'Extract unspecified domains';
+                        }
+                        
+                        // Show success message to user using the response format
+                        const totalRecords = result.totalRecords || 0;
+                        const processedCount = result.processedCount || 0;
+                        const extractedCount = result.extractedCount || 0;
+                        const failedCount = result.failedCount || 0;
+                        const skippedCount = result.skippedCount || 0;
+                        const successRate = result.successRate || 0;
+                        const message = result.message || 'Domain extraction completed';
+                        
+                        let alertMessage = message + '\\n\\n';
+                        alertMessage += \`Total records: \${totalRecords}\\n\`;
+                        if (processedCount > 0) {
+                            alertMessage += \`URLs processed: \${processedCount}\\n\`;
+                            alertMessage += \`Domains extracted: \${extractedCount}\\n\`;
+                            if (failedCount > 0) {
+                                alertMessage += \`Failed extractions: \${failedCount}\\n\`;
+                            }
+                            if (skippedCount > 0) {
+                                alertMessage += \`Skipped (already processed): \${skippedCount}\\n\`;
+                            }
+                            alertMessage += \`Success rate: \${successRate.toFixed(1)}%\`;
+                        } else if (skippedCount > 0) {
+                            alertMessage += \`All \${skippedCount} URLs were already processed\`;
+                        }
+                        
+                        alert(alertMessage);
+                        
+                    } catch (error) {
+                        console.error('Error during domain extraction process:', error);
+                        
+                        // Re-enable the button immediately after error
+                        if (window.extractDomainsButton) {
+                            window.extractDomainsButton.disabled = false;
+                            window.extractDomainsButton.textContent = 'Extract unspecified domains';
+                        }
+                        
+                        alert(\`Error: \${error.message}\`);
+                    } finally {
+                        // Final safety reset (just in case)
+                        if (window.extractDomainsButton) {
+                            window.extractDomainsButton.disabled = false;
+                            window.extractDomainsButton.textContent = 'Extract unspecified domains';
                         }
                     }
                 }
@@ -746,6 +872,331 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                     if (window.archiveButton) {
                         window.archiveButton.disabled = false;
                         window.archiveButton.textContent = 'Archive unarchived URLs';
+                    }
+                }
+                
+                // Show permission helper dialog for extract domains operation
+                function showExtractDomainsPermissionDialog(googleSheetsUrl) {
+                    // Extract sheet ID for the sharing URL
+                    const sheetId = extractSheetId(googleSheetsUrl);
+                    
+                    // Create modal overlay
+                    const modalOverlay = document.createElement('div');
+                    modalOverlay.id = 'extract-domains-permission-modal-overlay';
+                    modalOverlay.style.cssText = \`
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background: rgba(0, 0, 0, 0.5);
+                        z-index: 9999;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                    \`;
+                    
+                    // Create modal content
+                    const modalContent = document.createElement('div');
+                    modalContent.style.cssText = \`
+                        background: white;
+                        border-radius: 8px;
+                        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+                        max-width: 600px;
+                        width: 90%;
+                        max-height: 90vh;
+                        overflow-y: auto;
+                        position: relative;
+                    \`;
+                    
+                    modalContent.innerHTML = \`
+                        <div style="padding: 30px;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+                                <h2 style="margin: 0; color: #333; font-size: 24px;">🌐 Permission Required for Domain Extraction</h2>
+                                <button onclick="closeExtractDomainsPermissionDialog()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">&times;</button>
+                            </div>
+                            
+                            <div style="background: #fff3cd; border: 1px solid #ffeeba; border-radius: 6px; padding: 15px; margin-bottom: 25px;">
+                                <p style="margin: 0; color: #856404;">
+                                    <strong>⚠️ Domain Extraction Access Denied:</strong> The service needs write permission to update your Google Sheet with extracted domain names.
+                                </p>
+                            </div>
+
+                            <div style="margin-bottom: 25px;">
+                                <h3 style="color: #333; margin-bottom: 15px;">📧 Step 1: Copy the service account email</h3>
+                                <p style="margin-bottom: 15px; color: #666; line-height: 1.5;">
+                                    First, copy this service account email to your clipboard:
+                                </p>
+                                
+                                <div style="background: #f8f9fa; border-radius: 6px; padding: 15px; margin-bottom: 15px; text-align: center;">
+                                    <p style="margin: 0 0 15px 0; font-family: monospace; background: #e9ecef; padding: 10px; border-radius: 4px; font-size: 14px; word-break: break-all;">
+                                        gsheets-service@spheric-baton-459622-f4.iam.gserviceaccount.com
+                                    </p>
+                                    <button onclick="copyExtractDomainsServiceAccountEmail()" 
+                                            style="background: #28a745; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-size: 16px; display: flex; align-items: center; gap: 8px; margin: 0 auto;">
+                                        📋 Copy Service Account Email
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div style="margin-bottom: 25px;">
+                                <h3 style="color: #333; margin-bottom: 15px;">🔗 Step 2: Share your Google Sheet with write access</h3>
+                                <p style="margin-bottom: 15px; color: #666; line-height: 1.5;">
+                                    Now open the sharing settings for your Google Sheet and add the service account:
+                                </p>
+                                
+                                <button onclick="openExtractDomainsSharingSettings('\${sheetId}')" 
+                                        style="background: #1a73e8; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-size: 16px; display: flex; align-items: center; gap: 8px; margin-bottom: 15px; width: 100%; justify-content: center;">
+                                    📤 Open Google Sheets Sharing Settings
+                                </button>
+                                
+                                <div style="background: #f8f9fa; border-radius: 6px; padding: 15px; margin-bottom: 15px;">
+                                    <p style="margin: 0 0 10px 0; font-weight: bold; color: #333;">In the sharing dialog:</p>
+                                    <ol style="margin: 0; padding-left: 20px; color: #666; line-height: 1.6;">
+                                        <li>Click "Add people and groups"</li>
+                                        <li>Paste the copied service account email</li>
+                                        <li>Set permission to <strong>"Editor"</strong> (not Viewer)</li>
+                                        <li>Click "Send" or "Share"</li>
+                                    </ol>
+                                </div>
+                            </div>
+
+                            <div style="margin-bottom: 25px;">
+                                <h3 style="color: #333; margin-bottom: 15px;">✅ Step 3: Retry domain extraction</h3>
+                                <p style="margin-bottom: 15px; color: #666; line-height: 1.5;">
+                                    After sharing the sheet with Editor permissions, click the button below to retry domain extraction:
+                                </p>
+                                
+                                <button onclick="retryExtractDomainsAfterSharing('\${googleSheetsUrl}')" 
+                                        style="background: #17a2b8; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-size: 16px; display: flex; align-items: center; gap: 8px; margin-bottom: 15px; width: 100%; justify-content: center;">
+                                    🔄 Retry Domain Extraction
+                                </button>
+                                
+                                <div id="extract-domains-retry-status" style="margin-top: 10px; padding: 10px; border-radius: 4px; display: none;"></div>
+                            </div>
+
+                            <div style="border-top: 1px solid #dee2e6; padding-top: 20px;">
+                                <p style="margin: 0; color: #666; font-size: 14px; text-align: center;">
+                                    💡 <strong>Why do we need this?</strong> Our service account needs write access to add extracted domain names to your Google Sheet automatically.
+                                </p>
+                            </div>
+                        </div>
+                    \`;
+                    
+                    modalOverlay.appendChild(modalContent);
+                    document.body.appendChild(modalOverlay);
+                    
+                    // Close modal when clicking outside
+                    modalOverlay.addEventListener('click', function(e) {
+                        if (e.target === modalOverlay) {
+                            closeExtractDomainsPermissionDialog();
+                        }
+                    });
+                }
+                
+                // Open Google Sheets sharing settings for extract domains
+                function openExtractDomainsSharingSettings(sheetId) {
+                    if (!sheetId) {
+                        alert('Unable to extract sheet ID from URL');
+                        return;
+                    }
+                    
+                    // Use the sharing-specific URL that opens the sharing dialog directly
+                    const sharingUrl = \`https://docs.google.com/spreadsheets/d/\${sheetId}/edit?usp=sharing\`;
+                    window.open(sharingUrl, '_blank', 'width=1000,height=700');
+                }
+                
+                // Copy service account email to clipboard for extract domains
+                function copyExtractDomainsServiceAccountEmail() {
+                    const email = 'gsheets-service@spheric-baton-459622-f4.iam.gserviceaccount.com';
+                    const button = event.target; // Get the button that was clicked
+                    
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(email).then(() => {
+                            showExtractDomainsCopyFeedback(button);
+                        }).catch(err => {
+                            console.error('Failed to copy with Clipboard API:', err);
+                            fallbackExtractDomainsCopyText(email, button);
+                        });
+                    } else {
+                        fallbackExtractDomainsCopyText(email, button);
+                    }
+                }
+                
+                // Fallback copy method for extract domains
+                function fallbackExtractDomainsCopyText(text, button) {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = text;
+                    textArea.style.position = 'fixed';
+                    textArea.style.opacity = '0';
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    
+                    try {
+                        const successful = document.execCommand('copy');
+                        if (successful) {
+                            showExtractDomainsCopyFeedback(button);
+                        } else {
+                            alert('Copy failed. Please manually copy: ' + text);
+                        }
+                    } catch (err) {
+                        console.error('Fallback copy failed:', err);
+                        alert('Copy failed. Please manually copy: ' + text);
+                    }
+                    
+                    document.body.removeChild(textArea);
+                }
+                
+                // Show copy feedback for extract domains
+                function showExtractDomainsCopyFeedback(button) {
+                    if (!button) return; // Safety check
+                    
+                    const originalText = button.innerHTML;
+                    button.innerHTML = '✅ Copied!';
+                    button.style.background = '#28a745';
+                    
+                    setTimeout(() => {
+                        button.innerHTML = originalText;
+                        button.style.background = '#28a745';
+                    }, 2000);
+                }
+                
+                // Retry domain extraction after sharing
+                async function retryExtractDomainsAfterSharing(googleSheetsUrl) {
+                    const button = event.target;
+                    const statusDiv = document.getElementById('extract-domains-retry-status');
+                    
+                    try {
+                        // Update button state
+                        button.disabled = true;
+                        button.innerHTML = '🔄 Checking permissions...';
+                        
+                        // Show checking status
+                        statusDiv.style.display = 'block';
+                        statusDiv.style.background = '#d1ecf1';
+                        statusDiv.style.color = '#0c5460';
+                        statusDiv.style.border = '1px solid #bee5eb';
+                        statusDiv.innerHTML = '🔍 Checking if permissions were granted...';
+                        
+                        // Clean the URL - remove only fragment identifiers (#gid=0) but keep query parameters (?gid=0) that the server might need
+                        const cleanUrl = googleSheetsUrl.split('#')[0];
+                        console.log('Original URL:', googleSheetsUrl);
+                        console.log('Cleaned URL:', cleanUrl);
+                        
+                        // Step 1: Check permissions first
+                        const permissionResponse = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/check-permissions?url=\${encodeURIComponent(cleanUrl)}&checkWrite=true\`);
+                        
+                        let hasPermission = false;
+                        
+                        if (permissionResponse.ok) {
+                            const permissionData = await permissionResponse.json();
+                            console.log('Permission check response:', permissionData);
+                            hasPermission = permissionData.hasPermission === true;
+                        } else if (permissionResponse.status === 403) {
+                            // 403 on permission check means no access to sheet - still no permission granted
+                            console.log('Permission check still returns 403 - sheet still not shared with service account');
+                            hasPermission = false;
+                        } else {
+                            // Other errors (500, 404, etc.) are unexpected
+                            throw new Error(\`Permission check failed: \${permissionResponse.status} \${permissionResponse.statusText}\`);
+                        }
+                        
+                        // If still no write permission, show error
+                        if (!hasPermission) {
+                            statusDiv.style.background = '#f8d7da';
+                            statusDiv.style.color = '#721c24';
+                            statusDiv.style.border = '1px solid #f5c6cb';
+                            statusDiv.innerHTML = '❌ Still no write access. Please make sure you shared the sheet with Editor permissions and try again.';
+                            return;
+                        }
+                        
+                        // Step 2: Permissions confirmed! Close dialog and start extraction process
+                        console.log('Permissions confirmed! Closing dialog and starting domain extraction...');
+                        
+                        // Close the permission dialog immediately
+                        closeExtractDomainsPermissionDialog();
+                        
+                        console.log('Extracting domains for:', cleanUrl);
+                        
+                        // Call the extract-domains endpoint with cleaned URL
+                        const response = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/extract-domains?url=\${encodeURIComponent(cleanUrl)}\`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            const result = await response.json();
+                            
+                            // Success!
+                            console.log('Extract domains response:', result);
+                            
+                            // Show success message to user using the response format
+                            const totalRecords = result.totalRecords || 0;
+                            const processedCount = result.processedCount || 0;
+                            const extractedCount = result.extractedCount || 0;
+                            const failedCount = result.failedCount || 0;
+                            const skippedCount = result.skippedCount || 0;
+                            const successRate = result.successRate || 0;
+                            const message = result.message || 'Domain extraction completed';
+                            
+                            let alertMessage = message + '\\n\\n';
+                            alertMessage += \`Total records: \${totalRecords}\\n\`;
+                            if (processedCount > 0) {
+                                alertMessage += \`URLs processed: \${processedCount}\\n\`;
+                                alertMessage += \`Domains extracted: \${extractedCount}\\n\`;
+                                if (failedCount > 0) {
+                                    alertMessage += \`Failed extractions: \${failedCount}\\n\`;
+                                }
+                                if (skippedCount > 0) {
+                                    alertMessage += \`Skipped (already processed): \${skippedCount}\\n\`;
+                                }
+                                alertMessage += \`Success rate: \${successRate.toFixed(1)}%\`;
+                            } else if (skippedCount > 0) {
+                                alertMessage += \`All \${skippedCount} URLs were already processed\`;
+                            }
+                            
+                            alert(alertMessage);
+                            
+                        } else {
+                            // Extract domains failed for other reasons
+                            if (response.status === 400) {
+                                const errorData = await response.json().catch(() => ({}));
+                                const errorMessage = errorData.detail?.message || errorData.message || 'Bad request - please check the Google Sheets URL';
+                                throw new Error(errorMessage);
+                            } else {
+                                throw new Error(\`Extract domains request failed: \${response.status} \${response.statusText}\`);
+                            }
+                        }
+                        
+                    } catch (error) {
+                        console.error('Error during domain extraction retry:', error);
+                        statusDiv.style.display = 'block';
+                        statusDiv.style.background = '#f8d7da';
+                        statusDiv.style.color = '#721c24';
+                        statusDiv.style.border = '1px solid #f5c6cb';
+                        statusDiv.innerHTML = \`❌ Error: \${error.message}\`;
+                    } finally {
+                        // Reset button
+                        button.disabled = false;
+                        button.innerHTML = '🔄 Retry Domain Extraction';
+                    }
+                }
+                
+                // Close extract domains permission dialog
+                function closeExtractDomainsPermissionDialog() {
+                    const modal = document.getElementById('extract-domains-permission-modal-overlay');
+                    if (modal) {
+                        modal.remove();
+                    }
+                    
+                    // Re-enable the main extract domains button
+                    if (window.extractDomainsButton) {
+                        window.extractDomainsButton.disabled = false;
+                        window.extractDomainsButton.textContent = 'Extract unspecified domains';
                     }
                 }
                 
