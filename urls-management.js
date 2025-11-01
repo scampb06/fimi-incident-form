@@ -1,10 +1,58 @@
 /**
  * URLs Management Module
  * Handles UI updates and management of URLs from Google Sheets or manual entry
+ * Supports both Trusted URLs and Malicious URLs with Platform field
  */
 
-// Global array to store URLs data
+// Global arrays to store URLs data
 let urlsList = [];
+let maliciousUrlsList = [];
+
+// URL Type Configuration
+const URL_TYPES = {
+    trusted: {
+        listVar: 'urlsList',
+        containerId: 'urls-container',
+        messageId: 'urls-message',
+        googleSheetsUrlId: 'googleSheetsUrl',
+        googleSheetsErrorId: 'googleSheetsUrlError',
+        fields: ['url', 'domain', 'archiveUrl'],
+        fieldLabels: ['URL:', 'Domain:', 'Archive URL:'],
+        fieldPlaceholders: ['https://example.com', 'example.com', 'https://archive.org/...'],
+        backgroundColor: '#f9f9f9',
+        googleSheetsBackgroundColor: '#e3f2fd',
+        borderColor: '#ddd',
+        googleSheetsBorderColor: '#90caf9'
+    },
+    malicious: {
+        listVar: 'maliciousUrlsList',
+        containerId: 'malicious-urls-container',
+        messageId: 'malicious-urls-message',
+        googleSheetsUrlId: 'maliciousGoogleSheetsUrl',
+        googleSheetsErrorId: 'maliciousGoogleSheetsUrlError',
+        fields: ['url', 'domain', 'platform', 'archiveUrl'],
+        fieldLabels: ['URL:', 'Domain:', 'Platform:', 'Archive URL:'],
+        fieldPlaceholders: ['https://example.com', 'example.com', 'Twitter/X, Facebook, etc.', 'https://archive.org/...'],
+        backgroundColor: '#fff2f2',
+        googleSheetsBackgroundColor: '#ffebee',
+        borderColor: '#ffcdd2',
+        googleSheetsBorderColor: '#ef5350'
+    }
+};
+
+// Get the array reference for a URL type
+function getUrlsArray(urlType) {
+    return urlType === 'trusted' ? urlsList : maliciousUrlsList;
+}
+
+// Set the array for a URL type
+function setUrlsArray(urlType, array) {
+    if (urlType === 'trusted') {
+        urlsList = array;
+    } else {
+        maliciousUrlsList = array;
+    }
+}
 
 // Function to validate Google Sheets URL
 function validateGoogleSheetsUrl(url) {
@@ -28,9 +76,10 @@ function validateGoogleSheetsUrl(url) {
 }
 
 // Function to show validation error for Google Sheets URL
-function showGoogleSheetsUrlError(message) {
-    const errorDiv = document.getElementById('googleSheetsUrlError');
-    const urlInput = document.getElementById('googleSheetsUrl');
+function showGoogleSheetsUrlError(message, urlType = 'trusted') {
+    const config = URL_TYPES[urlType];
+    const errorDiv = document.getElementById(config.googleSheetsErrorId);
+    const urlInput = document.getElementById(config.googleSheetsUrlId);
     
     if (errorDiv && urlInput) {
         errorDiv.textContent = message;
@@ -40,13 +89,14 @@ function showGoogleSheetsUrlError(message) {
 }
 
 // Function to clear validation error for Google Sheets URL
-function clearGoogleSheetsUrlError() {
-    showGoogleSheetsUrlError('');
+function clearGoogleSheetsUrlError(urlType = 'trusted') {
+    showGoogleSheetsUrlError('', urlType);
 }
 
-// Function to load URLs from Google Sheets
-async function loadUrlsFromGoogleSheets() {
-    const urlInput = document.getElementById('googleSheetsUrl');
+// Function to load URLs from Google Sheets (generic)
+async function loadUrlsFromGoogleSheetsGeneric(urlType = 'trusted') {
+    const config = URL_TYPES[urlType];
+    const urlInput = document.getElementById(config.googleSheetsUrlId);
     if (!urlInput) {
         alert('Google Sheets URL input field not found');
         return;
@@ -57,20 +107,34 @@ async function loadUrlsFromGoogleSheets() {
     // Validate the URL
     const validation = validateGoogleSheetsUrl(googleSheetsUrl);
     if (!validation.valid) {
-        showGoogleSheetsUrlError(validation.message);
+        showGoogleSheetsUrlError(validation.message, urlType);
         urlInput.focus();
         return;
     }
     
     // Clear any previous validation errors
-    clearGoogleSheetsUrlError();
+    clearGoogleSheetsUrlError(urlType);
     
     // Open the interim editing window with the user-provided URL
-    openGoogleSheetsEditingWindow(googleSheetsUrl);
+    openGoogleSheetsEditingWindow(googleSheetsUrl, urlType);
+}
+
+// Function for trusted URLs (backwards compatibility)
+async function loadUrlsFromGoogleSheets() {
+    return loadUrlsFromGoogleSheetsGeneric('trusted');
+}
+
+// Function for malicious URLs
+async function loadMaliciousUrlsFromGoogleSheets() {
+    return loadUrlsFromGoogleSheetsGeneric('malicious');
 }
 
 // Function to open the Google Sheets editing window
-function openGoogleSheetsEditingWindow(userProvidedUrl) {
+function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
+    const config = URL_TYPES[urlType];
+    const windowTitle = urlType === 'trusted' ? 'Add Trusted URLs' : 'Add Malicious URLs';
+    const sectionTitle = urlType === 'trusted' ? 'Add Trusted URLs' : 'Add Malicious URLs';
+    
     // Create the popup window similar to DISARM Framework
     const popup = window.open('', 'googleSheetsEditor', 'width=1200,height=800,scrollbars=yes,resizable=yes');
     
@@ -80,7 +144,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Add Trusted URLs</title>
+            <title>${windowTitle}</title>
             <style>
                 body {
                     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -150,7 +214,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
         </head>
         <body>
             <div class="header">
-                <h1 class="title">Add Trusted URLs</h1>
+                <h1 class="title">${sectionTitle}</h1>
                 <div style="display: flex; gap: 10px;">
                     <button class="done-button" onclick="extractUnspecifiedDomains()" style="background: #28a745;">Extract unspecified domains</button>
                     <button class="done-button" onclick="archiveUnarchiveUrls()" style="background: #28a745;">Archive unarchived URLs</button>
@@ -1203,7 +1267,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
                 // Handle the Done button click
                 function handleDoneClick() {
                     // Close this window and trigger the data loading in the parent
-                    window.opener.loadUrlsFromGoogleSheetsData(window.userGoogleSheetsUrl);
+                    window.opener.loadUrlsFromGoogleSheetsData(window.userGoogleSheetsUrl, '${urlType}');
                     window.close();
                 }
                 
@@ -1218,9 +1282,12 @@ function openGoogleSheetsEditingWindow(userProvidedUrl) {
 }
 
 // Function to actually load the data from Google Sheets (called after editing)
-async function loadUrlsFromGoogleSheetsData(googleSheetsUrl) {
+async function loadUrlsFromGoogleSheetsData(googleSheetsUrl, urlType = 'trusted') {
+    const config = URL_TYPES[urlType];
+    const urlsArray = getUrlsArray(urlType);
+    
     try {
-        console.log('Loading URLs from Google Sheets...');
+        console.log(`Loading ${urlType} URLs from Google Sheets...`);
         console.log('Using URL:', googleSheetsUrl);
         
         // Call the new endpoint with the user-provided URL
@@ -1253,41 +1320,53 @@ async function loadUrlsFromGoogleSheetsData(googleSheetsUrl) {
         // Process the data from Google Sheets
         if (result.data && result.data.length > 0) {
             let addedCount = 0; // Track actually added entries
-            const initialUrlsCount = urlsList.length; // Store initial count for comparison
+            const initialUrlsCount = urlsArray.length; // Store initial count for comparison
             
             result.data.forEach(record => {
-                // Map Google Sheets data to our three-column structure
+                // Map Google Sheets data based on URL type
                 const newEntry = {
-                    url: record.URL || record.url || '',
-                    domain: record.Domain || record.domain || '',
-                    archiveUrl: record['Archive URL'] || record.archiveUrl || record.archive_url || '',
                     isFromGoogleSheets: true // Flag to identify Google Sheets entries
                 };
                 
-                // Skip empty entries
-                if (!newEntry.url && !newEntry.domain && !newEntry.archiveUrl) {
+                // Add fields based on URL type configuration
+                config.fields.forEach(field => {
+                    if (field === 'url') {
+                        newEntry[field] = record.URL || record.url || '';
+                    } else if (field === 'domain') {
+                        newEntry[field] = record.Domain || record.domain || '';
+                    } else if (field === 'platform') {
+                        newEntry[field] = record.Platform || record.platform || '';
+                    } else if (field === 'archiveUrl') {
+                        newEntry[field] = record['Archive URL'] || record.archiveUrl || record.archive_url || '';
+                    }
+                });
+                
+                // Skip empty entries (check if all fields are empty)
+                const hasContent = config.fields.some(field => newEntry[field] && newEntry[field].trim() !== '');
+                if (!hasContent) {
                     console.log('Skipped empty entry');
                     return;
                 }
                 
-                // Check for duplicates against current urlsList
-                const isDuplicate = urlsList.some(existingEntry => 
-                    existingEntry.url === newEntry.url && 
-                    existingEntry.domain === newEntry.domain && 
-                    existingEntry.archiveUrl === newEntry.archiveUrl
+                // Check for duplicates against current array
+                const isDuplicate = urlsArray.some(existingEntry => 
+                    config.fields.every(field => existingEntry[field] === newEntry[field])
                 );
                 
                 if (!isDuplicate) {
-                    urlsList.push(newEntry);
+                    urlsArray.push(newEntry);
                     addedCount++; // Increment only when actually added
-                    console.log('Added new Google Sheets entry:', newEntry);
+                    console.log(`Added new ${urlType} Google Sheets entry:`, newEntry);
                 } else {
                     console.log('Skipped duplicate entry:', newEntry);
                 }
             });
             
+            // Update the array reference
+            setUrlsArray(urlType, urlsArray);
+            
             // Update the UI
-            updateUrlsUI();
+            updateUrlsUI(urlType);
             
             // Show success message with correct counts
             const sampleRecord = result.data[0];
@@ -1296,63 +1375,70 @@ async function loadUrlsFromGoogleSheetsData(googleSheetsUrl) {
             const duplicateCount = processedCount - addedCount;
             
             // Verify our math with actual list changes
-            const finalUrlsCount = urlsList.length;
+            const finalUrlsCount = urlsArray.length;
             const actualAdded = finalUrlsCount - initialUrlsCount;
             
             console.log(`Debug: Initial count: ${initialUrlsCount}, Final count: ${finalUrlsCount}, Calculated added: ${addedCount}, Actual added: ${actualAdded}`);
             
-            showUrlsMessage(`Added ${actualAdded} new records from Google Sheets (${duplicateCount} duplicates skipped). Available fields: ${availableFields.join(', ')}`, 'success');
+            showUrlsMessage(`Added ${actualAdded} new ${urlType} records from Google Sheets (${duplicateCount} duplicates skipped). Available fields: ${availableFields.join(', ')}`, 'success', urlType);
         } else {
-            showUrlsMessage('No URL data found in Google Sheets', 'warning');
+            showUrlsMessage(`No ${urlType} URL data found in Google Sheets`, 'warning', urlType);
         }
         
     } catch (error) {
-        console.error('Error loading URLs from Google Sheets:', error);
-        showUrlsMessage(`Failed to load URLs from Google Sheets: ${error.message}`, 'error');
+        console.error(`Error loading ${urlType} URLs from Google Sheets:`, error);
+        showUrlsMessage(`Failed to load ${urlType} URLs from Google Sheets: ${error.message}`, 'error', urlType);
     }
 }
 
 // Update UI with current URLs
-function updateUrlsUI() {
-    const urlsContainer = document.getElementById('urls-container');
+function updateUrlsUI(urlType = 'trusted') {
+    const config = URL_TYPES[urlType];
+    const urlsArray = getUrlsArray(urlType);
+    const urlsContainer = document.getElementById(config.containerId);
+    
     if (urlsContainer) {
         // Always show headers and at least one entry
         let html = `
             <!-- Column Headers -->
             <div style="display: flex; gap: 10px; margin-bottom: 10px; padding: 0 15px;">
+        `;
+        
+        // Add header columns based on configuration
+        config.fieldLabels.forEach(label => {
+            html += `
                 <div style="flex: 1;">
-                    <label style="font-size: 14px; font-weight: bold; color: #333; display: block;">URL:</label>
+                    <label style="font-size: 14px; font-weight: bold; color: #333; display: block;">${label}</label>
                 </div>
-                <div style="flex: 1;">
-                    <label style="font-size: 14px; font-weight: bold; color: #333; display: block;">Domain:</label>
-                </div>
-                <div style="flex: 1;">
-                    <label style="font-size: 14px; font-weight: bold; color: #333; display: block;">Archive URL:</label>
-                </div>
+            `;
+        });
+        
+        html += `
                 <div style="width: 80px;"></div> <!-- Space for remove button -->
             </div>
         `;
         
         // If no entries exist, show one empty entry
-        if (urlsList.length === 0) {
+        if (urlsArray.length === 0) {
             html += `
                 <div class="url-entry">
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                        <div style="flex: 1; display: flex; gap: 10px; padding: 15px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px;">
+                        <div style="flex: 1; display: flex; gap: 10px; padding: 15px; background: ${config.backgroundColor}; border: 1px solid ${config.borderColor}; border-radius: 4px;">
+            `;
+            
+            // Add input fields based on configuration
+            config.fields.forEach((field, index) => {
+                html += `
                             <div style="flex: 1;">
-                                <input type="text" value="" onchange="handleEmptyEntryChange(0, 'url', this.value)" 
-                                       placeholder="https://example.com" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
+                                <input type="text" value="" onchange="handleEmptyEntryChange(0, '${field}', this.value, '${urlType}')" 
+                                       placeholder="${config.fieldPlaceholders[index]}" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
                             </div>
-                            <div style="flex: 1;">
-                                <input type="text" value="" onchange="handleEmptyEntryChange(0, 'domain', this.value)" 
-                                       placeholder="example.com" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
-                            </div>
-                            <div style="flex: 1;">
-                                <input type="text" value="" onchange="handleEmptyEntryChange(0, 'archiveUrl', this.value)" 
-                                       placeholder="https://archive.org/..." style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
-                            </div>
+                `;
+            });
+            
+            html += `
                         </div>
-                        <button type="button" onclick="removeEmptyEntry()" 
+                        <button type="button" onclick="removeEmptyEntry('${urlType}')" 
                                 style="background: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
                             Remove
                         </button>
@@ -1360,38 +1446,40 @@ function updateUrlsUI() {
                 </div>
             `;
             
-            // DO NOT automatically add to urlsList here - only add when user actually enters data
         } else {
             // Show all existing entries
-            html += urlsList.map((url, index) => {
+            html += urlsArray.map((url, index) => {
                 const isFromGoogleSheets = url.isFromGoogleSheets === true;
-                const backgroundColor = isFromGoogleSheets ? '#e3f2fd' : '#f9f9f9';
-                const borderColor = isFromGoogleSheets ? '#90caf9' : '#ddd';
+                const backgroundColor = isFromGoogleSheets ? config.googleSheetsBackgroundColor : config.backgroundColor;
+                const borderColor = isFromGoogleSheets ? config.googleSheetsBorderColor : config.borderColor;
                 
-                return `
+                let entryHtml = `
                 <div class="url-entry">
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
                         <div style="flex: 1; display: flex; gap: 10px; padding: 15px; background: ${backgroundColor}; border: 1px solid ${borderColor}; border-radius: 4px;">
+                `;
+                
+                // Add input fields based on configuration
+                config.fields.forEach((field, fieldIndex) => {
+                    entryHtml += `
                             <div style="flex: 1;">
-                                <input type="text" value="${url.url || ''}" onchange="updateUrlEntry(${index}, 'url', this.value)" 
-                                       placeholder="https://example.com" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
+                                <input type="text" value="${url[field] || ''}" onchange="updateUrlEntry(${index}, '${field}', this.value, '${urlType}')" 
+                                       placeholder="${config.fieldPlaceholders[fieldIndex]}" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
                             </div>
-                            <div style="flex: 1;">
-                                <input type="text" value="${url.domain || ''}" onchange="updateUrlEntry(${index}, 'domain', this.value)" 
-                                       placeholder="example.com" style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
-                            </div>
-                            <div style="flex: 1;">
-                                <input type="text" value="${url.archiveUrl || ''}" onchange="updateUrlEntry(${index}, 'archiveUrl', this.value)" 
-                                       placeholder="https://archive.org/..." style="width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px;">
-                            </div>
+                    `;
+                });
+                
+                entryHtml += `
                         </div>
-                        <button type="button" onclick="removeUrlFromList(${index})" 
+                        <button type="button" onclick="removeUrlFromList(${index}, '${urlType}')" 
                                 style="background: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
                             Remove
                         </button>
                     </div>
                 </div>
                 `;
+                
+                return entryHtml;
             }).join('');
         }
         
@@ -1400,61 +1488,86 @@ function updateUrlsUI() {
 }
 
 // Update a specific URL entry field
-function updateUrlEntry(index, field, value) {
-    if (index >= 0 && index < urlsList.length) {
-        urlsList[index][field] = value;
-        console.log(`Updated URL entry ${index} field ${field}:`, value);
+function updateUrlEntry(index, field, value, urlType = 'trusted') {
+    const urlsArray = getUrlsArray(urlType);
+    if (index >= 0 && index < urlsArray.length) {
+        urlsArray[index][field] = value;
+        setUrlsArray(urlType, urlsArray);
+        console.log(`Updated ${urlType} URL entry ${index} field ${field}:`, value);
     }
 }
 
-// Handle changes to the empty entry (when urlsList.length === 0)
-function handleEmptyEntryChange(index, field, value) {
+// Handle changes to the empty entry (when array is empty)
+function handleEmptyEntryChange(index, field, value, urlType = 'trusted') {
+    const config = URL_TYPES[urlType];
+    const urlsArray = getUrlsArray(urlType);
+    
     // If this is the first input in an empty list, create the first real entry
-    if (urlsList.length === 0) {
-        const newEntry = {
-            url: '',
-            domain: '',
-            archiveUrl: ''
-        };
+    if (urlsArray.length === 0) {
+        const newEntry = {};
+        
+        // Initialize all fields based on configuration
+        config.fields.forEach(fieldName => {
+            newEntry[fieldName] = '';
+        });
+        
         newEntry[field] = value;
-        urlsList.push(newEntry);
-        updateUrlsUI(); // Refresh to show as a real entry
+        urlsArray.push(newEntry);
+        setUrlsArray(urlType, urlsArray);
+        updateUrlsUI(urlType); // Refresh to show as a real entry
     }
 }
 
-// Remove the empty entry (when urlsList.length === 0)
-function removeEmptyEntry() {
+// Remove the empty entry (when array is empty)
+function removeEmptyEntry(urlType = 'trusted') {
     // For empty entry, just clear the input fields by refreshing
-    updateUrlsUI();
+    updateUrlsUI(urlType);
 }
 
 // Remove URL from list by index
-function removeUrlFromList(index) {
-    if (index >= 0 && index < urlsList.length) {
-        const removedUrl = urlsList.splice(index, 1)[0];
+function removeUrlFromList(index, urlType = 'trusted') {
+    const urlsArray = getUrlsArray(urlType);
+    if (index >= 0 && index < urlsArray.length) {
+        const removedUrl = urlsArray.splice(index, 1)[0];
+        setUrlsArray(urlType, urlsArray);
         
         // If we removed the last entry and the list is empty, we'll let updateUrlsUI() handle showing an empty entry
-        
-        updateUrlsUI();
-        console.log(`Removed URL entry:`, removedUrl);
+        updateUrlsUI(urlType);
+        console.log(`Removed ${urlType} URL entry:`, removedUrl);
     }
 }
 
-// Add a new empty URL entry
+// Add a new empty URL entry (generic)
+function addUrlGeneric(urlType = 'trusted') {
+    const config = URL_TYPES[urlType];
+    const urlsArray = getUrlsArray(urlType);
+    const newEntry = {};
+    
+    // Initialize all fields based on configuration
+    config.fields.forEach(field => {
+        newEntry[field] = '';
+    });
+    
+    urlsArray.push(newEntry);
+    setUrlsArray(urlType, urlsArray);
+    updateUrlsUI(urlType);
+    console.log(`Added new ${urlType} URL entry`);
+}
+
+// Add a new empty trusted URL entry (backwards compatibility)
 function addUrl() {
-    const newEntry = {
-        url: '',
-        domain: '',
-        archiveUrl: ''
-    };
-    urlsList.push(newEntry);
-    updateUrlsUI();
-    console.log('Added new URL entry');
+    addUrlGeneric('trusted');
+}
+
+// Add a new empty malicious URL entry
+function addMaliciousUrl() {
+    addUrlGeneric('malicious');
 }
 
 // Show message to user
-function showUrlsMessage(message, type = 'info') {
-    const messageContainer = document.getElementById('urls-message');
+function showUrlsMessage(message, type = 'info', urlType = 'trusted') {
+    const config = URL_TYPES[urlType];
+    const messageContainer = document.getElementById(config.messageId);
     
     // For error and warning messages, show popup for better visibility
     if (type === 'error' || type === 'warning') {
@@ -1486,23 +1599,33 @@ function showUrlsMessage(message, type = 'info') {
 
 // Initialize URLs management on page load
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize with empty array - updateUrlsUI will show the initial empty entry
+    // Initialize both arrays with empty entries
     urlsList = [];
-    updateUrlsUI();
+    maliciousUrlsList = [];
+    updateUrlsUI('trusted');
+    updateUrlsUI('malicious');
     
-    // Add real-time validation for Google Sheets URL input
-    const googleSheetsUrlInput = document.getElementById('googleSheetsUrl');
+    // Add real-time validation for both Google Sheets URL inputs
+    setupGoogleSheetsValidation('trusted');
+    setupGoogleSheetsValidation('malicious');
+});
+
+// Setup Google Sheets URL validation for a specific URL type
+function setupGoogleSheetsValidation(urlType) {
+    const config = URL_TYPES[urlType];
+    const googleSheetsUrlInput = document.getElementById(config.googleSheetsUrlId);
+    
     if (googleSheetsUrlInput) {
         googleSheetsUrlInput.addEventListener('input', function() {
             const url = this.value.trim();
             if (url === '') {
-                clearGoogleSheetsUrlError();
+                clearGoogleSheetsUrlError(urlType);
             } else {
                 const validation = validateGoogleSheetsUrl(url);
                 if (!validation.valid) {
-                    showGoogleSheetsUrlError(validation.message);
+                    showGoogleSheetsUrlError(validation.message, urlType);
                 } else {
-                    clearGoogleSheetsUrlError();
+                    clearGoogleSheetsUrlError(urlType);
                 }
             }
         });
@@ -1512,11 +1635,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (url !== '') {
                 const validation = validateGoogleSheetsUrl(url);
                 if (!validation.valid) {
-                    showGoogleSheetsUrlError(validation.message);
+                    showGoogleSheetsUrlError(validation.message, urlType);
                 } else {
-                    clearGoogleSheetsUrlError();
+                    clearGoogleSheetsUrlError(urlType);
                 }
             }
         });
     }
-});
+}

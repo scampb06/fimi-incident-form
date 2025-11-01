@@ -618,6 +618,45 @@
                 </div>
             </div>
 
+            <!-- Malicious URLs Section -->
+            <div class="form-section">
+                <div class="section-header">🚨 Malicious URLs</div>
+                
+                <!-- Message container for status updates -->
+                <div id="malicious-urls-message" style="display: none; padding: 10px; margin-bottom: 15px; border-radius: 4px; background: #f8f9fa;"></div>
+                
+                <!-- Action Buttons -->
+                <div class="form-row">
+                    <div class="form-col">
+                        <div style="display: flex; gap: 10px; align-items: flex-end; margin-bottom: 15px;">
+                            <div style="flex: 1;">
+                                <label for="maliciousGoogleSheetsUrl" style="font-size: 14px; font-weight: bold; color: #333; display: block; margin-bottom: 5px;">Google Sheet:</label>
+                                <input type="url" id="maliciousGoogleSheetsUrl" placeholder="https://docs.google.com/spreadsheets/d/..." 
+                                       style="width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box;">
+                                <div id="maliciousGoogleSheetsUrlError" style="color: red; font-size: 12px; margin-top: 2px; display: none;"></div>
+                            </div>
+                            <button type="button" onclick="loadMaliciousUrlsFromGoogleSheets()" 
+                                    style="background: #dc3545; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background-color 0.2s; white-space: nowrap;"
+                                    onmouseover="this.style.background='#c82333'" 
+                                    onmouseout="this.style.background='#dc3545'">
+                                📊 Load URLs from Google Sheet
+                            </button>
+                            <button type="button" onclick="addMaliciousUrl()" 
+                                    style="background: #ffc107; color: #212529; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background-color 0.2s; white-space: nowrap;"
+                                    onmouseover="this.style.background='#e0a800'" 
+                                    onmouseout="this.style.background='#ffc107'">
+                                + Add URL
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Malicious URLs Container -->
+                <div id="malicious-urls-container">
+                    <!-- URLs will be dynamically added here -->
+                </div>
+            </div>
+
             <!-- Executive Summary Section -->
             <div class="form-section">
                 <div class="section-header">📝 Executive Summary</div>
