@@ -587,16 +587,23 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         console.log('Extracting channels for:', cleanUrl);
                         
                         // Call the extract-channels endpoint with cleaned URL
-                        const response = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/extract-channels?url=\${encodeURIComponent(cleanUrl)}\`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            }
-                        });
+                        let response;
+                        try {
+                            response = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/extract-channels?url=\${encodeURIComponent(cleanUrl)}\`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                }
+                            });
+                        } catch (fetchError) {
+                            throw new Error('Unable to connect to the extract channels endpoint. The server may not have implemented the /extract-channels functionality yet. Please contact your administrator or try using the extract domains feature instead.');
+                        }
                         
                         if (!response.ok) {
                             // Handle different error types
-                            if (response.status === 400) {
+                            if (response.status === 404) {
+                                throw new Error('Extract channels endpoint not found. The server may not have implemented the /extract-channels endpoint yet. Please contact your administrator or use the extract domains functionality instead.');
+                            } else if (response.status === 400) {
                                 const errorData = await response.json().catch(() => ({}));
                                 const errorMessage = errorData.detail?.message || errorData.message || 'Bad request - please check the Google Sheets URL';
                                 throw new Error(errorMessage);
@@ -1647,12 +1654,17 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         console.log('Extracting channels for:', cleanUrl);
                         
                         // Call the extract-channels endpoint with cleaned URL
-                        const response = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/extract-channels?url=\${encodeURIComponent(cleanUrl)}\`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            }
-                        });
+                        let response;
+                        try {
+                            response = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/extract-channels?url=\${encodeURIComponent(cleanUrl)}\`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                }
+                            });
+                        } catch (fetchError) {
+                            throw new Error('Unable to connect to the extract channels endpoint. The server may not have implemented the /extract-channels functionality yet. Please contact your administrator or try using the extract domains feature instead.');
+                        }
                         
                         if (response.ok) {
                             const result = await response.json();
@@ -1689,7 +1701,9 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             
                         } else {
                             // Extract channels failed for other reasons
-                            if (response.status === 400) {
+                            if (response.status === 404) {
+                                throw new Error('Extract channels endpoint not found. The server may not have implemented the /extract-channels endpoint yet. Please contact your administrator or use the extract domains functionality instead.');
+                            } else if (response.status === 400) {
                                 const errorData = await response.json().catch(() => ({}));
                                 const errorMessage = errorData.detail?.message || errorData.message || 'Bad request - please check the Google Sheets URL';
                                 throw new Error(errorMessage);
@@ -1976,7 +1990,7 @@ function handleEmptyEntryChange(index, field, value, urlType = 'trusted') {
         });
         
         newEntry[field] = value;
-        urlsArray.push(newEntry);
+        urlsArray.unshift(newEntry); // Use unshift for consistency (though array is empty)
         setUrlsArray(urlType, urlsArray);
         updateUrlsUI(urlType); // Refresh to show as a real entry
     }
@@ -2012,10 +2026,10 @@ function addUrlGeneric(urlType = 'trusted') {
         newEntry[field] = '';
     });
     
-    urlsArray.push(newEntry);
+    urlsArray.unshift(newEntry); // Insert at beginning instead of end
     setUrlsArray(urlType, urlsArray);
     updateUrlsUI(urlType);
-    console.log(`Added new ${urlType} URL entry`);
+    console.log(`Added new ${urlType} URL entry at beginning of list`);
 }
 
 // Add a new empty trusted URL entry (backwards compatibility)
