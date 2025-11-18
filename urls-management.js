@@ -138,11 +138,11 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
     // Dynamic instructions based on URL type
     let instructions, extractButtonText, extractFunction;
     if (urlType === 'malicious') {
-        instructions = 'Add URLs below under the column headings "URL", "Channel" and "Archive URL". Press Done when you are finished.';
+        instructions = 'Add URLs below under the column heading "URL". Press Done when you are finished.';
         extractButtonText = 'Extract unspecified channels';
         extractFunction = 'extractUnspecifiedChannels';
     } else {
-        instructions = 'Add URLs below under the column headings "URL", "Domain" and "Archive URL". Press Done when you are finished.';
+        instructions = 'Add URLs below under the column heading "URL". Press Done when you are finished.';
         extractButtonText = 'Extract unspecified domains';
         extractFunction = 'extractUnspecifiedDomains';
     }
@@ -236,6 +236,13 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
             
             <div class="instructions">
                 ${instructions}
+                <div style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 4px; display: flex; align-items: center; gap: 10px;">
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-weight: bold;">
+                        <input type="checkbox" id="preValidationCheckbox" style="cursor: pointer; width: 18px; height: 18px;">
+                        Archive Prevalidation
+                    </label>
+                    <span style="color: #666; font-size: 13px;">(Validate URLs before archiving)</span>
+                </div>
             </div>
             
                     <div class="google-sheets-container">
@@ -351,8 +358,12 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         const startTime = Date.now();
                         const progressTimer = startArchiveProgressTimer(estimatedUrls, startTime);
                         
-                        // Call the archive endpoint with cleaned URL
-                        const response = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}\`, {
+                        // Get preValidation checkbox state
+                        const preValidationCheckbox = document.getElementById('preValidationCheckbox');
+                        const preValidation = preValidationCheckbox ? preValidationCheckbox.checked : false;
+                        
+                        // Call the archive endpoint with cleaned URL and preValidation parameter
+                        const response = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}&preValidation=\${preValidation}\`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
@@ -1025,8 +1036,12 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         const startTime = Date.now();
                         const progressTimer = startArchiveProgressTimer(estimatedUrls, startTime);
                         
-                        // Call the archive endpoint with cleaned URL
-                        const response = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}\`, {
+                        // Get preValidation checkbox state from the popup window
+                        const preValidationCheckbox = document.getElementById('preValidationCheckbox');
+                        const preValidation = preValidationCheckbox ? preValidationCheckbox.checked : false;
+                        
+                        // Call the archive endpoint with cleaned URL and preValidation parameter
+                        const response = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}&preValidation=\${preValidation}\`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
