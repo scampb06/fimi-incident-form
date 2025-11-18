@@ -236,12 +236,20 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
             
             <div class="instructions">
                 ${instructions}
-                <div style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 4px; display: flex; align-items: center; gap: 10px;">
-                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-weight: bold;">
-                        <input type="radio" id="preValidationCheckbox" name="preValidation" style="cursor: pointer; width: 18px; height: 18px;">
-                        Archive Prevalidation
+                <div style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 4px; display: flex; align-items: center; gap: 15px; flex-wrap: nowrap;">
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-weight: bold; white-space: nowrap;">
+                        <input type="radio" id="preValidationCheckbox" name="preValidation" style="cursor: pointer; width: 16px; height: 16px;">
+                        Prevalidation
                     </label>
-                    <span style="color: #666; font-size: 13px;">(Validate URLs before archiving)</span>
+                    <span style="color: #999; font-size: 20px;">|</span>
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-weight: bold; white-space: nowrap;">
+                        <input type="radio" id="waybackMachineRadio" name="archiveService" value="wayback" checked style="cursor: pointer; width: 16px; height: 16px;">
+                        Wayback Machine
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-weight: bold; white-space: nowrap;">
+                        <input type="radio" id="bellingcatRadio" name="archiveService" value="bellingcat" style="cursor: pointer; width: 16px; height: 16px;">
+                        Bellingcat Auto Archiver
+                    </label>
                 </div>
             </div>
             
@@ -362,8 +370,20 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         const preValidationCheckbox = document.getElementById('preValidationCheckbox');
                         const preValidation = preValidationCheckbox ? preValidationCheckbox.checked : false;
                         
+                        // Get selected archive service
+                        const waybackRadio = document.getElementById('waybackMachineRadio');
+                        const bellingcatRadio = document.getElementById('bellingcatRadio');
+                        
+                        // Determine which endpoint to use
+                        let endpoint;
+                        if (bellingcatRadio && bellingcatRadio.checked) {
+                            endpoint = \`https://fimi-incident-form-genai.azurewebsites.net/bellingcat/auto-archiver-sheets?url=\${encodeURIComponent(cleanUrl)}&preValidation=\${preValidation}\`;
+                        } else {
+                            endpoint = \`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}&preValidation=\${preValidation}\`;
+                        }
+                        
                         // Call the archive endpoint with cleaned URL and preValidation parameter
-                        const response = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}&preValidation=\${preValidation}\`, {
+                        const response = await fetch(endpoint, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
@@ -1040,8 +1060,20 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         const preValidationCheckbox = document.getElementById('preValidationCheckbox');
                         const preValidation = preValidationCheckbox ? preValidationCheckbox.checked : false;
                         
+                        // Get selected archive service
+                        const waybackRadio = document.getElementById('waybackMachineRadio');
+                        const bellingcatRadio = document.getElementById('bellingcatRadio');
+                        
+                        // Determine which endpoint to use
+                        let endpoint;
+                        if (bellingcatRadio && bellingcatRadio.checked) {
+                            endpoint = \`https://fimi-incident-form-genai.azurewebsites.net/bellingcat/auto-archiver-sheets?url=\${encodeURIComponent(cleanUrl)}&preValidation=\${preValidation}\`;
+                        } else {
+                            endpoint = \`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}&preValidation=\${preValidation}\`;
+                        }
+                        
                         // Call the archive endpoint with cleaned URL and preValidation parameter
-                        const response = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}&preValidation=\${preValidation}\`, {
+                        const response = await fetch(endpoint, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
