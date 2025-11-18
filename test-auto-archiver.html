@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto-Archiver Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            margin: 10px 0;
+            padding: 10px;
+            font-family: monospace;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Auto-Archiver Test</h1>
+    
+    <h3>Enter URLs to Archive (one per line):</h3>
+    <textarea id="urlsInput" placeholder="https://example.com/article1
+https://example.com/article2
+https://example.com/article3">https://example.com/test1
+https://example.com/test2</textarea>
+    
+    <button onclick="startArchiving()">Start Archiving</button>
+    <button onclick="checkStatus()" id="statusBtn" disabled>Check Status</button>
+    <button onclick="clearResult()">Clear</button>
+    
+    <div id="result"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:5239';
+        let currentJobId = null;
+
+        async function startArchiving() {
+            const urlsText = document.getElementById('urlsInput').value;
+            const urls = urlsText.split('\n')
+                .map(url => url.trim())
+                .filter(url => url.length > 0);
+            
+            if (urls.length === 0) {
+                showResult('Please enter at least one URL', 'error');
+                return;
+            }
+
+            showResult('Starting archiving process...', 'info');
+            document.getElementById('statusBtn').disabled = true;
+            
+            try {
+                const response = await fetch(`${API_BASE}/bellingcat/auto-archiver`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ urls: urls })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentJobId = data.jobId;
+                    document.getElementById('statusBtn').disabled = false;
+                    showResult(
+                        `✅ Job Started Successfully!\n\n` +
+                        `Job ID: ${data.jobId}\n` +
+                        `Status: ${data.status}\n` +
+                        `URLs: ${data.urlCount}\n` +
+                        `Message: ${data.message}\n\n` +
+                        `Click "Check Status" to monitor progress.`,
+                        'success'
+                    );
+                } else {
+                    showResult(
+                        `❌ Error Starting Job\n\n` +
+                        `Status: ${response.status}\n` +
+                        `Message: ${data.message || JSON.stringify(data, null, 2)}`,
+                        'error'
+                    );
+                }
+            } catch (error) {
+                showResult(
+                    `❌ Network Error\n\n` +
+                    `${error.message}\n\n` +
+                    `Make sure your backend is running at ${API_BASE}`,
+                    'error'
+                );
+            }
+        }
+
+        async function checkStatus() {
+            if (!currentJobId) {
+                showResult('No active job. Start archiving first.', 'error');
+                return;
+            }
+
+            showResult('Checking job status...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/bellingcat/auto-archiver/status/${currentJobId}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    let resultText = `📊 Job Status\n\n` +
+                        `Job ID: ${data.jobId}\n` +
+                        `Status: ${data.status}\n` +
+                        `Start Time: ${data.startTime}\n`;
+                    
+                    if (data.endTime) {
+                        resultText += `End Time: ${data.endTime}\n`;
+                    }
+                    
+                    if (data.outputDirectory) {
+                        resultText += `Output: ${data.outputDirectory}\n`;
+                    }
+                    
+                    if (data.logOutput) {
+                        resultText += `\nLogs:\n${data.logOutput}`;
+                    }
+                    
+                    if (data.results) {
+                        resultText += `\n\nResults:\n${JSON.stringify(data.results, null, 2)}`;
+                    }
+                    
+                    const statusClass = data.status === 'completed' ? 'success' : 
+                                       data.status === 'failed' ? 'error' : 'info';
+                    showResult(resultText, statusClass);
+                } else {
+                    showResult(
+                        `❌ Error Checking Status\n\n` +
+                        `${data.message || JSON.stringify(data, null, 2)}`,
+                        'error'
+                    );
+                }
+            } catch (error) {
+                showResult(
+                    `❌ Network Error\n\n${error.message}`,
+                    'error'
+                );
+            }
+        }
+
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = message;
+            resultDiv.className = type;
+        }
+
+        function clearResult() {
+            document.getElementById('result').textContent = '';
+            document.getElementById('result').className = '';
+            currentJobId = null;
+            document.getElementById('statusBtn').disabled = true;
+        }
+
+        // Auto-refresh status if job is running
+        setInterval(() => {
+            if (currentJobId) {
+                const statusBtn = document.getElementById('statusBtn');
+                if (!statusBtn.disabled) {
+                    // Auto-check every 5 seconds if there's an active job
+                    // checkStatus(); // Uncomment to enable auto-refresh
+                }
+            }
+        }, 5000);
+    </script>
+</body>
+</html>
