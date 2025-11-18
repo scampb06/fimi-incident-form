@@ -238,7 +238,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                 ${instructions}
                 <div style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 4px; display: flex; align-items: center; gap: 10px;">
                     <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-weight: bold;">
-                        <input type="checkbox" id="preValidationCheckbox" style="cursor: pointer; width: 18px; height: 18px;">
+                        <input type="radio" id="preValidationCheckbox" name="preValidation" style="cursor: pointer; width: 18px; height: 18px;">
                         Archive Prevalidation
                     </label>
                     <span style="color: #666; font-size: 13px;">(Validate URLs before archiving)</span>
