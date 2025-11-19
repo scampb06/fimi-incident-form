@@ -698,6 +698,9 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                     }
                 }
                 
+                // Global variable to store the active timer
+                let activeProgressTimer = null;
+                
                 // Show archive progress with timer
                 function showArchiveProgress(estimatedUrls) {
                     // Create or update progress display
@@ -721,13 +724,12 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
                         \`;
                         document.body.appendChild(progressDiv);
-                    }
-                    
-                    const estimatedTimeText = estimatedUrls > 0 ? 
-                        \`Estimated: \${Math.round(estimatedUrls * 2)} seconds (\${estimatedUrls} URLs × 2s each)\` : 
-                        'Calculating estimated time...';
-                    
-                    progressDiv.innerHTML = \`
+                        
+                        const estimatedTimeText = estimatedUrls > 0 ? 
+                            \`Estimated: \${Math.round(estimatedUrls * 2)} seconds (\${estimatedUrls} URLs × 2s each)\` : 
+                            'Calculating estimated time...';
+                        
+                        progressDiv.innerHTML = \`
                         <div style="margin-bottom: 20px;">
                             <h3 style="margin: 0 0 15px 0; color: #333; font-size: 20px;">🔄 Archiving URLs</h3>
                             <div style="font-size: 16px; color: #666; margin-bottom: 10px;">Processing your URLs...</div>
@@ -748,14 +750,20 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             This process archives each URL individually for better reliability
                         </div>
                     \`;
+                    }
                 }
                 
                 // Start the progress timer
                 function startArchiveProgressTimer(estimatedUrls, startTime) {
+                    // Clear any existing timer first
+                    if (activeProgressTimer) {
+                        clearInterval(activeProgressTimer);
+                    }
+                    
                     const averageTimePerUrl = 2; // seconds
                     const estimatedTotalTime = estimatedUrls * averageTimePerUrl;
                     
-                    return setInterval(() => {
+                    activeProgressTimer = setInterval(() => {
                         const elapsedSeconds = Math.round((Date.now() - startTime) / 1000);
                         const progressPercent = Math.min((elapsedSeconds / estimatedTotalTime) * 100, 95); // Cap at 95% until complete
                         const remainingSeconds = Math.max(estimatedTotalTime - elapsedSeconds, 0);
@@ -775,10 +783,18 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             timerDisplay.textContent = \`Elapsed: \${elapsedSeconds}s | \${remainingText}\`;
                         }
                     }, 1000);
+                    
+                    return activeProgressTimer;
                 }
                 
                 // Hide archive progress
                 function hideArchiveProgress() {
+                    // Clear the timer
+                    if (activeProgressTimer) {
+                        clearInterval(activeProgressTimer);
+                        activeProgressTimer = null;
+                    }
+                    
                     const progressDiv = document.getElementById('archive-progress-display');
                     if (progressDiv) {
                         progressDiv.remove();
