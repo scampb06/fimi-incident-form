@@ -238,7 +238,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                 ${instructions}
                 <div style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 4px; display: flex; align-items: center; gap: 15px; flex-wrap: nowrap;">
                     <label id="preValidationLabel" style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-weight: bold; white-space: nowrap;">
-                        <input type="checkbox" id="preValidationCheckbox" style="cursor: pointer; width: 16px; height: 16px;">
+                        <input type="checkbox" id="preValidationCheckbox" checked style="cursor: pointer; width: 16px; height: 16px;">
                         Prevalidation
                     </label>
                     <span style="color: #999; font-size: 20px;">|</span>
@@ -357,9 +357,6 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             window.archiveButton.textContent = 'Archiving URLs...';
                         }
                         
-                        // Create progress display
-                        showArchiveProgress(estimatedUrls);
-                        
                         console.log('Archiving URLs for:', cleanUrl);
                         
                         // Get selected archive service and determine time per URL
@@ -376,9 +373,32 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             timePerUrl = (preValidationCheckbox && preValidationCheckbox.checked) ? 2 : 1;
                         }
                         
+                        // Create progress display with accurate time estimate
+                        showArchiveProgress(estimatedUrls, timePerUrl);
+                        
                         // Start the progress timer
                         const startTime = Date.now();
                         const progressTimer = startArchiveProgressTimer(estimatedUrls, startTime, timePerUrl);
+                        
+                        // Setup timeout monitoring (300% of estimated time)
+                        const estimatedTotalTime = estimatedUrls * timePerUrl; // in seconds
+                        const timeoutLimit = estimatedTotalTime * 3; // 300% of estimated (in seconds)
+                        let hasTimedOut = false;
+                        
+                        const timeoutMonitor = setInterval(() => {
+                            const elapsedTime = (Date.now() - startTime) / 1000; // in seconds
+                            if (elapsedTime > timeoutLimit) {
+                                hasTimedOut = true;
+                                clearInterval(progressTimer);
+                                clearInterval(timeoutMonitor);
+                                hideArchiveProgress();
+                                if (window.archiveButton) {
+                                    window.archiveButton.disabled = false;
+                                    window.archiveButton.textContent = 'Archive unarchived URLs';
+                                }
+                                alert('Archive operation timed out. The call to the archive server exceeded 300% of the estimated time. Please check the archive logs and ensure the server is running properly.');
+                            }
+                        }, 1000);
                         
                         // Determine which endpoint to use
                         let endpoint;
@@ -392,19 +412,37 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         }
                         
                         // Call the archive endpoint with cleaned URL and preValidation parameter
-                        const response = await fetch(endpoint, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
+                        let response;
+                        try {
+                            response = await fetch(endpoint, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                }
+                            });
+                        } catch (fetchError) {
+                            clearInterval(progressTimer);
+                            clearInterval(timeoutMonitor);
+                            hideArchiveProgress();
+                            if (window.archiveButton) {
+                                window.archiveButton.disabled = false;
+                                window.archiveButton.textContent = 'Archive unarchived URLs';
                             }
-                        });
+                            throw new Error('Please check that the archive server is running properly.');
+                        }
                         
-                        // Clear the progress timer
+                        // Clear the progress timer and timeout monitor
                         clearInterval(progressTimer);
+                        clearInterval(timeoutMonitor);
+                        
+                        // Check if we timed out
+                        if (hasTimedOut) {
+                            return;
+                        }
                         
                         if (!response.ok) {
                             hideArchiveProgress();
-                            throw new Error(\`Archive request failed: \${response.status} \${response.statusText}\`);
+                            throw new Error(\`Archive request failed with status \${response.status}. Please check that the archive server is running properly.\`);
                         }
                         
                         const result = await response.json();
@@ -711,7 +749,10 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                 let activeProgressTimer = null;
                 
                 // Show archive progress with timer
-                function showArchiveProgress(estimatedUrls) {
+                function showArchiveProgress(estimatedUrls, timePerUrl) {
+                    // Default timePerUrl if not provided
+                    const timePerUrlDisplay = timePerUrl || 2;
+                    
                     // Create or update progress display
                     let progressDiv = document.getElementById('archive-progress-display');
                     if (!progressDiv) {
@@ -778,8 +819,9 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             }
                         });
                         
+                        const timePerUrlDisplay = timePerUrl || 2;
                         const estimatedTimeText = estimatedUrls > 0 ? 
-                            \`Estimated: \${Math.round(estimatedUrls * 2)} seconds (\${estimatedUrls} URLs × 2s each)\` : 
+                            \`Estimated: \${Math.round(estimatedUrls * timePerUrlDisplay)} seconds (\${estimatedUrls} URLs × \${timePerUrlDisplay}s each)\` : 
                             'Calculating estimated time...';
                         
                         progressDiv.innerHTML = \`
@@ -1118,9 +1160,6 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             console.log('Estimated URLs to process:', estimatedUrls);
                         }
                         
-                        // Show progress display with timer
-                        showArchiveProgress(estimatedUrls);
-                        
                         // Get selected archive service and determine time per URL
                         const waybackRadio = document.getElementById('waybackMachineRadio');
                         const bellingcatRadio = document.getElementById('bellingcatRadio');
@@ -1135,9 +1174,32 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             timePerUrl = (preValidationCheckbox && preValidationCheckbox.checked) ? 2 : 1;
                         }
                         
+                        // Show progress display with accurate time estimate
+                        showArchiveProgress(estimatedUrls, timePerUrl);
+                        
                         // Start the progress timer
                         const startTime = Date.now();
                         const progressTimer = startArchiveProgressTimer(estimatedUrls, startTime, timePerUrl);
+                        
+                        // Setup timeout monitoring (300% of estimated time)
+                        const estimatedTotalTime = estimatedUrls * timePerUrl; // in seconds
+                        const timeoutLimit = estimatedTotalTime * 3; // 300% of estimated (in seconds)
+                        let hasTimedOut = false;
+                        
+                        const timeoutMonitor = setInterval(() => {
+                            const elapsedTime = (Date.now() - startTime) / 1000; // in seconds
+                            if (elapsedTime > timeoutLimit) {
+                                hasTimedOut = true;
+                                clearInterval(progressTimer);
+                                clearInterval(timeoutMonitor);
+                                hideArchiveProgress();
+                                statusDiv.style.display = 'block';
+                                statusDiv.style.background = '#f8d7da';
+                                statusDiv.style.color = '#721c24';
+                                statusDiv.style.border = '1px solid #f5c6cb';
+                                statusDiv.innerHTML = '⏱️ Archive operation timed out. The call to the archive server exceeded 300% of the estimated time. Please check the archive logs and ensure the server is running properly.';
+                            }
+                        }, 1000);
                         
                         // Determine which endpoint to use
                         let endpoint;
@@ -1151,15 +1213,34 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         }
                         
                         // Call the archive endpoint with cleaned URL and preValidation parameter
-                        const response = await fetch(endpoint, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            }
-                        });
+                        let response;
+                        try {
+                            response = await fetch(endpoint, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                }
+                            });
+                        } catch (fetchError) {
+                            clearInterval(progressTimer);
+                            clearInterval(timeoutMonitor);
+                            hideArchiveProgress();
+                            statusDiv.style.display = 'block';
+                            statusDiv.style.background = '#f8d7da';
+                            statusDiv.style.color = '#721c24';
+                            statusDiv.style.border = '1px solid #f5c6cb';
+                            statusDiv.innerHTML = '❌ Error: Please check that the archive server is running properly.';
+                            return;
+                        }
                         
-                        // Clear the progress timer
+                        // Clear the progress timer and timeout monitor
                         clearInterval(progressTimer);
+                        clearInterval(timeoutMonitor);
+                        
+                        // Check if we timed out
+                        if (hasTimedOut) {
+                            return;
+                        }
                         
                         if (response.ok) {
                             const result = await response.json();
@@ -1177,7 +1258,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         } else {
                             // Archive failed for other reasons
                             hideArchiveProgress();
-                            throw new Error(\`Archive request failed: \${response.status} \${response.statusText}\`);
+                            throw new Error(\`Archive request failed with status \${response.status}. Please check that the archive server is running properly.\`);
                         }
                         
                     } catch (error) {
