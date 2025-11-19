@@ -362,13 +362,23 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         
                         console.log('Archiving URLs for:', cleanUrl);
                         
-                        // Start the progress timer
-                        const startTime = Date.now();
-                        const progressTimer = startArchiveProgressTimer(estimatedUrls, startTime);
-                        
-                        // Get selected archive service
+                        // Get selected archive service and determine time per URL
                         const waybackRadio = document.getElementById('waybackMachineRadio');
                         const bellingcatRadio = document.getElementById('bellingcatRadio');
+                        const preValidationCheckbox = document.getElementById('preValidationCheckbox');
+                        
+                        let timePerUrl;
+                        if (bellingcatRadio && bellingcatRadio.checked) {
+                            // Bellingcat Auto Archiver: 15 seconds per URL
+                            timePerUrl = 15;
+                        } else {
+                            // Wayback Machine: 2 seconds with prevalidation, 1 second without
+                            timePerUrl = (preValidationCheckbox && preValidationCheckbox.checked) ? 2 : 1;
+                        }
+                        
+                        // Start the progress timer
+                        const startTime = Date.now();
+                        const progressTimer = startArchiveProgressTimer(estimatedUrls, startTime, timePerUrl);
                         
                         // Determine which endpoint to use
                         let endpoint;
@@ -377,7 +387,6 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             endpoint = \`http://localhost:5239/bellingcat/auto-archiver-sheets?url=\${encodeURIComponent(cleanUrl)}\`;
                         } else {
                             // Wayback Machine - include preValidation parameter
-                            const preValidationCheckbox = document.getElementById('preValidationCheckbox');
                             const preValidation = preValidationCheckbox ? preValidationCheckbox.checked : false;
                             endpoint = \`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}&preValidation=\${preValidation}\`;
                         }
@@ -722,8 +731,52 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             min-width: 350px;
                             text-align: center;
                             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                            cursor: move;
                         \`;
                         document.body.appendChild(progressDiv);
+                        
+                        // Make the progress display draggable
+                        let isDragging = false;
+                        let currentX;
+                        let currentY;
+                        let initialX;
+                        let initialY;
+                        
+                        progressDiv.addEventListener('mousedown', function(e) {
+                            isDragging = true;
+                            progressDiv.style.cursor = 'grabbing';
+                            
+                            // Get initial mouse position
+                            initialX = e.clientX;
+                            initialY = e.clientY;
+                            
+                            // Get current position
+                            const rect = progressDiv.getBoundingClientRect();
+                            currentX = rect.left;
+                            currentY = rect.top;
+                        });
+                        
+                        document.addEventListener('mousemove', function(e) {
+                            if (!isDragging) return;
+                            
+                            e.preventDefault();
+                            
+                            // Calculate new position
+                            const deltaX = e.clientX - initialX;
+                            const deltaY = e.clientY - initialY;
+                            
+                            // Update position
+                            progressDiv.style.left = (currentX + deltaX) + 'px';
+                            progressDiv.style.top = (currentY + deltaY) + 'px';
+                            progressDiv.style.transform = 'none';
+                        });
+                        
+                        document.addEventListener('mouseup', function() {
+                            if (isDragging) {
+                                isDragging = false;
+                                progressDiv.style.cursor = 'move';
+                            }
+                        });
                         
                         const estimatedTimeText = estimatedUrls > 0 ? 
                             \`Estimated: \${Math.round(estimatedUrls * 2)} seconds (\${estimatedUrls} URLs × 2s each)\` : 
@@ -754,13 +807,13 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                 }
                 
                 // Start the progress timer
-                function startArchiveProgressTimer(estimatedUrls, startTime) {
+                function startArchiveProgressTimer(estimatedUrls, startTime, timePerUrl) {
                     // Clear any existing timer first
                     if (activeProgressTimer) {
                         clearInterval(activeProgressTimer);
                     }
                     
-                    const averageTimePerUrl = 2; // seconds
+                    const averageTimePerUrl = timePerUrl || 2; // seconds (default to 2 if not provided)
                     const estimatedTotalTime = estimatedUrls * averageTimePerUrl;
                     
                     activeProgressTimer = setInterval(() => {
@@ -1068,13 +1121,23 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         // Show progress display with timer
                         showArchiveProgress(estimatedUrls);
                         
-                        // Start the progress timer
-                        const startTime = Date.now();
-                        const progressTimer = startArchiveProgressTimer(estimatedUrls, startTime);
-                        
-                        // Get selected archive service
+                        // Get selected archive service and determine time per URL
                         const waybackRadio = document.getElementById('waybackMachineRadio');
                         const bellingcatRadio = document.getElementById('bellingcatRadio');
+                        const preValidationCheckbox = document.getElementById('preValidationCheckbox');
+                        
+                        let timePerUrl;
+                        if (bellingcatRadio && bellingcatRadio.checked) {
+                            // Bellingcat Auto Archiver: 15 seconds per URL
+                            timePerUrl = 15;
+                        } else {
+                            // Wayback Machine: 2 seconds with prevalidation, 1 second without
+                            timePerUrl = (preValidationCheckbox && preValidationCheckbox.checked) ? 2 : 1;
+                        }
+                        
+                        // Start the progress timer
+                        const startTime = Date.now();
+                        const progressTimer = startArchiveProgressTimer(estimatedUrls, startTime, timePerUrl);
                         
                         // Determine which endpoint to use
                         let endpoint;
@@ -1083,7 +1146,6 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             endpoint = \`http://localhost:5239/bellingcat/auto-archiver-sheets?url=\${encodeURIComponent(cleanUrl)}\`;
                         } else {
                             // Wayback Machine - include preValidation parameter
-                            const preValidationCheckbox = document.getElementById('preValidationCheckbox');
                             const preValidation = preValidationCheckbox ? preValidationCheckbox.checked : false;
                             endpoint = \`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}&preValidation=\${preValidation}\`;
                         }
