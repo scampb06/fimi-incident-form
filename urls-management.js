@@ -378,7 +378,6 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         let endpoint;
                         if (bellingcatRadio && bellingcatRadio.checked) {
                             endpoint = \`http://localhost:5239/bellingcat/auto-archiver-sheets?url=\${encodeURIComponent(cleanUrl)}&preValidation=\${preValidation}\`;
-                            //endpoint = \`https://fimi-incident-form-genai.azurewebsites.net/bellingcat/auto-archiver-sheets?url=\${encodeURIComponent(cleanUrl)}&preValidation=\${preValidation}\`;
                         } else {
                             endpoint = \`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}&preValidation=\${preValidation}\`;
                         }
@@ -1068,9 +1067,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         // Determine which endpoint to use
                         let endpoint;
                         if (bellingcatRadio && bellingcatRadio.checked) {
-                            endpoint = `http://localhost:5239/bellingcat/auto-archiver-sheets?url=${encodeURIComponent(cleanUrl)}&preValidation=${preValidation}`;
-                            //endpoint = `https://fimi-incident-form-genai.azurewebsites.net/bellingcat/auto-archiver-sheets?url=${encodeURIComponent(cleanUrl)}&preValidation=${preValidation}`;
-                            //endpoint = `https://fimi-incident-form-genai.azurewebsites.net/bellingcat/auto-archiver-sheets?url=${encodeURIComponent(cleanUrl)}&preValidation=${preValidation}`;
+                            endpoint = \`http://localhost:5239/bellingcat/auto-archiver-sheets?url=\${encodeURIComponent(cleanUrl)}&preValidation=\${preValidation}\`;
                         } else {
                             endpoint = \`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}&preValidation=\${preValidation}\`;
                         }
