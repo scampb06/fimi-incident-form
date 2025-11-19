@@ -237,8 +237,8 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
             <div class="instructions">
                 ${instructions}
                 <div style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 4px; display: flex; align-items: center; gap: 15px; flex-wrap: nowrap;">
-                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-weight: bold; white-space: nowrap;">
-                        <input type="radio" id="preValidationCheckbox" name="preValidation" style="cursor: pointer; width: 16px; height: 16px;">
+                    <label id="preValidationLabel" style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-weight: bold; white-space: nowrap;">
+                        <input type="checkbox" id="preValidationCheckbox" style="cursor: pointer; width: 16px; height: 16px;">
                         Prevalidation
                     </label>
                     <span style="color: #999; font-size: 20px;">|</span>
@@ -366,10 +366,6 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         const startTime = Date.now();
                         const progressTimer = startArchiveProgressTimer(estimatedUrls, startTime);
                         
-                        // Get preValidation checkbox state
-                        const preValidationCheckbox = document.getElementById('preValidationCheckbox');
-                        const preValidation = preValidationCheckbox ? preValidationCheckbox.checked : false;
-                        
                         // Get selected archive service
                         const waybackRadio = document.getElementById('waybackMachineRadio');
                         const bellingcatRadio = document.getElementById('bellingcatRadio');
@@ -377,8 +373,12 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         // Determine which endpoint to use
                         let endpoint;
                         if (bellingcatRadio && bellingcatRadio.checked) {
-                            endpoint = \`http://localhost:5239/bellingcat/auto-archiver-sheets?url=\${encodeURIComponent(cleanUrl)}&preValidation=\${preValidation}\`;
+                            // Bellingcat - no preValidation parameter
+                            endpoint = \`http://localhost:5239/bellingcat/auto-archiver-sheets?url=\${encodeURIComponent(cleanUrl)}\`;
                         } else {
+                            // Wayback Machine - include preValidation parameter
+                            const preValidationCheckbox = document.getElementById('preValidationCheckbox');
+                            const preValidation = preValidationCheckbox ? preValidationCheckbox.checked : false;
                             endpoint = \`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}&preValidation=\${preValidation}\`;
                         }
                         
@@ -1072,10 +1072,6 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         const startTime = Date.now();
                         const progressTimer = startArchiveProgressTimer(estimatedUrls, startTime);
                         
-                        // Get preValidation checkbox state from the popup window
-                        const preValidationCheckbox = document.getElementById('preValidationCheckbox');
-                        const preValidation = preValidationCheckbox ? preValidationCheckbox.checked : false;
-                        
                         // Get selected archive service
                         const waybackRadio = document.getElementById('waybackMachineRadio');
                         const bellingcatRadio = document.getElementById('bellingcatRadio');
@@ -1083,8 +1079,12 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         // Determine which endpoint to use
                         let endpoint;
                         if (bellingcatRadio && bellingcatRadio.checked) {
-                            endpoint = \`http://localhost:5239/bellingcat/auto-archiver-sheets?url=\${encodeURIComponent(cleanUrl)}&preValidation=\${preValidation}\`;
+                            // Bellingcat - no preValidation parameter
+                            endpoint = \`http://localhost:5239/bellingcat/auto-archiver-sheets?url=\${encodeURIComponent(cleanUrl)}\`;
                         } else {
+                            // Wayback Machine - include preValidation parameter
+                            const preValidationCheckbox = document.getElementById('preValidationCheckbox');
+                            const preValidation = preValidationCheckbox ? preValidationCheckbox.checked : false;
                             endpoint = \`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}&preValidation=\${preValidation}\`;
                         }
                         
@@ -1810,8 +1810,45 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                     window.close();
                 }
                 
+                // Setup archive service radio button listeners
+                function setupArchiveServiceListeners() {
+                    const waybackRadio = document.getElementById('waybackMachineRadio');
+                    const bellingcatRadio = document.getElementById('bellingcatRadio');
+                    const preValidationCheckbox = document.getElementById('preValidationCheckbox');
+                    const preValidationLabel = document.getElementById('preValidationLabel');
+                    
+                    function updatePrevalidationState() {
+                        if (bellingcatRadio && bellingcatRadio.checked) {
+                            // Bellingcat selected - gray out prevalidation but keep the state
+                            preValidationLabel.style.opacity = '0.4';
+                            preValidationLabel.style.cursor = 'not-allowed';
+                            preValidationCheckbox.style.cursor = 'not-allowed';
+                            preValidationLabel.style.pointerEvents = 'none';
+                        } else {
+                            // Wayback Machine selected - enable prevalidation
+                            preValidationLabel.style.opacity = '1';
+                            preValidationLabel.style.cursor = 'pointer';
+                            preValidationCheckbox.style.cursor = 'pointer';
+                            preValidationLabel.style.pointerEvents = 'auto';
+                        }
+                    }
+                    
+                    if (waybackRadio) {
+                        waybackRadio.addEventListener('change', updatePrevalidationState);
+                    }
+                    if (bellingcatRadio) {
+                        bellingcatRadio.addEventListener('change', updatePrevalidationState);
+                    }
+                    
+                    // Set initial state
+                    updatePrevalidationState();
+                }
+                
                 // Load the editor when the page loads
-                window.addEventListener('load', loadGoogleSheetsEditor);
+                window.addEventListener('load', function() {
+                    loadGoogleSheetsEditor();
+                    setupArchiveServiceListeners();
+                });
             </script>
         </body>
         </html>
