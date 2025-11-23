@@ -250,6 +250,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         <input type="radio" id="bellingcatRadio" name="archiveService" value="bellingcat" style="cursor: pointer; width: 16px; height: 16px;">
                         Bellingcat Auto Archiver
                     </label>
+                    <button id="checkStatusButton" onclick="checkBellingcatStatus()" style="padding: 5px 15px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; white-space: nowrap;">Check Status</button>
                 </div>
             </div>
             
@@ -359,19 +360,63 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         
                         console.log('Archiving URLs for:', cleanUrl);
                         
-                        // Get selected archive service and determine time per URL
+                        // Get selected archive service
                         const waybackRadio = document.getElementById('waybackMachineRadio');
                         const bellingcatRadio = document.getElementById('bellingcatRadio');
                         const preValidationCheckbox = document.getElementById('preValidationCheckbox');
                         
-                        let timePerUrl;
+                        // Check if Bellingcat is selected - use async endpoint without timer
                         if (bellingcatRadio && bellingcatRadio.checked) {
-                            // Bellingcat Auto Archiver: 15 seconds per URL
-                            timePerUrl = 15;
-                        } else {
-                            // Wayback Machine: 2 seconds with prevalidation, 1 second without
-                            timePerUrl = (preValidationCheckbox && preValidationCheckbox.checked) ? 2 : 1;
+                            // Bellingcat Auto Archiver - use async endpoint
+                            const endpoint = \`http://localhost:5239/bellingcat/auto-archiver-sheets-asynchronous?url=\${encodeURIComponent(cleanUrl)}\`;
+                            
+                            let response;
+                            try {
+                                response = await fetch(endpoint, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    }
+                                });
+                            } catch (fetchError) {
+                                if (window.archiveButton) {
+                                    window.archiveButton.disabled = false;
+                                    window.archiveButton.textContent = 'Archive unarchived URLs';
+                                }
+                                throw new Error('Please check that the archive server is running properly.');
+                            }
+                            
+                            if (!response.ok) {
+                                throw new Error(\`Archive request failed with status \${response.status}. Please check that the archive server is running properly.\`);
+                            }
+                            
+                            const result = await response.json();
+                            console.log('Bellingcat async job started:', result);
+                            
+                            // Store jobId for status checking
+                            window.currentBellingcatJobId = result.jobId;
+                            
+                            // Re-enable the button immediately
+                            if (window.archiveButton) {
+                                window.archiveButton.disabled = false;
+                                window.archiveButton.textContent = 'Archive unarchived URLs';
+                            }
+                            
+                            // Show job started message
+                            const message = \`\${result.message}\n\n" +
+                                "Job ID: \${result.jobId}\n" +
+                                "Status: \${result.status}\n" +
+                                "Estimated URLs: \${result.estimatedUrlCount}\n" +
+                                "Estimated Time: \${result.estimatedTime}\n\n" +
+                                "\${result.note}\n\n" +
+                                "Click the 'Check Status' button to monitor progress.\`;
+                            
+                            alert(message);
+                            return;
                         }
+                        
+                        // Wayback Machine flow - use original synchronous flow with timer
+                        let timePerUrl = (preValidationCheckbox && preValidationCheckbox.checked) ? 2 : 1;
                         
                         // Create progress display with accurate time estimate
                         showArchiveProgress(estimatedUrls, timePerUrl);
@@ -400,18 +445,11 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             }
                         }, 1000);
                         
-                        // Determine which endpoint to use
-                        let endpoint;
-                        if (bellingcatRadio && bellingcatRadio.checked) {
-                            // Bellingcat - no preValidation parameter
-                            endpoint = \`http://localhost:5239/bellingcat/auto-archiver-sheets?url=\${encodeURIComponent(cleanUrl)}\`;
-                        } else {
-                            // Wayback Machine - include preValidation parameter
-                            const preValidation = preValidationCheckbox ? preValidationCheckbox.checked : false;
-                            endpoint = \`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}&preValidation=\${preValidation}\`;
-                        }
+                        // Wayback Machine endpoint with preValidation parameter
+                        const preValidation = preValidationCheckbox ? preValidationCheckbox.checked : false;
+                        const endpoint = \`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}&preValidation=\${preValidation}\`;
                         
-                        // Call the archive endpoint with cleaned URL and preValidation parameter
+                        // Call the archive endpoint
                         let response;
                         try {
                             response = await fetch(endpoint, {
@@ -893,6 +931,88 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                     const progressDiv = document.getElementById('archive-progress-display');
                     if (progressDiv) {
                         progressDiv.remove();
+                    }
+                }
+                
+                // Check Bellingcat job status
+                async function checkBellingcatStatus() {
+                    try {
+                        // Check if we have a jobId
+                        if (!window.currentBellingcatJobId) {
+                            alert('No archive job found. Please click "Archive unarchived URLs" first to initiate archiving.');
+                            return;
+                        }
+                        
+                        const jobId = window.currentBellingcatJobId;
+                        const endpoint = \`http://localhost:5239/bellingcat/auto-archiver/status/\${jobId}\`;
+                        
+                        const response = await fetch(endpoint);
+                        
+                        if (response.status === 404) {
+                            alert('Job not found. It may have been removed from the server.');
+                            return;
+                        }
+                        
+                        if (!response.ok) {
+                            throw new Error(\`Status check failed with status \${response.status}\`);
+                        }
+                        
+                        const status = await response.json();
+                        console.log('Bellingcat job status:', status);
+                        
+                        // Format duration
+                        const duration = status.duration;
+                        let durationText = 'Unknown';
+                        if (duration) {
+                            // Parse duration string (format: \"HH:MM:SS.fffffff\")
+                            const parts = duration.split(':');
+                            if (parts.length >= 3) {
+                                const hours = parseInt(parts[0]);
+                                const minutes = parseInt(parts[1]);
+                                const seconds = Math.floor(parseFloat(parts[2]));
+                                
+                                if (hours > 0) {
+                                    durationText = \`\${hours}h \${minutes}m \${seconds}s\`;
+                                } else if (minutes > 0) {
+                                    durationText = \`\${minutes}m \${seconds}s\`;
+                                } else {
+                                    durationText = \`\${seconds}s\`;
+                                }
+                            }
+                        }
+                        
+                        // Build status message
+                        let message = \`Bellingcat Auto-Archiver Job Status\\n\\n\` +
+                            \`Job ID: \${status.jobId}\\n\` +
+                            \`Status: \${status.status}\\n\` +
+                            \`URL Count: \${status.urlCount}\\n\` +
+                            \`Duration: \${durationText}\\n\` +
+                            \`Start Time: \${new Date(status.startTime).toLocaleString()}\`;
+                        
+                        if (status.endTime) {
+                            message += \`\\nEnd Time: \${new Date(status.endTime).toLocaleString()}\`;
+                        }
+                        
+                        if (status.outputDirectory) {
+                            message += \`\\n\\nOutput Directory: \${status.outputDirectory}\`;
+                        }
+                        
+                        if (status.status === 'completed') {
+                            message += '\\n\\n✅ Archive job completed successfully!';
+                            if (status.results) {
+                                message += \`\\n\\nResults written to Google Sheet.\`;
+                            }
+                        } else if (status.status === 'running') {
+                            message += '\\n\\n⏳ Archive job is still running. Check back later for updates.';
+                        } else if (status.status === 'failed') {
+                            message += '\\n\\n❌ Archive job failed. Check the log output for details.';
+                        }
+                        
+                        alert(message);
+                        
+                    } catch (error) {
+                        console.error('Error checking Bellingcat status:', error);
+                        alert(\`Error checking job status: \${error.message}\`);
                     }
                 }
                 
@@ -1959,32 +2079,47 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                     const bellingcatRadio = document.getElementById('bellingcatRadio');
                     const preValidationCheckbox = document.getElementById('preValidationCheckbox');
                     const preValidationLabel = document.getElementById('preValidationLabel');
+                    const checkStatusButton = document.getElementById('checkStatusButton');
                     
-                    function updatePrevalidationState() {
+                    function updateControlStates() {
                         if (bellingcatRadio && bellingcatRadio.checked) {
                             // Bellingcat selected - gray out prevalidation but keep the state
                             preValidationLabel.style.opacity = '0.4';
                             preValidationLabel.style.cursor = 'not-allowed';
                             preValidationCheckbox.style.cursor = 'not-allowed';
                             preValidationLabel.style.pointerEvents = 'none';
+                            
+                            // Enable Check Status button
+                            if (checkStatusButton) {
+                                checkStatusButton.disabled = false;
+                                checkStatusButton.style.opacity = '1';
+                                checkStatusButton.style.cursor = 'pointer';
+                            }
                         } else {
                             // Wayback Machine selected - enable prevalidation
                             preValidationLabel.style.opacity = '1';
                             preValidationLabel.style.cursor = 'pointer';
                             preValidationCheckbox.style.cursor = 'pointer';
                             preValidationLabel.style.pointerEvents = 'auto';
+                            
+                            // Disable Check Status button
+                            if (checkStatusButton) {
+                                checkStatusButton.disabled = true;
+                                checkStatusButton.style.opacity = '0.4';
+                                checkStatusButton.style.cursor = 'not-allowed';
+                            }
                         }
                     }
                     
                     if (waybackRadio) {
-                        waybackRadio.addEventListener('change', updatePrevalidationState);
+                        waybackRadio.addEventListener('change', updateControlStates);
                     }
                     if (bellingcatRadio) {
-                        bellingcatRadio.addEventListener('change', updatePrevalidationState);
+                        bellingcatRadio.addEventListener('change', updateControlStates);
                     }
                     
                     // Set initial state
-                    updatePrevalidationState();
+                    updateControlStates();
                 }
                 
                 // Load the editor when the page loads
