@@ -338,27 +338,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             return; // Exit early to show the dialog
                         }
                         
-                        // Step 2: Get URL count for time estimation (only if we have permission)
-                        console.log('Permission confirmed! Getting URL count for time estimation...');
-                        if (window.archiveButton) {
-                            window.archiveButton.textContent = 'Getting URL count...';
-                        }
-                        
-                        const countResponse = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/data-for-url?url=\${encodeURIComponent(cleanUrl)}\`);
-                        
-                        let estimatedUrls = 0;
-                        if (countResponse.ok) {
-                            const countData = await countResponse.json();
-                            estimatedUrls = countData.count || 0;
-                            console.log('Estimated URLs to process:', estimatedUrls);
-                        }
-                        
-                        // Step 3: Show progress and start archiving (only if we have permission)
-                        if (window.archiveButton) {
-                            window.archiveButton.textContent = 'Archiving URLs...';
-                        }
-                        
-                        console.log('Archiving URLs for:', cleanUrl);
+                        console.log('Permission confirmed!');
                         
                         // Get selected archive service
                         const waybackRadio = document.getElementById('waybackMachineRadio');
@@ -367,7 +347,13 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         
                         // Check if Bellingcat is selected - use async endpoint without timer
                         if (bellingcatRadio && bellingcatRadio.checked) {
-                            // Bellingcat Auto Archiver - use async endpoint
+                            // Bellingcat Auto Archiver - use async endpoint (no URL count needed)
+                            console.log('Starting Bellingcat async archive for:', cleanUrl);
+                            
+                            if (window.archiveButton) {
+                                window.archiveButton.textContent = 'Starting archive job...';
+                            }
+                            
                             const endpoint = \`http://localhost:5239/bellingcat/auto-archiver-sheets-asynchronous?url=\${encodeURIComponent(cleanUrl)}\`;
                             
                             let response;
@@ -416,6 +402,25 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         }
                         
                         // Wayback Machine flow - use original synchronous flow with timer
+                        // Step 2: Get URL count for time estimation (only for Wayback Machine)
+                        console.log('Getting URL count for Wayback Machine timer...');
+                        if (window.archiveButton) {
+                            window.archiveButton.textContent = 'Getting URL count...';
+                        }
+                        
+                        const countResponse = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/data-for-url?url=\${encodeURIComponent(cleanUrl)}\`);
+                        
+                        let estimatedUrls = 0;
+                        if (countResponse.ok) {
+                            const countData = await countResponse.json();
+                            estimatedUrls = countData.count || 0;
+                            console.log('Estimated URLs to process:', estimatedUrls);
+                        }
+                        
+                        if (window.archiveButton) {
+                            window.archiveButton.textContent = 'Archiving URLs...';
+                        }
+                        
                         let timePerUrl = (preValidationCheckbox && preValidationCheckbox.checked) ? 2 : 1;
                         
                         // Create progress display with accurate time estimate
