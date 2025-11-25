@@ -388,14 +388,12 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                                 window.archiveButton.textContent = 'Archive unarchived URLs';
                             }
                             
-                            // Show job started message
-                            const message = \`\${result.message}\n\n" +
-                                "Job ID: \${result.jobId}\n" +
-                                "Status: \${result.status}\n" +
-                                "Estimated URLs: \${result.estimatedUrlCount}\n" +
-                                "Estimated Time: \${result.estimatedTime}\n\n" +
-                                "\${result.note}\n\n" +
-                                "Click the 'Check Status' button to monitor progress.\`;
+                            // Show simplified job started message
+                            const startTime = new Date().toLocaleString();
+                            const urlCount = result.estimatedUrlCount || 'Unknown';
+                            const estimatedTime = result.estimatedTime || 'Unknown';
+                            
+                            const message = \`Archive job started at \${startTime}. Estimated duration for \${urlCount} URLs is \${estimatedTime}. Click 'Check Status' to monitor progress.\`;
                             
                             alert(message);
                             return;
@@ -967,7 +965,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         
                         // Format duration
                         const duration = status.duration;
-                        let durationText = 'Unknown';
+                        let durationMinutes = 0;
                         if (duration) {
                             // Parse duration string (format: \"HH:MM:SS.fffffff\")
                             const parts = duration.split(':');
@@ -975,42 +973,27 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                                 const hours = parseInt(parts[0]);
                                 const minutes = parseInt(parts[1]);
                                 const seconds = Math.floor(parseFloat(parts[2]));
-                                
-                                if (hours > 0) {
-                                    durationText = \`\${hours}h \${minutes}m \${seconds}s\`;
-                                } else if (minutes > 0) {
-                                    durationText = \`\${minutes}m \${seconds}s\`;
-                                } else {
-                                    durationText = \`\${seconds}s\`;
-                                }
+                                durationMinutes = hours * 60 + minutes + Math.round(seconds / 60);
                             }
                         }
                         
-                        // Build status message
-                        let message = \`Bellingcat Auto-Archiver Job Status\\n\\n\` +
-                            \`Job ID: \${status.jobId}\\n\` +
-                            \`Status: \${status.status}\\n\` +
-                            \`URL Count: \${status.urlCount}\\n\` +
-                            \`Duration: \${durationText}\\n\` +
-                            \`Start Time: \${new Date(status.startTime).toLocaleString()}\`;
+                        const startTime = new Date(status.startTime).toLocaleString();
+                        const urlCount = status.urlCount || 0;
                         
-                        if (status.endTime) {
-                            message += \`\\nEnd Time: \${new Date(status.endTime).toLocaleString()}\`;
-                        }
+                        // Calculate estimated remaining time
+                        // Assuming 2-5 minutes per URL as per backend estimate
+                        const estimatedTotalMinutes = urlCount * 3.5; // Use middle of range
+                        const remainingMinutes = Math.max(0, Math.round(estimatedTotalMinutes - durationMinutes));
                         
-                        if (status.outputDirectory) {
-                            message += \`\\n\\nOutput Directory: \${status.outputDirectory}\`;
-                        }
-                        
+                        let message;
                         if (status.status === 'completed') {
-                            message += '\\n\\n✅ Archive job completed successfully!';
-                            if (status.results) {
-                                message += \`\\n\\nResults written to Google Sheet.\`;
-                            }
+                            message = \`Archive job started at \${startTime} completed in \${durationMinutes} minutes. ✅ Results written to Google Sheet.\`;
                         } else if (status.status === 'running') {
-                            message += '\\n\\n⏳ Archive job is still running. Check back later for updates.';
+                            message = \`Archive job started at \${startTime} has been running for \${durationMinutes} minutes. Remaining time estimated at \${remainingMinutes} minutes.\`;
                         } else if (status.status === 'failed') {
-                            message += '\\n\\n❌ Archive job failed. Check the log output for details.';
+                            message = \`Archive job started at \${startTime} failed after \${durationMinutes} minutes. ❌ Check the server logs for details.\`;
+                        } else {
+                            message = \`Archive job started at \${startTime}. Status: \${status.status}\`;
                         }
                         
                         alert(message);
