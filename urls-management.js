@@ -379,8 +379,9 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             const result = await response.json();
                             console.log('Bellingcat async job started:', result);
                             
-                            // Store jobId for status checking
+                            // Store jobId and estimated time for status checking
                             window.currentBellingcatJobId = result.jobId;
+                            window.currentBellingcatEstimatedTime = result.estimatedTime || 'Unknown';
                             
                             // Re-enable the button immediately
                             if (window.archiveButton) {
@@ -395,7 +396,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             
                             const message = \`Archive job started at \${startTime}. Estimated duration for \${urlCount} URLs is \${estimatedTime}. Click 'Check Status' to monitor progress.\`;
                             
-                            alert(message);
+                            showMessageDialog(message, 'Archive Job Started');
                             return;
                         }
                         
@@ -937,12 +938,76 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                     }
                 }
                 
+                // Show custom message dialog (similar to permission dialog)
+                function showMessageDialog(message, title = 'Archive Status') {
+                    // Remove any existing message dialog
+                    const existing = document.getElementById('message-modal-overlay');
+                    if (existing) {
+                        existing.remove();
+                    }
+                    
+                    // Create modal overlay
+                    const modalOverlay = document.createElement('div');
+                    modalOverlay.id = 'message-modal-overlay';
+                    modalOverlay.style.cssText = \`
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background: rgba(0, 0, 0, 0.5);
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        z-index: 10000;
+                    \`;
+                    
+                    // Create modal dialog
+                    const modal = document.createElement('div');
+                    modal.style.cssText = \`
+                        background: white;
+                        border-radius: 8px;
+                        padding: 30px;
+                        max-width: 500px;
+                        width: 90%;
+                        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                    \`;
+                    
+                    modal.innerHTML = \`
+                        <h2 style="margin: 0 0 20px 0; color: #333; font-size: 24px;">\${title}</h2>
+                        <div style="color: #666; font-size: 16px; line-height: 1.6; white-space: pre-line; margin-bottom: 25px;">\${message}</div>
+                        <div style="text-align: right;">
+                            <button onclick="document.getElementById('message-modal-overlay').remove()" style="
+                                padding: 10px 30px;
+                                background: #007cba;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 16px;
+                                font-weight: bold;
+                            ">OK</button>
+                        </div>
+                    \`;
+                    
+                    modalOverlay.appendChild(modal);
+                    document.body.appendChild(modalOverlay);
+                    
+                    // Close on overlay click
+                    modalOverlay.addEventListener('click', function(e) {
+                        if (e.target === modalOverlay) {
+                            modalOverlay.remove();
+                        }
+                    });
+                }
+                
                 // Check Bellingcat job status
                 async function checkBellingcatStatus() {
                     try {
                         // Check if we have a jobId
                         if (!window.currentBellingcatJobId) {
-                            alert('No archive job found. Please click "Archive unarchived URLs" first to initiate archiving.');
+                            showMessageDialog('No archive job found. Please click "Archive unarchived URLs" first to initiate archiving.', 'No Job Found');
                             return;
                         }
                         
@@ -952,7 +1017,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         const response = await fetch(endpoint);
                         
                         if (response.status === 404) {
-                            alert('Job not found. It may have been removed from the server.');
+                            showMessageDialog('Job not found. It may have been removed from the server.', 'Job Not Found');
                             return;
                         }
                         
@@ -980,23 +1045,40 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         const startTime = new Date(status.startTime).toLocaleString();
                         const urlCount = status.urlCount || 0;
                         
-                        // Calculate estimated remaining time
-                        // Assuming 2-5 minutes per URL as per backend estimate
-                        const estimatedTotalMinutes = urlCount * 3.5; // Use middle of range
+                        // Calculate estimated remaining time using backend's estimate
+                        // Backend returns format like "14-35 minutes"
+                        let estimatedTotalMinutes = 0;
+                        if (window.currentBellingcatEstimatedTime && window.currentBellingcatEstimatedTime !== 'Unknown') {
+                            // Parse "14-35 minutes" to get average
+                            const match = window.currentBellingcatEstimatedTime.match(/(\d+)-(\d+)/);
+                            if (match) {
+                                const minEstimate = parseInt(match[1]);
+                                const maxEstimate = parseInt(match[2]);
+                                estimatedTotalMinutes = Math.round((minEstimate + maxEstimate) / 2);
+                            }
+                        } else {
+                            // Fallback: assume 2-5 minutes per URL
+                            estimatedTotalMinutes = urlCount * 3.5;
+                        }
                         const remainingMinutes = Math.max(0, Math.round(estimatedTotalMinutes - durationMinutes));
                         
                         let message;
+                        let dialogTitle = 'Archive Job Status';
+                        
                         if (status.status === 'completed') {
                             message = \`Archive job started at \${startTime} completed in \${durationMinutes} minutes. ✅ Results written to Google Sheet.\`;
+                            dialogTitle = 'Archive Job Completed';
                         } else if (status.status === 'running') {
                             message = \`Archive job started at \${startTime} has been running for \${durationMinutes} minutes. Remaining time estimated at \${remainingMinutes} minutes.\`;
+                            dialogTitle = 'Archive Job Running';
                         } else if (status.status === 'failed') {
                             message = \`Archive job started at \${startTime} failed after \${durationMinutes} minutes. ❌ Check the server logs for details.\`;
+                            dialogTitle = 'Archive Job Failed';
                         } else {
                             message = \`Archive job started at \${startTime}. Status: \${status.status}\`;
                         }
                         
-                        alert(message);
+                        showMessageDialog(message, dialogTitle);
                         
                     } catch (error) {
                         console.error('Error checking Bellingcat status:', error);
