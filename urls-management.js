@@ -1048,19 +1048,34 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         // Calculate estimated remaining time using backend's estimate
                         // Backend returns format like "14-35 minutes"
                         let estimatedTotalMinutes = 0;
+                        
+                        console.log('Stored estimated time:', window.currentBellingcatEstimatedTime);
+                        console.log('Exact character codes:', window.currentBellingcatEstimatedTime ? Array.from(window.currentBellingcatEstimatedTime).map(c => c.charCodeAt(0)) : 'N/A');
+                        console.log('Duration minutes:', durationMinutes);
+                        console.log('URL count:', urlCount);
+                        
                         if (window.currentBellingcatEstimatedTime && window.currentBellingcatEstimatedTime !== 'Unknown') {
-                            // Parse "14-35 minutes" to get average
-                            const match = window.currentBellingcatEstimatedTime.match(/(\d+)-(\d+)/);
-                            if (match) {
-                                const minEstimate = parseInt(match[1]);
-                                const maxEstimate = parseInt(match[2]);
+                            // Parse "14-35 minutes" to get average - try multiple approaches
+                            // First, try to extract any two numbers regardless of separator
+                            const numbers = window.currentBellingcatEstimatedTime.match(/(\d+)\D+(\d+)/);
+                            console.log('Number extraction result:', numbers);
+                            if (numbers) {
+                                const minEstimate = parseInt(numbers[1]);
+                                const maxEstimate = parseInt(numbers[2]);
                                 estimatedTotalMinutes = Math.round((minEstimate + maxEstimate) / 2);
+                                console.log('Parsed estimates - min:', minEstimate, 'max:', maxEstimate, 'average:', estimatedTotalMinutes);
+                            } else {
+                                console.log('Regex did not match. Trying fallback calculation.');
+                                estimatedTotalMinutes = urlCount * 3.5;
                             }
                         } else {
+                            console.log('No stored estimate found. Using fallback calculation.');
                             // Fallback: assume 2-5 minutes per URL
                             estimatedTotalMinutes = urlCount * 3.5;
                         }
+                        
                         const remainingMinutes = Math.max(0, Math.round(estimatedTotalMinutes - durationMinutes));
+                        console.log('Estimated total:', estimatedTotalMinutes, 'Remaining:', remainingMinutes);
                         
                         let message;
                         let dialogTitle = 'Archive Job Status';
