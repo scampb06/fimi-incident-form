@@ -247,15 +247,19 @@
         
         // Handle country code input changes
         document.getElementById('countryCode').addEventListener('input', function(e) {
-            const selectedCode = e.target.value.trim().toUpperCase();
+            const inputValue = e.target.value.trim().toUpperCase();
             const countryNameField = document.getElementById('countryName');
+            
+            // Update the input to uppercase
+            e.target.value = inputValue;
             
             // Clear previous selection styling
             e.target.classList.remove('selected');
             countryNameField.classList.remove('selected');
             
-            if (selectedCode && countryCodeMap.has(selectedCode)) {
-                const country = countryCodeMap.get(selectedCode);
+            // Check for exact match
+            if (inputValue && countryCodeMap.has(inputValue)) {
+                const country = countryCodeMap.get(inputValue);
                 countryNameField.value = country.name;
                 
                 // Add selection styling
@@ -266,9 +270,14 @@
                 document.getElementById('status').innerHTML = 
                     `<div class="info">✓ Selected: <strong>${country.id}</strong> - ${country.name}</div>`;
             } else {
-                // Clear name field if code doesn't match exactly
-                if (selectedCode && !isPartialMatch(selectedCode, 'code')) {
-                    countryNameField.value = '';
+                // Clear name field if no exact match
+                countryNameField.value = '';
+                
+                // Update datalist with filtered results
+                if (inputValue) {
+                    updateCodeDatalist(inputValue);
+                    document.getElementById('status').innerHTML = 
+                        `<div class="info">Type to search country codes...</div>`;
                 }
             }
             
@@ -278,15 +287,16 @@
         
         // Handle country name input changes
         document.getElementById('countryName').addEventListener('input', function(e) {
-            const selectedName = e.target.value.trim();
+            const inputValue = e.target.value.trim();
             const countryCodeField = document.getElementById('countryCode');
             
             // Clear previous selection styling
             e.target.classList.remove('selected');
             countryCodeField.classList.remove('selected');
             
-            if (selectedName && countryNameMap.has(selectedName)) {
-                const country = countryNameMap.get(selectedName);
+            // Check for exact match
+            if (inputValue && countryNameMap.has(inputValue)) {
+                const country = countryNameMap.get(inputValue);
                 countryCodeField.value = country.id;
                 
                 // Add selection styling
@@ -297,15 +307,68 @@
                 document.getElementById('status').innerHTML = 
                     `<div class="info">✓ Selected: <strong>${country.id}</strong> - ${country.name}</div>`;
             } else {
-                // Clear code field if name doesn't match exactly
-                if (selectedName && !isPartialMatch(selectedName, 'name')) {
-                    countryCodeField.value = '';
+                // Clear code field if no exact match
+                countryCodeField.value = '';
+                
+                // Update datalist with filtered results
+                if (inputValue) {
+                    updateNameDatalist(inputValue);
+                    document.getElementById('status').innerHTML = 
+                        `<div class="info">Type to search country names...</div>`;
                 }
             }
             
             // Update button state
             updateSelectButtonState();
         });
+        
+        // Update code datalist with filtered results
+        function updateCodeDatalist(searchTerm) {
+            const codeDatalist = document.getElementById('countryCodeList');
+            codeDatalist.innerHTML = '';
+            
+            const fragment = document.createDocumentFragment();
+            const upperSearch = searchTerm.toUpperCase();
+            
+            // Filter countries that match the search term
+            const matches = countries.filter(country => 
+                country.id.toUpperCase().startsWith(upperSearch)
+            );
+            
+            // Limit to first 50 matches for performance
+            matches.slice(0, 50).forEach(country => {
+                const option = document.createElement('option');
+                option.value = country.id;
+                option.textContent = `${country.id} - ${country.name}`;
+                fragment.appendChild(option);
+            });
+            
+            codeDatalist.appendChild(fragment);
+        }
+        
+        // Update name datalist with filtered results
+        function updateNameDatalist(searchTerm) {
+            const nameDatalist = document.getElementById('countryNameList');
+            nameDatalist.innerHTML = '';
+            
+            const fragment = document.createDocumentFragment();
+            const lowerSearch = searchTerm.toLowerCase();
+            
+            // Filter countries that match the search term
+            const matches = countries.filter(country => 
+                country.name.toLowerCase().includes(lowerSearch)
+            );
+            
+            // Limit to first 50 matches for performance
+            matches.slice(0, 50).forEach(country => {
+                const option = document.createElement('option');
+                option.value = country.name;
+                option.textContent = `${country.name} (${country.id})`;
+                fragment.appendChild(option);
+            });
+            
+            nameDatalist.appendChild(fragment);
+        }
         
         // Check if input is a partial match (user is still typing)
         function isPartialMatch(input, type) {
