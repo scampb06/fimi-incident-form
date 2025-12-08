@@ -894,8 +894,8 @@
             renumberMetaNarratives();
         }
 
-        function addSubNarrative(metaIndex) {
-            console.log('addSubNarrative called with metaIndex:', metaIndex);
+        function addSubNarrativeCompact(metaIndex) {
+            console.log('addSubNarrativeCompact called with metaIndex:', metaIndex);
             const metaGroup = document.querySelector(`.meta-narrative-group[data-meta-index="${metaIndex}"]`);
             console.log('Found metaGroup:', metaGroup);
             if (!metaGroup) {
@@ -916,7 +916,7 @@
             newField.innerHTML = `
                 <div class="dynamic-field-header">
                     <span class="field-number" style="background: #6c757d;">Sub-Narrative ${metaIndex}.${newSubIndex}</span>
-                    <button type="button" class="remove-field-btn" onclick="removeSubNarrative(this)">Remove</button>
+                    <button type="button" class="remove-field-btn" onclick="removeSubNarrativeCompact(this)">Remove</button>
                 </div>
                 <textarea class="sub-narrative-text" placeholder="Describe this sub-narrative..." rows="3"></textarea>
             `;
@@ -924,7 +924,7 @@
             console.log('Sub-narrative added successfully');
         }
 
-        function removeSubNarrative(button) {
+        function removeSubNarrativeCompact(button) {
             const metaGroup = button.closest('.meta-narrative-group');
             const metaIndex = metaGroup.getAttribute('data-meta-index');
             button.closest('.dynamic-field-container').remove();
@@ -1070,8 +1070,8 @@
                         e.preventDefault();
                         e.stopPropagation();
                         const metaIndex = parseInt(target.getAttribute('data-meta-index'));
-                        console.log('Button clicked, calling addSubNarrative with index:', metaIndex);
-                        addSubNarrative(metaIndex);
+                        console.log('Button clicked, calling addSubNarrativeCompact with index:', metaIndex);
+                        addSubNarrativeCompact(metaIndex);
                     }
                 });
             }
