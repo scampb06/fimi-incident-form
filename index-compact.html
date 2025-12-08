@@ -584,15 +584,15 @@
                             </div>
                             <textarea class="meta-narrative-text" placeholder="Overarching narrative theme..." rows="4"></textarea>
                             
-                            <div class="sub-narratives-container" style="margin-top: 15px; padding-left: 20px; border-left: 3px solid #007cba;">
-                                <div class="dynamic-field-container" style="background: white;">
+                            <div class="sub-narratives-container" data-meta-index="1" style="margin-top: 15px; padding-left: 20px; border-left: 3px solid #007cba;">
+                                <div class="dynamic-field-container" style="background: white; position: relative;">
                                     <div class="dynamic-field-header">
                                         <span class="field-number" style="background: #6c757d;">Sub-Narrative 1.1</span>
                                     </div>
                                     <textarea class="sub-narrative-text" placeholder="Describe the first sub-narrative..." rows="3"></textarea>
                                 </div>
                             </div>
-                            <button type="button" class="add-field-btn" onclick="addSubNarrative(1)" style="margin-top: 10px; font-size: 13px; padding: 6px 12px;">+ Add Sub-Narrative</button>
+                            <button type="button" class="add-field-btn" data-meta-index="1" style="margin-top: 10px; font-size: 13px; padding: 6px 12px;">+ Add Sub-Narrative</button>
                         </div>
                     </div>
                 </div>
@@ -874,15 +874,15 @@
                     </div>
                     <textarea class="meta-narrative-text" placeholder="Overarching narrative theme..." rows="4"></textarea>
                     
-                    <div class="sub-narratives-container" style="margin-top: 15px; padding-left: 20px; border-left: 3px solid #007cba;">
-                        <div class="dynamic-field-container" style="background: white;">
+                    <div class="sub-narratives-container" data-meta-index="${metaNarrativeCount}" style="margin-top: 15px; padding-left: 20px; border-left: 3px solid #007cba;">
+                        <div class="dynamic-field-container" style="background: white; position: relative;">
                             <div class="dynamic-field-header">
                                 <span class="field-number" style="background: #6c757d;">Sub-Narrative ${metaNarrativeCount}.1</span>
                             </div>
                             <textarea class="sub-narrative-text" placeholder="Describe the first sub-narrative..." rows="3"></textarea>
                         </div>
                     </div>
-                    <button type="button" class="add-field-btn" onclick="addSubNarrative(${metaNarrativeCount})" style="margin-top: 10px; font-size: 13px; padding: 6px 12px;">+ Add Sub-Narrative</button>
+                    <button type="button" class="add-field-btn" data-meta-index="${metaNarrativeCount}" style="margin-top: 10px; font-size: 13px; padding: 6px 12px;">+ Add Sub-Narrative</button>
                 </div>
             `;
             container.appendChild(newMetaGroup);
@@ -895,16 +895,24 @@
         }
 
         function addSubNarrative(metaIndex) {
+            console.log('addSubNarrative called with metaIndex:', metaIndex);
             const metaGroup = document.querySelector(`.meta-narrative-group[data-meta-index="${metaIndex}"]`);
-            if (!metaGroup) return;
+            console.log('Found metaGroup:', metaGroup);
+            if (!metaGroup) {
+                console.error('Meta group not found for index:', metaIndex);
+                return;
+            }
             
             const subContainer = metaGroup.querySelector('.sub-narratives-container');
+            console.log('Found subContainer:', subContainer);
             const currentSubCount = subContainer.querySelectorAll('.dynamic-field-container').length;
             const newSubIndex = currentSubCount + 1;
+            console.log('Creating sub-narrative:', metaIndex + '.' + newSubIndex);
             
             const newField = document.createElement('div');
             newField.className = 'dynamic-field-container';
             newField.style.background = 'white';
+            newField.style.position = 'relative';
             newField.innerHTML = `
                 <div class="dynamic-field-header">
                     <span class="field-number" style="background: #6c757d;">Sub-Narrative ${metaIndex}.${newSubIndex}</span>
@@ -913,6 +921,7 @@
                 <textarea class="sub-narrative-text" placeholder="Describe this sub-narrative..." rows="3"></textarea>
             `;
             subContainer.appendChild(newField);
+            console.log('Sub-narrative added successfully');
         }
 
         function removeSubNarrative(button) {
@@ -937,16 +946,22 @@
                 const metaFieldNumber = group.querySelector('.dynamic-field-header > .field-number');
                 metaFieldNumber.textContent = `Meta-Narrative ${newMetaIndex}`;
                 
+                // Update sub-narratives container data attribute
+                const subNarrativesContainer = group.querySelector('.sub-narratives-container');
+                if (subNarrativesContainer) {
+                    subNarrativesContainer.setAttribute('data-meta-index', newMetaIndex);
+                }
+                
                 // Update sub-narrative numbers
                 const subContainers = group.querySelectorAll('.sub-narratives-container .dynamic-field-container');
                 subContainers.forEach((subContainer, subIndex) => {
                     subContainer.querySelector('.field-number').textContent = `Sub-Narrative ${newMetaIndex}.${subIndex + 1}`;
                 });
                 
-                // Update the add button onclick
-                const addButton = group.querySelector('button[onclick^="addSubNarrative"]');
+                // Update the add button data-meta-index attribute
+                const addButton = group.querySelector('.add-field-btn[data-meta-index]');
                 if (addButton) {
-                    addButton.setAttribute('onclick', `addSubNarrative(${newMetaIndex})`);
+                    addButton.setAttribute('data-meta-index', newMetaIndex);
                 }
             });
             metaNarrativeCount = metaGroups.length;
@@ -1040,6 +1055,26 @@
                 }
             }
             tryUpdateCounters();
+            
+            // Add event delegation for add sub-narrative buttons
+            const metaNarrativesContainer = document.getElementById('meta-narratives-container');
+            if (metaNarrativesContainer) {
+                metaNarrativesContainer.addEventListener('click', function(e) {
+                    // Check if clicked element or its parent is the add sub-narrative button
+                    let target = e.target;
+                    if (!target.classList.contains('add-field-btn')) {
+                        target = target.closest('.add-field-btn');
+                    }
+                    
+                    if (target && target.hasAttribute('data-meta-index') && target.classList.contains('add-field-btn')) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const metaIndex = parseInt(target.getAttribute('data-meta-index'));
+                        console.log('Button clicked, calling addSubNarrative with index:', metaIndex);
+                        addSubNarrative(metaIndex);
+                    }
+                });
+            }
         });
 
         function resetForm() {
@@ -1055,15 +1090,15 @@
                             </div>
                             <textarea class="meta-narrative-text" placeholder="Overarching narrative theme..." rows="4"></textarea>
                             
-                            <div class="sub-narratives-container" style="margin-top: 15px; padding-left: 20px; border-left: 3px solid #007cba;">
-                                <div class="dynamic-field-container" style="background: white;">
+                            <div class="sub-narratives-container" data-meta-index="1" style="margin-top: 15px; padding-left: 20px; border-left: 3px solid #007cba;">
+                                <div class="dynamic-field-container" style="background: white; position: relative;">
                                     <div class="dynamic-field-header">
                                         <span class="field-number" style="background: #6c757d;">Sub-Narrative 1.1</span>
                                     </div>
                                     <textarea class="sub-narrative-text" placeholder="Describe the first sub-narrative..." rows="3"></textarea>
                                 </div>
                             </div>
-                            <button type="button" class="add-field-btn" onclick="addSubNarrative(1)" style="margin-top: 10px; font-size: 13px; padding: 6px 12px;">+ Add Sub-Narrative</button>
+                            <button type="button" class="add-field-btn" data-meta-index="1" style="margin-top: 10px; font-size: 13px; padding: 6px 12px;">+ Add Sub-Narrative</button>
                         </div>
                     </div>
                 `;
