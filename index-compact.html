@@ -1239,7 +1239,23 @@ Make sure the summary is clear and professional.`;
 
         // Open country selector modal
         function openCountrySelector() {
-            document.getElementById('countrySelectorModal').style.display = 'block';
+            const modal = document.getElementById('countrySelectorModal');
+            const iframe = document.getElementById('countrySelectorFrame');
+            
+            // Reload the iframe to sync with current selection
+            iframe.src = iframe.src;
+            
+            // Wait for iframe to load, then send current selection
+            iframe.onload = function() {
+                setTimeout(function() {
+                    iframe.contentWindow.postMessage({
+                        type: 'syncSelectedCountries',
+                        countries: selectedTargetedCountries
+                    }, '*');
+                }, 100);
+            };
+            
+            modal.style.display = 'block';
         }
 
         // Close country selector modal

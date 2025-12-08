@@ -549,6 +549,26 @@
         
         // Load countries when page loads
         document.addEventListener('DOMContentLoaded', loadCountries);
+        
+        // Listen for sync messages from parent window
+        window.addEventListener('message', function(event) {
+            if (event.data.type === 'syncSelectedCountries') {
+                // Sync the selected countries from parent
+                selectedCountries = event.data.countries || [];
+                updateSelectedCountriesDisplay();
+                
+                // Update status message
+                if (selectedCountries.length > 0) {
+                    document.getElementById('status').innerHTML = 
+                        `<div class="info">✓ Loaded ${selectedCountries.length} previously selected country/countries. Select more or press Done.</div>`;
+                    
+                    // Update button text
+                    const selectBtn = document.getElementById('selectBtn');
+                    selectBtn.textContent = 'Select another country';
+                    selectBtn.style.backgroundColor = '#6c757d';
+                }
+            }
+        });
     </script>
 </body>
 </html>
