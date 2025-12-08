@@ -233,6 +233,113 @@
             font-size: 12px;
         }
 
+        /* Modal styles for country selector */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 2% auto;
+            padding: 0;
+            border: 1px solid #888;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 700px;
+            height: 85vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            padding: 15px 20px;
+            background-color: #007cba;
+            color: white;
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-close {
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .modal-close:hover,
+        .modal-close:focus {
+            opacity: 0.7;
+        }
+
+        .modal-body {
+            flex: 1;
+            overflow: auto;
+        }
+
+        .modal-body iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .selected-country-display {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+
+        .country-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+
+        .country-item-info {
+            font-size: 14px;
+        }
+
+        .country-code-badge {
+            font-weight: bold;
+            color: #007cba;
+            margin-right: 8px;
+        }
+
+        .select-countries-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .select-countries-btn:hover {
+            background: #218838;
+        }
+
         /* Responsive design */
         @media (max-width: 768px) {
             .form-row {
@@ -246,6 +353,12 @@
 
             .compact-container {
                 padding: 10px;
+            }
+
+            .modal-content {
+                width: 95%;
+                height: 90vh;
+                margin: 5% auto;
             }
         }
 
@@ -360,58 +473,6 @@
                     </div>
                     <div class="form-col">
                         <div class="form-group">
-                            <label for="country" title="Targeted Countries">Targeted Countries:</label>
-                            <select id="country" multiple class="narrow-input">
-                                <option value="AL">AL</option>
-                                <option value="AT">AT</option>
-                                <option value="BE">BE</option>
-                                <option value="BA">BA</option>
-                                <option value="BG">BG</option>
-                                <option value="HR">HR</option>
-                                <option value="CY">CY</option>
-                                <option value="CZ">CZ</option>
-                                <option value="DK">DK</option>
-                                <option value="EE">EE</option>
-                                <option value="EU">EU</option>
-                                <option value="FI">FI</option>
-                                <option value="FR">FR</option>
-                                <option value="GE">GE</option>
-                                <option value="GB">GB</option>
-                                <option value="DE">DE</option>
-                                <option value="EL">EL</option>
-                                <option value="GR">GR</option>
-                                <option value="HU">HU</option>
-                                <option value="IS">IS</option>
-                                <option value="IE">IE</option>
-                                <option value="IT">IT</option>
-                                <option value="XK">XK</option>
-                                <option value="LV">LV</option>
-                                <option value="LI">LI</option>
-                                <option value="LT">LT</option>
-                                <option value="LU">LU</option>
-                                <option value="MT">MT</option>
-                                <option value="MD">MD</option>
-                                <option value="ME">ME</option>
-                                <option value="NL">NL</option>
-                                <option value="MK">MK</option>
-                                <option value="NO">NO</option>
-                                <option value="PL">PL</option>
-                                <option value="PT">PT</option>
-                                <option value="RO">RO</option>
-                                <option value="RS">RS</option>
-                                <option value="SK">SK</option>
-                                <option value="SI">SI</option>
-                                <option value="ES">ES</option>
-                                <option value="SE">SE</option>
-                                <option value="CH">CH</option>
-                                <option value="TR">TR</option>
-                                <option value="UA">UA</option>
-                                <option value="UK">UK</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-col">
-                        <div class="form-group">
                             <label for="platforms" title="Platforms">Platforms:</label>
                             <select id="platforms" multiple>
                                 <option value="9Gag">9Gag</option>
@@ -478,6 +539,18 @@
                                 <option value="YouTube">YouTube</option>
                                 <option value="Zhihu">Zhihu</option>
                             </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label>Targeted Countries:</label>
+                            <button type="button" class="select-countries-btn" onclick="openCountrySelector()">Select Countries</button>
+                            <div id="selected-countries-display" class="selected-country-display" style="display: none;">
+                                <!-- Selected countries will be displayed here -->
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -948,6 +1021,10 @@
                 document.getElementById('objectives-container').innerHTML = '<p style="color: #666; font-style: italic;">Select objectives using the tools above...</p>';
                 document.getElementById('ttps-container').innerHTML = '<p style="color: #666; font-style: italic;">Select TTPs using the tools above...</p>';
                 
+                // Clear selected countries
+                selectedTargetedCountries = [];
+                updateSelectedCountriesDisplay();
+                
                 updateCounters();
             }
         }
@@ -1142,6 +1219,100 @@ Make sure the summary is clear and professional.`;
             <button onclick="closeAuthorModal()">Cancel</button>
         </div>
     </div>
+
+    <!-- Country Selector Modal -->
+    <div id="countrySelectorModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 style="margin: 0;">Select Targeted Countries</h3>
+                <button class="modal-close" onclick="closeCountrySelector()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <iframe id="countrySelectorFrame" src="country-selector.html"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Array to store selected countries for Word document generation
+        let selectedTargetedCountries = [];
+
+        // Open country selector modal
+        function openCountrySelector() {
+            document.getElementById('countrySelectorModal').style.display = 'block';
+        }
+
+        // Close country selector modal
+        function closeCountrySelector() {
+            document.getElementById('countrySelectorModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside of it
+        window.onclick = function(event) {
+            const modal = document.getElementById('countrySelectorModal');
+            if (event.target === modal) {
+                closeCountrySelector();
+            }
+        }
+
+        // Listen for messages from the country selector iframe
+        window.addEventListener('message', function(event) {
+            // Security check - only accept messages from same origin
+            if (event.origin !== window.location.origin) {
+                return;
+            }
+
+            if (event.data.type === 'countriesSelected') {
+                // Update the selected countries array
+                selectedTargetedCountries = event.data.countries;
+                
+                // Update the display
+                updateSelectedCountriesDisplay();
+                
+                // Close the modal
+                closeCountrySelector();
+            }
+        });
+
+        // Update the display of selected countries
+        function updateSelectedCountriesDisplay() {
+            const displayContainer = document.getElementById('selected-countries-display');
+            
+            if (selectedTargetedCountries.length === 0) {
+                displayContainer.style.display = 'none';
+                return;
+            }
+            
+            displayContainer.style.display = 'block';
+            displayContainer.innerHTML = '';
+            
+            selectedTargetedCountries.forEach((country, index) => {
+                const countryItem = document.createElement('div');
+                countryItem.className = 'country-item';
+                countryItem.innerHTML = `
+                    <div class="country-item-info">
+                        <span class="country-code-badge">${country.id}</span>
+                        <span>${country.name}</span>
+                    </div>
+                    <button type="button" class="remove-field-btn" onclick="removeTargetedCountry(${index})">
+                        Remove
+                    </button>
+                `;
+                displayContainer.appendChild(countryItem);
+            });
+        }
+
+        // Remove a country from the selected list
+        function removeTargetedCountry(index) {
+            selectedTargetedCountries.splice(index, 1);
+            updateSelectedCountriesDisplay();
+        }
+
+        // Get selected countries for Word document generation
+        function getSelectedCountries() {
+            return selectedTargetedCountries;
+        }
+    </script>
 
 </body>
 </html>

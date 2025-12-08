@@ -530,10 +530,21 @@
                 return;
             }
             
-            // Logic will be added later
-            // For now, just show the selected countries
-            console.log('Selected countries:', selectedCountries);
-            alert(`Done! Selected ${selectedCountries.length} country/countries.\n\nLogic to be added later.`);
+            // Send selection to parent window
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'countriesSelected',
+                    countries: selectedCountries
+                }, '*');
+                
+                // Show feedback
+                document.getElementById('status').innerHTML = 
+                    `<div class="info">✓ ${selectedCountries.length} country/countries sent to form. You can close this window.</div>`;
+            } else {
+                // Fallback for when not in iframe
+                console.log('Selected countries:', selectedCountries);
+                alert(`Done! Selected ${selectedCountries.length} country/countries.\n\n${selectedCountries.map(c => `${c.id} - ${c.name}`).join('\n')}`);
+            }
         }
         
         // Load countries when page loads
