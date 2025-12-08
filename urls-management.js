@@ -1050,22 +1050,52 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         let estimatedTotalMinutes = 0;
                         
                         console.log('Stored estimated time:', window.currentBellingcatEstimatedTime);
-                        console.log('Exact character codes:', window.currentBellingcatEstimatedTime ? Array.from(window.currentBellingcatEstimatedTime).map(c => c.charCodeAt(0)) : 'N/A');
+                        console.log('Type:', typeof window.currentBellingcatEstimatedTime);
+                        console.log('String representation:', JSON.stringify(window.currentBellingcatEstimatedTime));
+                        console.log('Length:', window.currentBellingcatEstimatedTime ? window.currentBellingcatEstimatedTime.length : 'N/A');
+                        
+                        // Check character codes of first few characters
+                        if (window.currentBellingcatEstimatedTime) {
+                            for (let i = 0; i < Math.min(5, window.currentBellingcatEstimatedTime.length); i++) {
+                                console.log(\`Char \${i}: '\${window.currentBellingcatEstimatedTime[i]}' = \${window.currentBellingcatEstimatedTime.charCodeAt(i)}\`);
+                            }
+                        }
+                        
                         console.log('Duration minutes:', durationMinutes);
                         console.log('URL count:', urlCount);
                         
                         if (window.currentBellingcatEstimatedTime && window.currentBellingcatEstimatedTime !== 'Unknown') {
-                            // Parse "14-35 minutes" to get average - try multiple approaches
-                            // First, try to extract any two numbers regardless of separator
-                            const numbers = window.currentBellingcatEstimatedTime.match(/(\d+)\D+(\d+)/);
-                            console.log('Number extraction result:', numbers);
-                            if (numbers) {
-                                const minEstimate = parseInt(numbers[1]);
-                                const maxEstimate = parseInt(numbers[2]);
-                                estimatedTotalMinutes = Math.round((minEstimate + maxEstimate) / 2);
-                                console.log('Parsed estimates - min:', minEstimate, 'max:', maxEstimate, 'average:', estimatedTotalMinutes);
+                            // Try simple split by space and extract numbers
+                            const timeStr = String(window.currentBellingcatEstimatedTime);
+                            const parts = timeStr.split(/\s+/);
+                            console.log('Split by space:', parts);
+                            console.log('First part:', parts[0]);
+                            
+                            // Extract all numbers from the string - try multiple patterns
+                            const allNumbers = timeStr.match(/\d+/g);
+                            console.log('All numbers found with \\d+:', allNumbers);
+                            
+                            const allNumbers2 = timeStr.match(/[0-9]+/g);
+                            console.log('All numbers found with [0-9]+:', allNumbers2);
+                            
+                            // Manual extraction from first part
+                            const firstPart = parts[0] || '';
+                            const dashSplit = firstPart.split('-');
+                            console.log('Dash split:', dashSplit);
+                            
+                            // Use dash split if we have two parts
+                            if (dashSplit && dashSplit.length >= 2) {
+                                const minEstimate = parseInt(dashSplit[0]);
+                                const maxEstimate = parseInt(dashSplit[1]);
+                                if (!isNaN(minEstimate) && !isNaN(maxEstimate)) {
+                                    estimatedTotalMinutes = Math.round((minEstimate + maxEstimate) / 2);
+                                    console.log('Parsed from dash split - min:', minEstimate, 'max:', maxEstimate, 'average:', estimatedTotalMinutes);
+                                } else {
+                                    console.log('parseInt failed. Trying fallback calculation.');
+                                    estimatedTotalMinutes = urlCount * 3.5;
+                                }
                             } else {
-                                console.log('Regex did not match. Trying fallback calculation.');
+                                console.log('Could not split by dash. Trying fallback calculation.');
                                 estimatedTotalMinutes = urlCount * 3.5;
                             }
                         } else {
