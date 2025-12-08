@@ -92,6 +92,15 @@
             background: #c82333;
         }
         
+        .done-btn {
+            background: #007bff;
+            color: white;
+        }
+        
+        .done-btn:hover {
+            background: #0056b3;
+        }
+        
         .button-group {
             display: flex;
             gap: 10px;
@@ -125,6 +134,26 @@
             margin-top: 20px;
         }
         
+        .selected-country-item {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .selected-country-item .country-info {
+            font-size: 14px;
+        }
+        
+        .selected-country-item .country-code {
+            font-weight: bold;
+            color: #007bff;
+        }
+        
         /* Style for datalist dropdown appearance */
         datalist {
             position: absolute;
@@ -140,6 +169,10 @@
 <body>
     <div class="container">
         <h1>Country Selector</h1>
+        
+        <div class="info" style="margin-bottom: 20px;">
+            <strong>Instructions:</strong> Select one or more targeted countries. Press Done when finished.
+        </div>
         
         <form id="countryForm">
             <div class="form-group">
@@ -175,8 +208,14 @@
             <div class="button-group">
                 <button type="submit" class="btn select-btn" id="selectBtn" disabled>Select Country</button>
                 <button type="button" class="btn clear-btn" onclick="clearForm()">Clear Form</button>
+                <button type="button" class="btn done-btn" id="doneBtn" onclick="handleDone()">Done</button>
             </div>
         </form>
+        
+        <div id="selectedCountries" style="margin-top: 30px; display: none;">
+            <h3 style="color: #333; margin-bottom: 15px;">Selected Countries:</h3>
+            <div id="selectedCountriesList"></div>
+        </div>
         
         <div id="status" class="loading">Loading countries...</div>
     </div>
@@ -185,6 +224,7 @@
         let countries = [];
         let countryCodeMap = new Map(); // Map code to country object
         let countryNameMap = new Map(); // Map name to country object
+        let selectedCountries = []; // Array to store selected countries
         
         // Load countries from JSON file
         async function loadCountries() {
@@ -268,7 +308,7 @@
                 
                 // Update status
                 document.getElementById('status').innerHTML = 
-                    `<div class="info">✓ Selected: <strong>${country.id}</strong> - ${country.name}</div>`;
+                    `<div class="info">Press Select for <strong>${country.id}</strong> - ${country.name}</div>`;
             } else {
                 // Clear name field if no exact match
                 countryNameField.value = '';
@@ -277,7 +317,7 @@
                 if (inputValue) {
                     updateCodeDatalist(inputValue);
                     document.getElementById('status').innerHTML = 
-                        `<div class="info">Type to search country codes...</div>`;
+                        `<div class="info">Type to search country codes or names...</div>`;
                 }
             }
             
@@ -305,7 +345,7 @@
                 
                 // Update status
                 document.getElementById('status').innerHTML = 
-                    `<div class="info">✓ Selected: <strong>${country.id}</strong> - ${country.name}</div>`;
+                    `<div class="info">Press Select for <strong>${country.id}</strong> - ${country.name}</div>`;
             } else {
                 // Clear code field if no exact match
                 countryCodeField.value = '';
@@ -314,7 +354,7 @@
                 if (inputValue) {
                     updateNameDatalist(inputValue);
                     document.getElementById('status').innerHTML = 
-                        `<div class="info">Type to search country names...</div>`;
+                        `<div class="info">Type to search country codes or names...</div>`;
                 }
             }
             
@@ -389,7 +429,15 @@
             const isValidSelection = code && name && countryCodeMap.has(code) && countryCodeMap.get(code).name === name;
             
             selectBtn.disabled = !isValidSelection;
-            selectBtn.textContent = isValidSelection ? 'Select Country' : 'Select a country first';
+            
+            // Update button text and styling
+            if (!isValidSelection) {
+                selectBtn.textContent = selectedCountries.length > 0 ? 'Select another country' : 'Select a country first';
+                selectBtn.style.backgroundColor = '#6c757d'; // Gray background
+            } else {
+                selectBtn.textContent = 'Select';
+                selectBtn.style.backgroundColor = '#28a745'; // Green background
+            }
         }
         
         // Clear form function
@@ -398,14 +446,20 @@
             document.getElementById('countryName').value = '';
             document.getElementById('countryCode').classList.remove('selected');
             document.getElementById('countryName').classList.remove('selected');
-            document.getElementById('status').innerHTML = 
-                `<div class="info">Form cleared. Start typing in either field to search countries.</div>`;
+            
+            if (selectedCountries.length > 0) {
+                document.getElementById('status').innerHTML = 
+                    `<div class="info">Form cleared. Select another country or press Done.</div>`;
+            } else {
+                document.getElementById('status').innerHTML = 
+                    `<div class="info">Form cleared. Start typing in either field to search countries.</div>`;
+            }
             
             // Update button state
             updateSelectButtonState();
         }
         
-        // Handle form submission (send selection to parent window)
+        // Handle form submission (add country to selection)
         document.getElementById('countryForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
@@ -415,21 +469,72 @@
             if (code && name && countryCodeMap.has(code)) {
                 const country = countryCodeMap.get(code);
                 
-                // Send selection to parent window
-                if (window.parent && window.parent !== window) {
-                    window.parent.postMessage({
-                        type: 'countrySelected',
+                // Check if country is already selected
+                if (!selectedCountries.some(c => c.id === country.id)) {
+                    selectedCountries.push({
                         id: country.id,
                         name: country.name
-                    }, '*');
+                    });
+                    
+                    // Update the display
+                    updateSelectedCountriesDisplay();
+                    
+                    // Clear the form for next selection
+                    clearForm();
+                    
+                    // Update button text and styling
+                    const selectBtn = document.getElementById('selectBtn');
+                    selectBtn.textContent = 'Select another country';
+                    selectBtn.style.backgroundColor = '#6c757d'; // Gray background
+                    
+                    // Update status
+                    document.getElementById('status').innerHTML = 
+                        `<div class="info">✓ Added ${country.name}. Select another country or press Done.</div>`;
                 } else {
-                    // Fallback for when not in iframe
-                    alert(`Selected Country:\nCode: ${country.id}\nName: ${country.name}`);
+                    document.getElementById('status').innerHTML = 
+                        `<div class="error">⚠ ${country.name} is already selected.</div>`;
                 }
             } else {
                 alert('Please select a valid country from the dropdown.');
             }
         });
+        
+        // Update the display of selected countries
+        function updateSelectedCountriesDisplay() {
+            const container = document.getElementById('selectedCountries');
+            const list = document.getElementById('selectedCountriesList');
+            
+            if (selectedCountries.length > 0) {
+                container.style.display = 'block';
+                list.innerHTML = '';
+                
+                selectedCountries.forEach(country => {
+                    const item = document.createElement('div');
+                    item.className = 'selected-country-item';
+                    item.innerHTML = `
+                        <div class="country-info">
+                            <span class="country-code">${country.id}</span> - ${country.name}
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+            } else {
+                container.style.display = 'none';
+            }
+        }
+        
+        // Handle Done button click
+        function handleDone() {
+            if (selectedCountries.length === 0) {
+                alert('Please select at least one country before clicking Done.');
+                return;
+            }
+            
+            // Logic will be added later
+            // For now, just show the selected countries
+            console.log('Selected countries:', selectedCountries);
+            alert(`Done! Selected ${selectedCountries.length} country/countries.\n\nLogic to be added later.`);
+        }
         
         // Load countries when page loads
         document.addEventListener('DOMContentLoaded', loadCountries);
