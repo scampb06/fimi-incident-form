@@ -173,9 +173,11 @@ document.addEventListener('DOMContentLoaded', function() {
     top: 0;
     z-index: 1000;
     font-weight: bold;
-    width: 100%;
+    min-width: 100%;
+    width: max-content;
     box-sizing: border-box;
     margin: 0;
+    left: 0;
   `;
   header.innerHTML = '✓ Interactive DISARM Framework - Click techniques to add them to your report<br><small>🎯 Columns 1-2 = Objectives | 📋 Columns 3+ = TTPs</small>';
   document.body.insertBefore(header, document.body.firstChild);
