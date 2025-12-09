@@ -176,6 +176,37 @@ document.addEventListener('DOMContentLoaded', function() {
   header.innerHTML = '✓ Interactive DISARM Framework - Click techniques to add them to your report<br><small>🎯 Columns 1-2 = Objectives | 📋 Columns 3+ = TTPs</small>';
   document.body.insertBefore(header, document.body.firstChild);
   
+  // Add objectives label above first two columns
+  var objectivesLabel = document.createElement('div');
+  objectivesLabel.style.cssText = `
+    position: absolute;
+    top: 70px;
+    left: 0;
+    background: #e8f5e9;
+    color: #2e7d32;
+    padding: 8px 0;
+    text-align: center;
+    font-weight: bold;
+    font-size: 16px;
+    z-index: 999;
+    border: 2px solid #4CAF50;
+    border-bottom: none;
+  `;
+  objectivesLabel.textContent = 'Objectives';
+  
+  // Position it to span the first two columns
+  var table = document.querySelector('table');
+  if (table) {
+    var tableRect = table.getBoundingClientRect();
+    var firstCell = table.rows[0].cells[0];
+    var secondCell = table.rows[0].cells[1];
+    var firstCellWidth = firstCell.offsetWidth;
+    var secondCellWidth = secondCell.offsetWidth;
+    objectivesLabel.style.width = (firstCellWidth + secondCellWidth + 2) + 'px';
+    objectivesLabel.style.left = firstCell.offsetLeft + 'px';
+    document.body.appendChild(objectivesLabel);
+  }
+  
   // Add styling to make checkboxes more visible
   var style = document.createElement('style');
   style.textContent = `
@@ -208,17 +239,24 @@ document.addEventListener('DOMContentLoaded', function() {
     table tr td:nth-child(2) {
       background-color: rgba(255, 248, 225, 0.3);
     }
+    /* Add gap between 2nd and 3rd columns for all data rows (not header rows) */
+    table tr:not(:first-child):not(:nth-child(2)) td:nth-child(2) {
+      border-right: 8px solid white;
+    }
+    /* Extend green band styling */
+    body > div:first-child {
+      width: 100% !important;
+      box-sizing: border-box;
+    }
   `;
   document.head.appendChild(style);
 });
 </script>
 
-<h1>DISARM</h1>
-
-<table border=1 bgcolor=silver>
-<tr bgcolor=fuchsia>
+<table border=1 bgcolor=silver style="border-spacing: 0;">
+<tr style="background-color: #f8bbd0;">
 <td>P01 Plan</td>
-<td>P01 Plan</td>
+<td style="border-right: 8px solid white;">P01 Plan</td>
 <td>P02 Prepare</td>
 <td>P02 Prepare</td>
 <td>P02 Prepare</td>
@@ -234,9 +272,9 @@ document.addEventListener('DOMContentLoaded', function() {
 <td>P03 Execute</td>
 <td>P03 Execute</td>
 </tr>
-<tr bgcolor=aqua>
+<tr style="background-color: #b2ebf2;">
 <td>TA01 Plan Strategy</td>
-<td>TA02 Plan Objectives</td>
+<td style="border-right: 8px solid white;">TA02 Plan Objectives</td>
 <td>TA05 Microtarget</td>
 <td>TA06 Develop Content</td>
 <td>TA07 Select Channels and Affordances</td>
