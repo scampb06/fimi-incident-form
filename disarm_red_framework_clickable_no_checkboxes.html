@@ -173,6 +173,9 @@ document.addEventListener('DOMContentLoaded', function() {
     top: 0;
     z-index: 1000;
     font-weight: bold;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
   `;
   header.innerHTML = '✓ Interactive DISARM Framework - Click techniques to add them to your report<br><small>🎯 Columns 1-2 = Objectives | 📋 Columns 3+ = TTPs</small>';
   document.body.insertBefore(header, document.body.firstChild);
@@ -180,6 +183,10 @@ document.addEventListener('DOMContentLoaded', function() {
   // Add styling to make checkboxes more visible
   var style = document.createElement('style');
   style.textContent = `
+    body {
+      margin: 0;
+      padding: 0;
+    }
     input[type="checkbox"] {
       transform: scale(1.2);
       margin-left: 5px;
@@ -247,7 +254,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <tr style="background-color: #e8f5e9;">
 <td colspan="2" style="background: #e8f5e9; color: #2e7d32; padding: 8px; text-align: center; font-weight: bold; font-size: 16px; border: 2px solid #4CAF50;">Objectives</td>
 <td class="spacer"></td>
-<td colspan="14" style="background: transparent; border: none;"></td>
+<td colspan="14" style="background: #e8f5e9; color: #2e7d32; padding: 8px; text-align: center; font-weight: bold; font-size: 16px; border: 2px solid #4CAF50;">TTPs</td>
 </tr>
 <tr style="background-color: #f8bbd0;">
 <td>P01 Plan</td>
