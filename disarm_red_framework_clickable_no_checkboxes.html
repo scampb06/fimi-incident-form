@@ -177,34 +177,34 @@ document.addEventListener('DOMContentLoaded', function() {
   document.body.insertBefore(header, document.body.firstChild);
   
   // Add objectives label above first two columns
-  var objectivesLabel = document.createElement('div');
-  objectivesLabel.style.cssText = `
-    position: absolute;
-    top: 70px;
-    left: 0;
-    background: #e8f5e9;
-    color: #2e7d32;
-    padding: 8px 0;
-    text-align: center;
-    font-weight: bold;
-    font-size: 16px;
-    z-index: 999;
-    border: 2px solid #4CAF50;
-    border-bottom: none;
-  `;
-  objectivesLabel.textContent = 'Objectives';
-  
-  // Position it to span the first two columns
   var table = document.querySelector('table');
   if (table) {
-    var tableRect = table.getBoundingClientRect();
-    var firstCell = table.rows[0].cells[0];
-    var secondCell = table.rows[0].cells[1];
-    var firstCellWidth = firstCell.offsetWidth;
-    var secondCellWidth = secondCell.offsetWidth;
-    objectivesLabel.style.width = (firstCellWidth + secondCellWidth + 2) + 'px';
-    objectivesLabel.style.left = firstCell.offsetLeft + 'px';
-    document.body.appendChild(objectivesLabel);
+    var objectivesRow = document.createElement('tr');
+    objectivesRow.style.cssText = 'background: #e8f5e9; border: 2px solid #4CAF50;';
+    
+    var objectivesCell = document.createElement('td');
+    objectivesCell.setAttribute('colspan', '2');
+    objectivesCell.style.cssText = `
+      background: #e8f5e9;
+      color: #2e7d32;
+      padding: 8px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 16px;
+      border: 2px solid #4CAF50;
+      border-right: 8px solid white;
+    `;
+    objectivesCell.textContent = 'Objectives';
+    
+    var emptyCell = document.createElement('td');
+    emptyCell.setAttribute('colspan', '14');
+    emptyCell.style.cssText = 'background: transparent; border: none;';
+    
+    objectivesRow.appendChild(objectivesCell);
+    objectivesRow.appendChild(emptyCell);
+    
+    // Insert before the first row
+    table.insertBefore(objectivesRow, table.rows[0]);
   }
   
   // Add styling to make checkboxes more visible
