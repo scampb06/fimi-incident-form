@@ -82,8 +82,9 @@ function getTacticColumn(techniqueElement) {
     }
   }
   
-  // Map column index to tactic
-  var tactics = ['TA01', 'TA02', 'TA05', 'TA06', 'TA07', 'TA08', 'TA09', 'TA10', 'TA11', 'TA12', 'TA13', 'TA14', 'TA15', 'TA16', 'TA17', 'TA18'];
+  // Map column index to tactic (accounting for spacer column at index 2)
+  // Columns: 0=TA01, 1=TA02, 2=spacer, 3=TA05, 4=TA06, etc.
+  var tactics = ['TA01', 'TA02', 'spacer', 'TA05', 'TA06', 'TA07', 'TA08', 'TA09', 'TA10', 'TA11', 'TA12', 'TA13', 'TA14', 'TA15', 'TA16', 'TA17', 'TA18'];
   
   if (columnIndex >= 0 && columnIndex < tactics.length) {
     return tactics[columnIndex];
@@ -176,37 +177,6 @@ document.addEventListener('DOMContentLoaded', function() {
   header.innerHTML = '✓ Interactive DISARM Framework - Click techniques to add them to your report<br><small>🎯 Columns 1-2 = Objectives | 📋 Columns 3+ = TTPs</small>';
   document.body.insertBefore(header, document.body.firstChild);
   
-  // Add objectives label above first two columns
-  var table = document.querySelector('table');
-  if (table) {
-    var objectivesRow = document.createElement('tr');
-    objectivesRow.style.cssText = 'background: #e8f5e9; border: 2px solid #4CAF50;';
-    
-    var objectivesCell = document.createElement('td');
-    objectivesCell.setAttribute('colspan', '2');
-    objectivesCell.style.cssText = `
-      background: #e8f5e9;
-      color: #2e7d32;
-      padding: 8px;
-      text-align: center;
-      font-weight: bold;
-      font-size: 16px;
-      border: 2px solid #4CAF50;
-      border-right: 8px solid white;
-    `;
-    objectivesCell.textContent = 'Objectives';
-    
-    var emptyCell = document.createElement('td');
-    emptyCell.setAttribute('colspan', '14');
-    emptyCell.style.cssText = 'background: transparent; border: none;';
-    
-    objectivesRow.appendChild(objectivesCell);
-    objectivesRow.appendChild(emptyCell);
-    
-    // Insert before the first row
-    table.insertBefore(objectivesRow, table.rows[0]);
-  }
-  
   // Add styling to make checkboxes more visible
   var style = document.createElement('style');
   style.textContent = `
@@ -239,9 +209,15 @@ document.addEventListener('DOMContentLoaded', function() {
     table tr td:nth-child(2) {
       background-color: rgba(255, 248, 225, 0.3);
     }
-    /* Add gap between 2nd and 3rd columns for all data rows (not header rows) */
-    table tr:not(:first-child):not(:nth-child(2)) td:nth-child(2) {
-      border-right: 8px solid white;
+    /* Style for spacer column between objectives and TTPs */
+    table tr td.spacer {
+      width: 5px;
+      min-width: 5px;
+      max-width: 5px;
+      padding: 0;
+      background-color: #f5f5f5;
+      border: none;
+      cursor: default;
     }
     /* Extend green band styling */
     body > div:first-child {
@@ -250,13 +226,33 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   `;
   document.head.appendChild(style);
+  
+  // Add spacer column after 2nd column in all data rows (rows 3 onwards, skipping objectives and header rows)
+  var table = document.querySelector('table');
+  if (table) {
+    for (var i = 3; i < table.rows.length; i++) {
+      var row = table.rows[i];
+      if (row.cells.length >= 2) {
+        var spacer = document.createElement('td');
+        spacer.className = 'spacer';
+        // Insert spacer after the 2nd cell (index 2)
+        row.insertBefore(spacer, row.cells[2]);
+      }
+    }
+  }
 });
 </script>
 
 <table border=1 bgcolor=silver style="border-spacing: 0;">
+<tr style="background-color: #e8f5e9;">
+<td colspan="2" style="background: #e8f5e9; color: #2e7d32; padding: 8px; text-align: center; font-weight: bold; font-size: 16px; border: 2px solid #4CAF50;">Objectives</td>
+<td class="spacer"></td>
+<td colspan="14" style="background: transparent; border: none;"></td>
+</tr>
 <tr style="background-color: #f8bbd0;">
 <td>P01 Plan</td>
-<td style="border-right: 8px solid white;">P01 Plan</td>
+<td>P01 Plan</td>
+<td class="spacer"></td>
 <td>P02 Prepare</td>
 <td>P02 Prepare</td>
 <td>P02 Prepare</td>
@@ -274,7 +270,8 @@ document.addEventListener('DOMContentLoaded', function() {
 </tr>
 <tr style="background-color: #b2ebf2;">
 <td>TA01 Plan Strategy</td>
-<td style="border-right: 8px solid white;">TA02 Plan Objectives</td>
+<td>TA02 Plan Objectives</td>
+<td class="spacer"></td>
 <td>TA05 Microtarget</td>
 <td>TA06 Develop Content</td>
 <td>TA07 Select Channels and Affordances</td>
