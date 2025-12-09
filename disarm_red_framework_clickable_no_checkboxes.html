@@ -162,25 +162,27 @@ function handleTechniqueClickNoCheckbox(element) {
 
 // Add visual feedback for iframe usage
 document.addEventListener('DOMContentLoaded', function() {
-  // Add a header indicating this is the interactive version
-  var header = document.createElement('div');
-  header.style.cssText = `
-    background: #4CAF50;
-    color: white;
-    padding: 10px;
-    text-align: center;
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    font-weight: bold;
-    min-width: 100%;
-    width: max-content;
-    box-sizing: border-box;
-    margin: 0;
-    left: 0;
-  `;
-  header.innerHTML = '✓ Interactive DISARM Framework - Click techniques to add them to your report<br><small>🎯 Columns 1-2 = Objectives | 📋 Columns 3+ = TTPs</small>';
-  document.body.insertBefore(header, document.body.firstChild);
+  // Add a header row to the table indicating this is the interactive version
+  var table = document.querySelector('table');
+  if (table) {
+    var headerRow = document.createElement('tr');
+    headerRow.style.cssText = 'background: #4CAF50;';
+    
+    var headerCell = document.createElement('td');
+    headerCell.setAttribute('colspan', '17'); // Spans all columns including spacer
+    headerCell.style.cssText = `
+      background: #4CAF50;
+      color: white;
+      padding: 10px;
+      text-align: center;
+      font-weight: bold;
+      border: none;
+    `;
+    headerCell.innerHTML = '✓ Interactive DISARM Framework - Click techniques to add them to your report<br><small>🎯 Columns 1-2 = Objectives | 📋 Columns 3+ = TTPs</small>';
+    
+    headerRow.appendChild(headerCell);
+    table.insertBefore(headerRow, table.rows[0]);
+  }
   
   // Add styling to make checkboxes more visible
   var style = document.createElement('style');
