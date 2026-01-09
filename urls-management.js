@@ -1106,6 +1106,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         
                         const remainingMinutes = Math.max(0, Math.round(estimatedTotalMinutes - durationMinutes));
                         console.log('Estimated total:', estimatedTotalMinutes, 'Remaining:', remainingMinutes);
+                        console.log('Log Output:', status.logOutput);
                         
                         let message;
                         let dialogTitle = 'Archive Job Status';
