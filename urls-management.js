@@ -1044,7 +1044,8 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         
                         const startTime = new Date(status.startTime).toLocaleString();
                         const urlCount = status.urlCount || 0;
-                        
+                        const logOutput = status.logOutput || '';
+
                         // Calculate estimated remaining time using backend's estimate
                         // Backend returns format like "14-35 minutes"
                         let estimatedTotalMinutes = 0;
@@ -1106,7 +1107,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         
                         const remainingMinutes = Math.max(0, Math.round(estimatedTotalMinutes - durationMinutes));
                         console.log('Estimated total:', estimatedTotalMinutes, 'Remaining:', remainingMinutes);
-                        console.log('Log Output:', status.logOutput);
+                        console.log('Log Output:', logOutput);
                         
                         let message;
                         let dialogTitle = 'Archive Job Status';
