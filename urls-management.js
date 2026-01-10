@@ -939,7 +939,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                 }
                 
                 // Show custom message dialog (similar to permission dialog)
-                function showMessageDialog(message, title = 'Archive Status') {
+                function showMessageDialog(message, title = 'Archive Status', logOutput = null) {
                     // Remove any existing message dialog
                     const existing = document.getElementById('message-modal-overlay');
                     if (existing) {
@@ -972,24 +972,99 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         width: 90%;
                         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
                         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                        transition: max-width 0.3s ease, width 0.3s ease;
                     \`;
                     
-                    modal.innerHTML = \`
+                    // Create message content
+                    const messageDiv = document.createElement('div');
+                    messageDiv.innerHTML = \`
                         <h2 style="margin: 0 0 20px 0; color: #333; font-size: 24px;">\${title}</h2>
                         <div style="color: #666; font-size: 16px; line-height: 1.6; white-space: pre-line; margin-bottom: 25px;">\${message}</div>
-                        <div style="text-align: right;">
-                            <button onclick="document.getElementById('message-modal-overlay').remove()" style="
-                                padding: 10px 30px;
-                                background: #007cba;
-                                color: white;
-                                border: none;
-                                border-radius: 4px;
-                                cursor: pointer;
-                                font-size: 16px;
-                                font-weight: bold;
-                            ">OK</button>
-                        </div>
                     \`;
+                    
+                    modal.appendChild(messageDiv);
+                    
+                    // Create log container (hidden by default)
+                    let logContainer = null;
+                    if (logOutput) {
+                        logContainer = document.createElement('div');
+                        logContainer.id = 'log-output-container';
+                        logContainer.style.cssText = \`
+                            display: none;
+                            margin-bottom: 25px;
+                            max-height: 400px;
+                            overflow-y: auto;
+                            background: #f5f5f5;
+                            border: 1px solid #ddd;
+                            border-radius: 4px;
+                            padding: 15px;
+                            font-family: 'Courier New', monospace;
+                            font-size: 12px;
+                            color: #333;
+                            white-space: pre-wrap;
+                            word-wrap: break-word;
+                        \`;
+                        logContainer.textContent = logOutput;
+                        modal.appendChild(logContainer);
+                    }
+                    
+                    // Create button container
+                    const buttonContainer = document.createElement('div');
+                    buttonContainer.style.cssText = 'text-align: right; display: flex; gap: 10px; justify-content: flex-end;';
+                    
+                    // Add Show/Hide Log button if logOutput exists
+                    if (logOutput) {
+                        const toggleLogButton = document.createElement('button');
+                        toggleLogButton.textContent = 'Show Log';
+                        toggleLogButton.style.cssText = \`
+                            padding: 10px 30px;
+                            background: #28a745;
+                            color: white;
+                            border: none;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-size: 16px;
+                            font-weight: bold;
+                        \`;
+                        
+                        toggleLogButton.addEventListener('click', function() {
+                            if (logContainer.style.display === 'none') {
+                                // Show log
+                                logContainer.style.display = 'block';
+                                toggleLogButton.textContent = 'Hide Log';
+                                modal.style.maxWidth = '800px';
+                                modal.style.width = '95%';
+                            } else {
+                                // Hide log
+                                logContainer.style.display = 'none';
+                                toggleLogButton.textContent = 'Show Log';
+                                modal.style.maxWidth = '500px';
+                                modal.style.width = '90%';
+                            }
+                        });
+                        
+                        buttonContainer.appendChild(toggleLogButton);
+                    }
+                    
+                    // Add OK button
+                    const okButton = document.createElement('button');
+                    okButton.textContent = 'OK';
+                    okButton.style.cssText = \`
+                        padding: 10px 30px;
+                        background: #007cba;
+                        color: white;
+                        border: none;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        font-size: 16px;
+                        font-weight: bold;
+                    \`;
+                    okButton.addEventListener('click', function() {
+                        modalOverlay.remove();
+                    });
+                    
+                    buttonContainer.appendChild(okButton);
+                    modal.appendChild(buttonContainer);
                     
                     modalOverlay.appendChild(modal);
                     document.body.appendChild(modalOverlay);
@@ -1125,7 +1200,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             message = \`Archive job started at \${startTime}. Status: \${status.status}\`;
                         }
                         
-                        showMessageDialog(message, dialogTitle);
+                        showMessageDialog(message, dialogTitle, logOutput);
                         
                     } catch (error) {
                         console.error('Error checking Bellingcat status:', error);
