@@ -787,8 +787,8 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                     }
                 }
                 
-                // Global variable to store the active timer
-                let activeProgressTimer = null;
+                // Use window property to avoid redeclaration issues
+                window.activeProgressTimer = null;
                 
                 // Show archive progress with timer
                 function showArchiveProgress(estimatedUrls, timePerUrl) {
@@ -893,14 +893,14 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                 // Start the progress timer
                 function startArchiveProgressTimer(estimatedUrls, startTime, timePerUrl) {
                     // Clear any existing timer first
-                    if (activeProgressTimer) {
-                        clearInterval(activeProgressTimer);
+                    if (window.activeProgressTimer) {
+                        clearInterval(window.activeProgressTimer);
                     }
                     
                     const averageTimePerUrl = timePerUrl || 2; // seconds (default to 2 if not provided)
                     const estimatedTotalTime = estimatedUrls * averageTimePerUrl;
                     
-                    activeProgressTimer = setInterval(() => {
+                    window.activeProgressTimer = setInterval(() => {
                         const elapsedSeconds = Math.round((Date.now() - startTime) / 1000);
                         const progressPercent = Math.min((elapsedSeconds / estimatedTotalTime) * 100, 95); // Cap at 95% until complete
                         const remainingSeconds = Math.max(estimatedTotalTime - elapsedSeconds, 0);
@@ -921,15 +921,15 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         }
                     }, 1000);
                     
-                    return activeProgressTimer;
+                    return window.activeProgressTimer;
                 }
                 
                 // Hide archive progress
                 function hideArchiveProgress() {
                     // Clear the timer
-                    if (activeProgressTimer) {
-                        clearInterval(activeProgressTimer);
-                        activeProgressTimer = null;
+                    if (window.activeProgressTimer) {
+                        clearInterval(window.activeProgressTimer);
+                        window.activeProgressTimer = null;
                     }
                     
                     const progressDiv = document.getElementById('archive-progress-display');
