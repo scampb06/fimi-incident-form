@@ -354,7 +354,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                                 window.archiveButton.textContent = 'Starting archive job...';
                             }
                             
-                            const endpoint = \`http://localhost:5239/bellingcat/auto-archiver-sheets-asynchronous?url=\${encodeURIComponent(cleanUrl)}\`;
+                            const endpoint = \`https://fimi-incident-form-genai.azurewebsites.net/bellingcat/auto-archiver-sheets-asynchronous?url=\${encodeURIComponent(cleanUrl)}\`;
                             
                             let response;
                             try {
@@ -1087,7 +1087,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         }
                         
                         const jobId = window.currentBellingcatJobId;
-                        const endpoint = \`http://localhost:5239/bellingcat/auto-archiver/status/\${jobId}\`;
+                        const endpoint = \`https://fimi-incident-form-genai.azurewebsites.net/bellingcat/auto-archiver/status/\${jobId}\`;
                         
                         const response = await fetch(endpoint);
                         
@@ -1517,7 +1517,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         let endpoint;
                         if (bellingcatRadio && bellingcatRadio.checked) {
                             // Bellingcat - no preValidation parameter
-                            endpoint = \`http://localhost:5239/bellingcat/auto-archiver-sheets?url=\${encodeURIComponent(cleanUrl)}\`;
+                            endpoint = \`https://fimi-incident-form-genai.azurewebsites.net/bellingcat/auto-archiver-sheets?url=\${encodeURIComponent(cleanUrl)}\`;
                         } else {
                             // Wayback Machine - include preValidation parameter
                             const preValidation = preValidationCheckbox ? preValidationCheckbox.checked : false;
