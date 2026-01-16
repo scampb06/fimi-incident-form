@@ -354,7 +354,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                                 window.archiveButton.textContent = 'Starting archive job...';
                             }
 
-                            const endpoint = `https://fimi-incident-form-genai.azurewebsites.net/bellingcat/auto-archiver-sheets-asynchronous?url=${encodeURIComponent(cleanUrl)}`;
+                            const endpoint = \`https://fimi-incident-form-genai.azurewebsites.net/bellingcat/auto-archiver-sheets-asynchronous?url=\${encodeURIComponent(cleanUrl)}\`;
 
                             let response;
                             try {
@@ -374,7 +374,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
 
                             // Handle non-OK responses
                             if (!response.ok) {
-                                let errorMessage = `Archive request failed (HTTP ${response.status})`;
+                                let errorMessage = \`Archive request failed (HTTP \${response.status})\`;
                                 
                                 try {
                                     // Try to parse the error response body
@@ -387,11 +387,11 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                                         if (detail.includes('estimated processing time') && detail.includes('exceeds')) {
                                             // This is the timeout exceeded error
                                             throw new Error(
-                                                `⚠️ Sheet Too Large: Your Google Sheet has too many URLs to process within the timeout limit.\n\n` +
-                                                `${errorData.detail}\n\n` +
-                                                `Solutions:\n` +
-                                                `• Split your sheet into smaller chunks (recommended)\n` +
-                                                `• Contact your administrator to increase the timeout setting`
+                                                \`⚠️ Sheet Too Large: Your Google Sheet has too many URLs to process within the timeout limit.\n\n\` +
+                                                \`\${errorData.detail}\n\n\` +
+                                                \`Solutions:\n\` +
+                                                \`• Split your sheet into smaller chunks (recommended)\n\` +
+                                                \`• Contact your administrator to increase the timeout setting\`
                                             );
                                         }
                                     }
@@ -430,9 +430,9 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             const urlCount = result.estimatedUrlCount || 'Unknown';
                             const estimatedTime = result.estimatedTime || 'Unknown';
                             
-                            let message = `Archive job started at ${startTime}. Estimated duration for ${urlCount} URLs is ${estimatedTime}. Click 'Check Status' to monitor progress.`;
+                            let message = \`Archive job started at \${startTime}. Estimated duration for \${urlCount} URLs is \${estimatedTime}. Click 'Check Status' to monitor progress.\`;
                             if (result.note) {
-                                message += `\n${result.note}`;
+                                message += \`\n\${result.note}\`;
                             }
                             
                             showMessageDialog(message, 'Archive Job Started');
