@@ -20,3 +20,8 @@ node_modules/
 # OS generated files
 .DS_Store
 Thumbs.db
+
+# My development files
+2025-11-11T134355.1745302Z Log Stream API TRACE.txt
+2025-11-11T134904.300778Z info Syst.txt
+index-compact-dec8-2025-old-country-list-platform-list.html

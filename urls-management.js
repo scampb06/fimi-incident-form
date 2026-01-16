@@ -1017,6 +1017,36 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                     
                     // Add Show/Hide Log button if logOutput exists
                     if (logOutput) {
+                        // Create Download Log button (initially hidden)
+                        const downloadLogButton = document.createElement('button');
+                        downloadLogButton.textContent = 'Download Log';
+                        downloadLogButton.style.cssText = \`
+                            padding: 10px 30px;
+                            background: #28a745;
+                            color: white;
+                            border: none;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-size: 16px;
+                            font-weight: bold;
+                            display: none;
+                        \`;
+                        
+                        downloadLogButton.addEventListener('click', function() {
+                            // Create a blob with the log content
+                            const blob = new Blob([logOutput], { type: 'text/plain' });
+                            const url = URL.createObjectURL(blob);
+                            
+                            // Create a temporary link and trigger download
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = \`archive-log-\${new Date().toISOString().replace(/:/g, '-').split('.')[0]}.txt\`;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                        });
+                        
                         const toggleLogButton = document.createElement('button');
                         toggleLogButton.textContent = 'Show Log';
                         toggleLogButton.style.cssText = \`
@@ -1035,17 +1065,20 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                                 // Show log
                                 logContainer.style.display = 'block';
                                 toggleLogButton.textContent = 'Hide Log';
+                                downloadLogButton.style.display = 'inline-block';
                                 modal.style.maxWidth = '800px';
                                 modal.style.width = '95%';
                             } else {
                                 // Hide log
                                 logContainer.style.display = 'none';
                                 toggleLogButton.textContent = 'Show Log';
+                                downloadLogButton.style.display = 'none';
                                 modal.style.maxWidth = '500px';
                                 modal.style.width = '90%';
                             }
                         });
                         
+                        buttonContainer.appendChild(downloadLogButton);
                         buttonContainer.appendChild(toggleLogButton);
                     }
                     
