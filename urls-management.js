@@ -353,9 +353,9 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             if (window.archiveButton) {
                                 window.archiveButton.textContent = 'Starting archive job...';
                             }
-                            
-                            const endpoint = \`https://fimi-incident-form-genai.azurewebsites.net/bellingcat/auto-archiver-sheets-asynchronous?url=\${encodeURIComponent(cleanUrl)}\`;
-                            
+
+                            const endpoint = `https://fimi-incident-form-genai.azurewebsites.net/bellingcat/auto-archiver-sheets-asynchronous?url=${encodeURIComponent(cleanUrl)}`;
+
                             let response;
                             try {
                                 response = await fetch(endpoint, {
@@ -369,11 +369,47 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                                     window.archiveButton.disabled = false;
                                     window.archiveButton.textContent = 'Archive unarchived URLs';
                                 }
-                                throw new Error('Please check that the archive server is running properly.');
+                                throw new Error('Network error: Unable to connect to the archive server. Please check your internet connection.');
                             }
-                            
+
+                            // Handle non-OK responses
                             if (!response.ok) {
-                                throw new Error(\`Archive request failed with status \${response.status}. Please check that the archive server is running properly.\`);
+                                let errorMessage = `Archive request failed (HTTP ${response.status})`;
+                                
+                                try {
+                                    // Try to parse the error response body
+                                    const errorData = await response.json();
+                                    
+                                    // Check if this is the timeout validation error
+                                    if (response.status === 413 && errorData.detail) {
+                                        const detail = errorData.detail.toLowerCase();
+                                        
+                                        if (detail.includes('estimated processing time') && detail.includes('exceeds')) {
+                                            // This is the timeout exceeded error
+                                            throw new Error(
+                                                `⚠️ Sheet Too Large: Your Google Sheet has too many URLs to process within the timeout limit.\n\n` +
+                                                `${errorData.detail}\n\n` +
+                                                `Solutions:\n` +
+                                                `• Split your sheet into smaller chunks (recommended)\n` +
+                                                `• Contact your administrator to increase the timeout setting`
+                                            );
+                                        }
+                                    }
+                                    
+                                    // Generic error with detail from server
+                                    errorMessage = errorData.detail || errorData.message || errorMessage;
+                                    
+                                } catch (parseError) {
+                                    // If JSON parsing fails, use generic error
+                                    console.error('Failed to parse error response:', parseError);
+                                }
+                                
+                                if (window.archiveButton) {
+                                    window.archiveButton.disabled = false;
+                                    window.archiveButton.textContent = 'Archive unarchived URLs';
+                                }
+                                
+                                throw new Error(errorMessage);
                             }
                             
                             const result = await response.json();
