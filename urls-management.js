@@ -430,9 +430,9 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             const urlCount = result.estimatedUrlCount || 'Unknown';
                             const estimatedTime = result.estimatedTime || 'Unknown';
                             
-                            let message = \`Archive job started at \${startTime}. Estimated duration for \${urlCount} URLs is \${estimatedTime}. Click 'Check Status' to monitor progress.\`;
+                            let message = `Archive job started at ${startTime}. Estimated duration for ${urlCount} URLs is ${estimatedTime}. Click 'Check Status' to monitor progress.`;
                             if (result.note) {
-                                message += \`\\n\${result.note}\`;
+                                message += `\n${result.note}`;
                             }
                             
                             showMessageDialog(message, 'Archive Job Started');
