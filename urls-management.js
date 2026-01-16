@@ -385,19 +385,21 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                                         const detail = errorData.detail.toLowerCase();
                                         
                                         if (detail.includes('estimated processing time') && detail.includes('exceeds')) {
-                                            // This is the timeout exceeded error
-                                            throw new Error(
+                                            // This is the timeout exceeded error - set custom message
+                                            errorMessage = 
                                                 \`⚠️ Sheet Too Large: Your Google Sheet has too many URLs to process within the timeout limit.\n\n\` +
                                                 \`\${errorData.detail}\n\n\` +
                                                 \`Solutions:\n\` +
                                                 \`• Split your sheet into smaller chunks (recommended)\n\` +
-                                                \`• Contact your administrator to increase the timeout setting\`
-                                            );
+                                                \`• Contact your administrator to increase the timeout setting\`;
+                                        } else {
+                                            // Other 413 errors
+                                            errorMessage = errorData.detail || errorData.message || errorMessage;
                                         }
+                                    } else {
+                                        // Generic error with detail from server
+                                        errorMessage = errorData.detail || errorData.message || errorMessage;
                                     }
-                                    
-                                    // Generic error with detail from server
-                                    errorMessage = errorData.detail || errorData.message || errorMessage;
                                     
                                 } catch (parseError) {
                                     // If JSON parsing fails, use generic error
