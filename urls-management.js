@@ -1595,7 +1595,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         let endpoint;
                         if (bellingcatRadio && bellingcatRadio.checked) {
                             // Bellingcat - no preValidation parameter
-                            endpoint = \`https://fimi-incident-form-genai.azurewebsites.net/bellingcat/auto-archiver-sheets?url=\${encodeURIComponent(cleanUrl)}\`;
+                            endpoint = \`https://fimi-incident-form-genai.azurewebsites.net/bellingcat/auto-archiver-sheets-asynchronous?url=\${encodeURIComponent(cleanUrl)}\`;
                         } else {
                             // Wayback Machine - include preValidation parameter
                             const preValidation = preValidationCheckbox ? preValidationCheckbox.checked : false;
