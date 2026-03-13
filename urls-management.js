@@ -623,7 +623,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         console.log('Extracting domains for:', cleanUrl);
                         
                         // Call the extract-domains endpoint with cleaned URL
-                        const response = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/extract-domains?url=\${encodeURIComponent(cleanUrl)}\`, {
+                        const response = await fetch(\`http://localhost:5239/google-sheets/extract-domains?url=\${encodeURIComponent(cleanUrl)}\`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
@@ -750,7 +750,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         // Call the extract-channels endpoint with cleaned URL
                         let response;
                         try {
-                            response = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/extract-channels?url=\${encodeURIComponent(cleanUrl)}\`, {
+                            response = await fetch(\`http://localhost:5239/google-sheets/extract-channels?url=\${encodeURIComponent(cleanUrl)}\`, {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json'
@@ -1925,7 +1925,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         console.log('Extracting domains for:', cleanUrl);
                         
                         // Call the extract-domains endpoint with cleaned URL
-                        const response = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/extract-domains?url=\${encodeURIComponent(cleanUrl)}\`, {
+                        const response = await fetch(\`http://localhost:5239/google-sheets/extract-domains?url=\${encodeURIComponent(cleanUrl)}\`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
@@ -2252,7 +2252,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         // Call the extract-channels endpoint with cleaned URL
                         let response;
                         try {
-                            response = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/extract-channels?url=\${encodeURIComponent(cleanUrl)}\`, {
+                            response = await fetch(\`http://localhost:5239/google-sheets/extract-channels?url=\${encodeURIComponent(cleanUrl)}\`, {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json'

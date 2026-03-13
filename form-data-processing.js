@@ -50,7 +50,9 @@ function collectFormData() {
         platforms: safeGetSelectedOptions('platforms'),
         title: safeGetValue("title"),
         date: safeGetValue("date"),
-        threatActor: safeGetValue("threatActor"),
+        threatActor: (typeof getSelectedThreatActors === 'function'
+            ? getSelectedThreatActors().map(function(ta) { return ta.name + (ta.type ? ' (' + ta.type + ')' : ''); }).join(', ')
+            : safeGetValue("threatActor")),
         authors: authors.join('; '),
         summary: safeGetValue("executive-summary"),
         incident: safeGetValue("incidentDescription"),
