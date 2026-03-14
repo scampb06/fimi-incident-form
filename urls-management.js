@@ -54,6 +54,20 @@ function setUrlsArray(urlType, array) {
     }
 }
 
+function normalizeUrlForMatching(url) {
+    const raw = String(url || '').trim();
+    if (!raw) return '';
+
+    try {
+        const parsed = new URL(raw);
+        parsed.hash = '';
+        const normalizedPath = parsed.pathname === '/' ? '' : parsed.pathname.replace(/\/$/, '');
+        return `${parsed.protocol.toLowerCase()}//${parsed.host.toLowerCase()}${normalizedPath}${parsed.search}`;
+    } catch (error) {
+        return raw.replace(/\/$/, '').toLowerCase();
+    }
+}
+
 // Function to validate Google Sheets URL
 function validateGoogleSheetsUrl(url) {
     if (!url || url.trim() === '') {
@@ -2444,6 +2458,8 @@ async function loadUrlsFromGoogleSheetsData(googleSheetsUrl, urlType = 'trusted'
         // Process the data from Google Sheets
         if (result.data && result.data.length > 0) {
             let addedCount = 0; // Track actually added entries
+            let updatedCount = 0; // Track entries updated by matching URL
+            let duplicateCount = 0; // Track exact duplicates or no-op updates
             const initialUrlsCount = urlsArray.length; // Store initial count for comparison
             
             result.data.forEach(record => {
@@ -2473,6 +2489,40 @@ async function loadUrlsFromGoogleSheetsData(googleSheetsUrl, urlType = 'trusted'
                     console.log('Skipped empty entry');
                     return;
                 }
+
+                // Upsert by URL: if URL already exists on form, update that row instead of creating a duplicate
+                const newUrlKey = normalizeUrlForMatching(newEntry.url);
+                if (newUrlKey) {
+                    const existingIndex = urlsArray.findIndex(existingEntry =>
+                        normalizeUrlForMatching(existingEntry.url) === newUrlKey
+                    );
+
+                    if (existingIndex >= 0) {
+                        const existingEntry = urlsArray[existingIndex];
+                        let changed = false;
+
+                        config.fields.forEach(field => {
+                            const incomingValue = String(newEntry[field] || '').trim();
+                            if (incomingValue) {
+                                if ((existingEntry[field] || '') !== newEntry[field]) {
+                                    existingEntry[field] = newEntry[field];
+                                    changed = true;
+                                }
+                            }
+                        });
+
+                        existingEntry.isFromGoogleSheets = true;
+
+                        if (changed) {
+                            updatedCount++;
+                            console.log(`Updated existing ${urlType} entry by URL:`, existingEntry);
+                        } else {
+                            duplicateCount++;
+                            console.log('Skipped URL match with no data changes:', newEntry);
+                        }
+                        return;
+                    }
+                }
                 
                 // Check for duplicates against current array
                 const isDuplicate = urlsArray.some(existingEntry => 
@@ -2484,6 +2534,7 @@ async function loadUrlsFromGoogleSheetsData(googleSheetsUrl, urlType = 'trusted'
                     addedCount++; // Increment only when actually added
                     console.log(`Added new ${urlType} Google Sheets entry:`, newEntry);
                 } else {
+                    duplicateCount++;
                     console.log('Skipped duplicate entry:', newEntry);
                 }
             });
@@ -2498,15 +2549,15 @@ async function loadUrlsFromGoogleSheetsData(googleSheetsUrl, urlType = 'trusted'
             const sampleRecord = result.data[0];
             const availableFields = Object.keys(sampleRecord);
             const processedCount = result.data.length; // Total records we tried to process
-            const duplicateCount = processedCount - addedCount;
+            const unchangedCount = processedCount - addedCount - updatedCount;
             
             // Verify our math with actual list changes
             const finalUrlsCount = urlsArray.length;
             const actualAdded = finalUrlsCount - initialUrlsCount;
             
-            console.log(`Debug: Initial count: ${initialUrlsCount}, Final count: ${finalUrlsCount}, Calculated added: ${addedCount}, Actual added: ${actualAdded}`);
+            console.log(`Debug: Initial count: ${initialUrlsCount}, Final count: ${finalUrlsCount}, Calculated added: ${addedCount}, Actual added: ${actualAdded}, Updated: ${updatedCount}`);
             
-            showUrlsMessage(`Added ${actualAdded} new ${urlType} records from Google Sheets (${duplicateCount} duplicates skipped). Available fields: ${availableFields.join(', ')}`, 'success', urlType);
+            showUrlsMessage(`Added ${actualAdded} new and updated ${updatedCount} existing ${urlType} records from Google Sheets (${unchangedCount} unchanged skipped). Available fields: ${availableFields.join(', ')}`, 'success', urlType);
         } else {
             showUrlsMessage(`No ${urlType} URL data found in Google Sheets`, 'warning', urlType);
         }

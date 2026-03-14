@@ -1962,12 +1962,21 @@
                 const outcome = document.getElementById('outcome')?.value || '';
                 const impactAssessment = [reach, outcome].filter(text => text.trim()).join(' ');
                 
-                // Narrative Summary: metaNarrative + all sub-narratives
-                const metaNarrative = document.getElementById('metaNarrative')?.value || '';
-                const subNarratives = Array.from(document.querySelectorAll('.sub-narrative-text'))
-                    .map(textarea => textarea.value)
+                // Narrative Summary: meta-narratives + all sub-narratives
+                const metaNarratives = Array.from(document.querySelectorAll('#meta-narratives-container .meta-narrative-group'))
+                    .map(group => (group.getAttribute('data-meta-text') || '').trim())
                     .filter(text => text.trim());
-                const narrativeSummary = [metaNarrative, ...subNarratives].filter(text => text.trim()).join(' ');
+
+                const subNarratives = Array.from(document.querySelectorAll('.sub-narrative-text'))
+                    .map(entry => {
+                        const raw = entry && entry.value !== undefined ? entry.value : entry?.textContent;
+                        return String(raw || '').trim();
+                    })
+                    .filter(text => text.trim());
+
+                const narrativeSummary = [...metaNarratives, ...subNarratives]
+                    .filter(text => text.trim())
+                    .join(' ');
                 
                 // TTPs Summary: objectives + TTPs from containers
                 const objectivesContainer = document.getElementById('objectives-container');
