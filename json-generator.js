@@ -57,12 +57,19 @@ function buildIncidentJson() {
     });
 
     // ── DISARM tactics ────────────────────────────────────────────
-    const objectives = Array.isArray(window.objectivesList)
-        ? window.objectivesList.map(o => (typeof o === 'string' ? o : (o.label || o.text || JSON.stringify(o))).trim()).filter(Boolean)
-        : [];
-    const ttps = Array.isArray(window.ttpsList)
-        ? window.ttpsList.map(t => (typeof t === 'string' ? t : (t.label || t.text || JSON.stringify(t))).trim()).filter(Boolean)
-        : [];
+    const objectivesSource = (typeof objectivesList !== 'undefined' && Array.isArray(objectivesList))
+        ? objectivesList
+        : (Array.isArray(window.objectivesList) ? window.objectivesList : []);
+    const ttpsSource = (typeof ttpsList !== 'undefined' && Array.isArray(ttpsList))
+        ? ttpsList
+        : (Array.isArray(window.ttpsList) ? window.ttpsList : []);
+
+    const objectives = objectivesSource
+        .map(o => (typeof o === 'string' ? o : (o.label || o.text || JSON.stringify(o))).trim())
+        .filter(Boolean);
+    const ttps = ttpsSource
+        .map(t => (typeof t === 'string' ? t : (t.label || t.text || JSON.stringify(t))).trim())
+        .filter(Boolean);
 
     // ── Social media engagement & outcome ─────────────────────────
     const socialMediaEngagement = (document.getElementById('reach')?.value || '').trim();
