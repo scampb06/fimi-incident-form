@@ -49,6 +49,18 @@ function collectFormData() {
         .filter(Boolean)
         .join('; ');
 
+    const collectedActionsTaken = Array.from(
+        document.querySelectorAll('#actions-taken-container .action-taken-entry')
+    )
+        .map(block => {
+            const actionText = (block.getAttribute('data-action-text') || '').trim();
+            const actionDate = (block.getAttribute('data-action-date') || '').trim();
+            if (!actionText) return '';
+            return actionDate ? `${actionText} (${actionDate})` : actionText;
+        })
+        .filter(Boolean)
+        .join('; ');
+
     return {
         incidentNumber: safeGetValue("incidentNumber", "0000"),
         tlpLevel: safeGetValue("tlpLevel", "TLP:CLEAR"),
@@ -66,7 +78,7 @@ function collectFormData() {
         metaNarrative: collectedMetaNarratives || (document.getElementById('metaNarrative')?.value || ''),
         reach: safeGetValue("reach"),
         outcome: safeGetValue("outcome"),
-        actionsTaken: safeGetValue("actionsTaken")
+        actionsTaken: collectedActionsTaken
     };
 }
 
@@ -74,7 +86,10 @@ function collectFormData() {
 function processNarratives() {
     const subNarrativeEntries = document.querySelectorAll(".sub-narrative-text");
     let subNarratives = Array.from(subNarrativeEntries)
-        .map((entry, index) => `Sub-Narrative ${index + 1}: ${entry.value || ""}`)
+        .map((entry, index) => {
+            const entryText = (entry.value !== undefined ? entry.value : entry.textContent) || "";
+            return `Sub-Narrative ${index + 1}: ${entryText}`;
+        })
         .join("\n");
 
     const subNarrativeTextRuns = subNarratives.split("\n").map(line => 
@@ -87,9 +102,9 @@ function processNarratives() {
     );
     const subNarrativeParagraph = new docx.Paragraph({ children: subNarrativeTextRuns });
 
-    const recommendationEntries = document.querySelectorAll(".recommendation-text");
+    const recommendationEntries = document.querySelectorAll("#recommendations-container .recommendation-entry");
     let recommendations = Array.from(recommendationEntries)
-        .map((entry, index) => `Recommendation ${index + 1}: ${entry.value || ""}`)
+        .map((entry, index) => `Recommendation ${index + 1}: ${(entry.getAttribute('data-recommendation-text') || '').trim()}`)
         .join("\n");
 
     const recommendationTextRuns = recommendations.split("\n").map(line => 

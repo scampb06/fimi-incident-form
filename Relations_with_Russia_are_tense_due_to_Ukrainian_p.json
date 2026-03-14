@@ -1,0 +1,84 @@
+{
+  "title": "Relations with Russia are tense due to Ukrainian provocations",
+  "date": "04-20-2021",
+  "organization": "EUvsDisinfo",
+  "url": "https://euvsdisinfo.eu/report/relations-with-russia-are-tense-due-to-ukrainian-provocations",
+  "summary": {
+    "platforms": "The disinformation was disseminated through multiple Arabic-language websites including Sputnik Arabic, Al Minasa Press, mn2ol.com, and misrday.com, targeting Arabic-speaking audiences.",
+    "mainTheme": "The primary narrative promoted is that Russian-Ukrainian tensions are caused by Ukrainian provocative military actions in the Donbas region, framing Russia as responding to Ukrainian aggression rather than being the aggressor.",
+    "tactics": "The operation utilized Russian state media (Sputnik Arabic) alongside regional Arabic news aggregators to spread the pro-Russian framing of the conflict. The content was cross-posted across multiple platforms to amplify reach to Arabic-speaking audiences.",
+    "impact": "The disinformation attempts to shift blame for Russian-Ukrainian tensions from Russia to Ukraine, portraying Ukrainian defensive actions in Donbas as provocations that justify Russian military posture.",
+    "countermeasures": "No specific countermeasures mentioned in the report."
+  },
+  "targetedCountries": [
+    "UA"
+  ],
+  "threatActors": [
+    {
+      "name": "Russia",
+      "type": "Country"
+    },
+    {
+      "name": "Sputnik",
+      "type": "Organization"
+    },
+    {
+      "name": "Al Minasa Press",
+      "type": "Organization"
+    },
+    {
+      "name": "Mn2Ol",
+      "type": "Organization"
+    },
+    {
+      "name": "Misrday",
+      "type": "Organization"
+    },
+    {
+      "name": "Alminasapress",
+      "type": "Organization"
+    }
+  ],
+  "incidentDescription": "Russian state media outlet Sputnik Arabic, along with several Arabic-language news aggregators, disseminated a narrative claiming that Russian-Ukrainian relations are strained due to provocative actions carried out by the Ukrainian armed forces in the Donbas region. This framing reverses the established facts about Russian aggression in eastern Ukraine, instead portraying Ukraine as the provocateur and Russia as the party responding to Ukrainian actions. The content was published on April 20, 2021, and distributed across multiple Arabic-language platforms to reach audiences in the Middle East and North Africa.",
+  "keyNarratives": [
+    "S005.1 - Russia is responding to anti-Russian actions by the West and Ukraine"
+  ],
+  "disarmTactics": [
+    "T0023 - Distort Facts",
+    "T0066 - Degrade Adversary",
+    "T0115 - Post Content",
+    "T0119.002 - Post Across Platform"
+  ],
+  "socialMediaEngagement": "No specific metrics provided",
+  "countermeasures": [],
+  "trustedUrls": [
+    {
+      "url": "https://euvsdisinfo.eu/report/relations-with-russia-are-tense-due-to-ukrainian-provocations",
+      "domain": "euvsdisinfo.eu",
+      "archive": ""
+    }
+  ],
+  "suspiciousUrls": [
+    {
+      "url": "https://arabic.sputniknews.com/world/202104201048752275--زيلنسكي-يدعو-بوتين-لعقد-قمة-في-دونباس/",
+      "channel": "arabic.sputniknews.com",
+      "archive": ""
+    },
+    {
+      "url": "https://www.alminasapress.com/news817940",
+      "channel": "alminasapress.com",
+      "archive": ""
+    },
+    {
+      "url": "https://www.mn2ol.com/Arab-and-world/748493/زيلينسكي-يدعو-بوتين-لعقد-قمة-في-دونباس.html",
+      "channel": "mn2ol.com",
+      "archive": ""
+    },
+    {
+      "url": "https://www.misrday.com/Arab-and-world/237701/زيلينسكي-يدعو-بوتين-لعقد-قمة-في-دونباس",
+      "channel": "misrday.com",
+      "archive": ""
+    }
+  ],
+  "socialMediaUrls": []
+}

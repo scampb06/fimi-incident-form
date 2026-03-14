@@ -476,6 +476,55 @@
             text-overflow: ellipsis;
         }
 
+        /* Countermeasure autocomplete */
+        .cm-autocomplete-wrapper {
+            position: relative;
+        }
+
+        .cm-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            max-height: 280px;
+            overflow-y: auto;
+            z-index: 500;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.12);
+        }
+
+        .cm-dropdown-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #333;
+            border-bottom: 1px solid #f0f0f0;
+            line-height: 1.4;
+        }
+
+        .cm-dropdown-item:last-child { border-bottom: none; }
+
+        .cm-dropdown-item:hover,
+        .cm-dropdown-item.highlighted {
+            background: #e8f4fd;
+        }
+
+        .cm-item-name {
+            font-weight: 600;
+            display: block;
+        }
+
+        .cm-item-desc {
+            color: #666;
+            font-size: 12px;
+            display: block;
+            margin-top: 2px;
+        }
+
         /* Hide original form fields that we'll replace with dynamic ones */
         #recommendations, 
         #sub-narratives-container,
@@ -707,25 +756,62 @@
             <!-- Incident Response Section -->
             <div class="form-section">
                 <div class="section-header">💡 Incident Response</div>
-                
-                <div class="form-row">
-                    <div class="form-col">
-                        <div class="form-group">
-                            <label for="actionsTaken">Actions Taken:</label>
-                            <textarea id="actionsTaken" placeholder="Response actions and mitigation measures"></textarea>
+
+                <!-- Actions Taken row -->
+                <div class="form-row" style="display: grid; grid-template-columns: minmax(0, 1fr) 110px 170px; gap: 10px;">
+                    <div class="form-col" style="min-width: 0;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="actionTakenInput">Action Taken:</label>
+                            <div class="cm-autocomplete-wrapper" id="actionTakenAutocompleteWrapper">
+                                <input type="text" id="actionTakenInput"
+                                       placeholder="Enter action taken..."
+                                       oninput="handleActionTakenInput(this.value)"
+                                       onkeydown="handleActionTakenKeydown(event)"
+                                       autocomplete="off">
+                                <div id="actionTakenDropdown" class="cm-dropdown"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-col" style="min-width: 0;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="actionTakenDate">Date:</label>
+                            <input type="date" id="actionTakenDate" style="width: 100%; max-width: 100%; min-width: 0;">
+                        </div>
+                    </div>
+                    <div class="form-col" style="min-width: 0;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label style="visibility: hidden;">Placeholder</label>
+                            <button type="button" class="add-field-btn" style="width: 160px; margin-top: 0; white-space: nowrap;" onclick="addActionTakenFromInput()">+ Add Action Taken</button>
                         </div>
                     </div>
                 </div>
-                
-                <div id="dynamic-recommendations">
-                    <div class="dynamic-field-container">
-                        <div class="dynamic-field-header">
-                            <span class="field-number">Recommendation 1</span>
+
+                <div id="actions-taken-container" style="margin-top: 10px;"></div>
+
+                <!-- Recommendations row -->
+                <div class="form-row" style="flex-wrap: wrap; gap: 10px; margin-top: 20px;">
+                    <div class="form-col" style="flex: 3; min-width: 260px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="recommendationInput">Recommendation:</label>
+                            <div class="cm-autocomplete-wrapper" id="recommendationAutocompleteWrapper">
+                                <input type="text" id="recommendationInput"
+                                       placeholder="Enter recommendation..."
+                                       oninput="handleRecommendationInput(this.value)"
+                                       onkeydown="handleRecommendationKeydown(event)"
+                                       autocomplete="off">
+                                <div id="recommendationDropdown" class="cm-dropdown"></div>
+                            </div>
                         </div>
-                        <textarea class="recommendation-text" placeholder="Describe the first recommendation..." rows="3"></textarea>
+                    </div>
+                    <div class="form-col" style="flex: 0 0 auto; min-width: 220px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label style="visibility: hidden;">Placeholder</label>
+                            <button type="button" class="add-field-btn" style="width: 210px; margin-top: 0;" onclick="addRecommendationFromInput()">+ Add Recommendation</button>
+                        </div>
                     </div>
                 </div>
-                <button type="button" class="add-field-btn" onclick="addRecommendation()">+ Add Another Recommendation</button>
+
+                <div id="recommendations-container" style="margin-top: 10px;"></div>
             </div>
 
             <!-- URLs Section -->
@@ -915,24 +1001,6 @@
         }
 
         // Override the functions from ui-interactions.js after DOM loads
-        window.addEventListener('DOMContentLoaded', function() {
-            // Override addRecommendation for compact form
-            window.addRecommendation = function() {
-                recommendationCount++;
-                const container = document.getElementById('dynamic-recommendations');
-                const newField = document.createElement('div');
-                newField.className = 'dynamic-field-container';
-                newField.innerHTML = `
-                    <div class="dynamic-field-header">
-                        <span class="field-number">Recommendation ${recommendationCount}</span>
-                        <button type="button" class="remove-field-btn" onclick="removeRecommendation(this)">Remove</button>
-                    </div>
-                    <textarea class="recommendation-text" placeholder="Describe this recommendation..." rows="3"></textarea>
-                `;
-                container.appendChild(newField);
-            };
-        });
-
         // Narrative library + dynamic narrative block management
         let narrativeMetaCount = 0;
         let narrativeLibraryLoaded = false;
@@ -1362,6 +1430,7 @@
 
         document.addEventListener('DOMContentLoaded', function () {
             loadNarrativesLibrary();
+            loadCountermeasureLibrary();
         });
 
         document.addEventListener('click', function (event) {
@@ -1377,32 +1446,355 @@
                     if (subDropdown) subDropdown.style.display = 'none';
                 }
             });
+
+            if (!event.target.closest('#actionTakenAutocompleteWrapper')) {
+                const actionDropdown = document.getElementById('actionTakenDropdown');
+                if (actionDropdown) actionDropdown.style.display = 'none';
+            }
+
+            if (!event.target.closest('#recommendationAutocompleteWrapper')) {
+                const recommendationDropdown = document.getElementById('recommendationDropdown');
+                if (recommendationDropdown) recommendationDropdown.style.display = 'none';
+            }
         });
 
-        function addRecommendation() {
-            recommendationCount++;
-            const container = document.getElementById('dynamic-recommendations');
-            const newField = document.createElement('div');
-            newField.className = 'dynamic-field-container';
-            newField.innerHTML = `
-                <div class="dynamic-field-header">
-                    <span class="field-number">Recommendation ${recommendationCount}</span>
-                    <button type="button" class="remove-field-btn" onclick="removeRecommendation(this)">Remove</button>
-                </div>
-                <textarea class="recommendation-text" placeholder="Describe this recommendation..." rows="3"></textarea>
-            `;
-            container.appendChild(newField);
+        // Countermeasure library + dynamic Incident Response management
+        let countermeasureLibraryLoaded = false;
+        let countermeasureLibraryLoadPromise = null;
+        let countermeasureItems = [];
+        let actionTakenHighlightIndex = -1;
+        let recommendationHighlightIndex = -1;
+
+        // const COUNTERMEASURES_ENDPOINT = 'https://fimi-incident-form-genai.azurewebsites.net/get-countermeasures';
+        const COUNTERMEASURES_ENDPOINT = 'http://localhost:5239/get-countermeasures';
+        const COUNTERMEASURES_FALLBACK = 'countermeasures.json';
+
+        function normalizeCountermeasureEntry(item) {
+            if (!item || typeof item !== 'object') {
+                return { name: '', description: '' };
+            }
+
+            const nameRaw = item.name || item.Name || item.countermeasure || item.Countermeasure || '';
+            const descriptionRaw = item.description || item.Description || item.details || item.Details || '';
+
+            return {
+                name: String(nameRaw).trim(),
+                description: String(descriptionRaw).trim()
+            };
         }
 
-        function removeRecommendation(button) {
-            button.closest('.dynamic-field-container').remove();
-            // Renumber remaining fields
-            const containers = document.querySelectorAll('#dynamic-recommendations .dynamic-field-container');
-            containers.forEach((container, index) => {
-                container.querySelector('.field-number').textContent = `Recommendation ${index + 1}`;
+        function buildCountermeasureLibrary(entries) {
+            const dedupe = new Map();
+            entries.forEach((entry) => {
+                const normalized = normalizeCountermeasureEntry(entry);
+                if (!normalized.name && !normalized.description) return;
+
+                const key = `${normalized.name.toLowerCase()}|${normalized.description.toLowerCase()}`;
+                if (!dedupe.has(key)) {
+                    dedupe.set(key, normalized);
+                }
             });
-            recommendationCount = containers.length;
+
+            countermeasureItems = Array.from(dedupe.values());
         }
+
+        async function loadCountermeasureLibrary() {
+            if (countermeasureLibraryLoaded) return;
+            if (countermeasureLibraryLoadPromise) return countermeasureLibraryLoadPromise;
+
+            countermeasureLibraryLoadPromise = (async function () {
+                try {
+                    const response = await fetch(COUNTERMEASURES_ENDPOINT, { cache: 'no-cache' });
+                    if (!response.ok) throw new Error('HTTP ' + response.status);
+                    const data = await response.json();
+                    if (!Array.isArray(data)) throw new Error('Countermeasures endpoint returned non-array payload');
+                    buildCountermeasureLibrary(data);
+                    countermeasureLibraryLoaded = true;
+                    console.log('Countermeasure library loaded from endpoint (' + countermeasureItems.length + ' entries).');
+                    return;
+                } catch (error) {
+                    console.warn('Countermeasures endpoint unavailable, falling back to local countermeasures.json. Reason:', error.message);
+                }
+
+                try {
+                    const response = await fetch(COUNTERMEASURES_FALLBACK);
+                    if (!response.ok) throw new Error('HTTP ' + response.status);
+                    const data = await response.json();
+                    if (!Array.isArray(data)) throw new Error('Local countermeasures file returned non-array payload');
+                    buildCountermeasureLibrary(data);
+                    countermeasureLibraryLoaded = true;
+                    console.log('Countermeasure library loaded from fallback file (' + countermeasureItems.length + ' entries).');
+                } catch (error) {
+                    console.error('Failed to load countermeasures from endpoint and fallback file.', error);
+                }
+            })();
+
+            return countermeasureLibraryLoadPromise;
+        }
+
+        function formatCountermeasureValue(item) {
+            if (!item) return '';
+            const name = (item.name || '').trim();
+            const description = (item.description || '').trim();
+            if (name && description) return `${name} (${description})`;
+            return name || description;
+        }
+
+        function getCountermeasureMatches(query) {
+            if (!query) return [];
+            const q = query.toLowerCase();
+            return countermeasureItems.filter(function (item) {
+                const name = (item.name || '').toLowerCase();
+                const description = (item.description || '').toLowerCase();
+                return name.includes(q) || description.includes(q);
+            }).slice(0, 12);
+        }
+
+        function renderCountermeasureDropdown(dropdownEl, matches, onSelect, setHighlightIndex) {
+            dropdownEl.innerHTML = '';
+            if (matches.length === 0) {
+                dropdownEl.style.display = 'none';
+                return;
+            }
+
+            matches.forEach((item, index) => {
+                const row = document.createElement('div');
+                row.className = 'cm-dropdown-item';
+                const label = formatCountermeasureValue(item);
+                row.innerHTML = `<span class="cm-item-name">${escapeHtml(item.name || item.description)}</span>${item.description ? `<span class="cm-item-desc">${escapeHtml(item.description)}</span>` : ''}`;
+                row.setAttribute('data-value', label);
+
+                row.addEventListener('mousedown', function (event) {
+                    event.preventDefault();
+                    onSelect(label);
+                });
+
+                row.addEventListener('mouseenter', function () {
+                    dropdownEl.querySelectorAll('.cm-dropdown-item').forEach(function (element) {
+                        element.classList.remove('highlighted');
+                    });
+                    row.classList.add('highlighted');
+                    setHighlightIndex(index);
+                });
+
+                dropdownEl.appendChild(row);
+            });
+
+            dropdownEl.style.display = 'block';
+        }
+
+        function renumberActionTakenBlocks() {
+            const blocks = Array.from(document.querySelectorAll('#actions-taken-container .dynamic-field-container'));
+            blocks.forEach(function (block, index) {
+                const number = index + 1;
+                const header = block.querySelector('.field-number');
+                if (header) {
+                    header.textContent = `Action Taken ${number}`;
+                }
+            });
+        }
+
+        function renumberRecommendationBlocks() {
+            const blocks = Array.from(document.querySelectorAll('#recommendations-container .dynamic-field-container'));
+            blocks.forEach(function (block, index) {
+                const number = index + 1;
+                const header = block.querySelector('.field-number');
+                if (header) {
+                    header.textContent = `Recommendation ${number}`;
+                }
+            });
+            recommendationCount = blocks.length;
+        }
+
+        window.handleActionTakenInput = async function (value) {
+            await loadCountermeasureLibrary();
+            actionTakenHighlightIndex = -1;
+
+            const dropdown = document.getElementById('actionTakenDropdown');
+            if (!dropdown || !value) {
+                if (dropdown) dropdown.style.display = 'none';
+                return;
+            }
+
+            const matches = getCountermeasureMatches(value);
+            renderCountermeasureDropdown(dropdown, matches, function (selectedValue) {
+                const input = document.getElementById('actionTakenInput');
+                if (input) input.value = selectedValue;
+                dropdown.style.display = 'none';
+            }, function (index) { actionTakenHighlightIndex = index; });
+        };
+
+        window.handleActionTakenKeydown = function (event) {
+            const dropdown = document.getElementById('actionTakenDropdown');
+            if (!dropdown) return;
+
+            const items = Array.from(dropdown.querySelectorAll('.cm-dropdown-item'));
+
+            if (event.key === 'ArrowDown') {
+                actionTakenHighlightIndex = Math.min(actionTakenHighlightIndex + 1, items.length - 1);
+                items.forEach(function (item, index) { item.classList.toggle('highlighted', index === actionTakenHighlightIndex); });
+                event.preventDefault();
+            } else if (event.key === 'ArrowUp') {
+                actionTakenHighlightIndex = Math.max(actionTakenHighlightIndex - 1, 0);
+                items.forEach(function (item, index) { item.classList.toggle('highlighted', index === actionTakenHighlightIndex); });
+                event.preventDefault();
+            } else if (event.key === 'Enter') {
+                if (actionTakenHighlightIndex >= 0 && items[actionTakenHighlightIndex]) {
+                    items[actionTakenHighlightIndex].dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+                } else {
+                    window.addActionTakenFromInput();
+                }
+                event.preventDefault();
+            } else if (event.key === 'Escape') {
+                dropdown.style.display = 'none';
+            }
+        };
+
+        window.addActionTakenFromInput = function () {
+            const input = document.getElementById('actionTakenInput');
+            const dateInput = document.getElementById('actionTakenDate');
+            const actionText = input ? input.value.trim() : '';
+            const actionDate = dateInput ? dateInput.value : '';
+
+            if (!actionText) {
+                if (input) input.focus();
+                return;
+            }
+
+            const container = document.getElementById('actions-taken-container');
+            if (!container) return;
+
+            const actionNumber = container.querySelectorAll('.dynamic-field-container').length + 1;
+            const block = document.createElement('div');
+            block.className = 'dynamic-field-container action-taken-entry';
+            block.setAttribute('data-action-text', actionText);
+            block.setAttribute('data-action-date', actionDate || '');
+            block.style.marginBottom = '8px';
+            block.innerHTML = `
+                <div class="dynamic-field-header" style="margin-bottom: 6px;">
+                    <span class="field-number" style="background: #6c757d;">Action Taken ${actionNumber}</span>
+                    <button type="button" class="remove-field-btn" onclick="removeActionTaken(this)">Remove</button>
+                </div>
+                <div class="form-row" style="flex-wrap: wrap; gap: 10px; margin-bottom: 0;">
+                    <div class="form-col" style="flex: 3; min-width: 220px;">
+                        <div class="narrative-text-display action-taken-text" title="${escapeHtml(actionText)}">${escapeHtml(actionText)}</div>
+                    </div>
+                    <div class="form-col" style="flex: 0 0 160px; min-width: 130px;">
+                        <div class="narrative-text-display action-taken-date" style="white-space: nowrap;">${escapeHtml(actionDate || '')}</div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(block);
+
+            if (input) {
+                input.value = '';
+                input.focus();
+            }
+            if (dateInput) {
+                dateInput.value = '';
+            }
+
+            const dropdown = document.getElementById('actionTakenDropdown');
+            if (dropdown) dropdown.style.display = 'none';
+            actionTakenHighlightIndex = -1;
+        };
+
+        window.removeActionTaken = function (button) {
+            const block = button.closest('.dynamic-field-container');
+            if (block) {
+                block.remove();
+                renumberActionTakenBlocks();
+            }
+        };
+
+        window.handleRecommendationInput = async function (value) {
+            await loadCountermeasureLibrary();
+            recommendationHighlightIndex = -1;
+
+            const dropdown = document.getElementById('recommendationDropdown');
+            if (!dropdown || !value) {
+                if (dropdown) dropdown.style.display = 'none';
+                return;
+            }
+
+            const matches = getCountermeasureMatches(value);
+            renderCountermeasureDropdown(dropdown, matches, function (selectedValue) {
+                const input = document.getElementById('recommendationInput');
+                if (input) input.value = selectedValue;
+                dropdown.style.display = 'none';
+            }, function (index) { recommendationHighlightIndex = index; });
+        };
+
+        window.handleRecommendationKeydown = function (event) {
+            const dropdown = document.getElementById('recommendationDropdown');
+            if (!dropdown) return;
+
+            const items = Array.from(dropdown.querySelectorAll('.cm-dropdown-item'));
+
+            if (event.key === 'ArrowDown') {
+                recommendationHighlightIndex = Math.min(recommendationHighlightIndex + 1, items.length - 1);
+                items.forEach(function (item, index) { item.classList.toggle('highlighted', index === recommendationHighlightIndex); });
+                event.preventDefault();
+            } else if (event.key === 'ArrowUp') {
+                recommendationHighlightIndex = Math.max(recommendationHighlightIndex - 1, 0);
+                items.forEach(function (item, index) { item.classList.toggle('highlighted', index === recommendationHighlightIndex); });
+                event.preventDefault();
+            } else if (event.key === 'Enter') {
+                if (recommendationHighlightIndex >= 0 && items[recommendationHighlightIndex]) {
+                    items[recommendationHighlightIndex].dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+                } else {
+                    window.addRecommendationFromInput();
+                }
+                event.preventDefault();
+            } else if (event.key === 'Escape') {
+                dropdown.style.display = 'none';
+            }
+        };
+
+        window.addRecommendationFromInput = function () {
+            const input = document.getElementById('recommendationInput');
+            const recommendationText = input ? input.value.trim() : '';
+
+            if (!recommendationText) {
+                if (input) input.focus();
+                return;
+            }
+
+            const container = document.getElementById('recommendations-container');
+            if (!container) return;
+
+            const recommendationNumber = container.querySelectorAll('.dynamic-field-container').length + 1;
+            const block = document.createElement('div');
+            block.className = 'dynamic-field-container recommendation-entry';
+            block.setAttribute('data-recommendation-text', recommendationText);
+            block.style.marginBottom = '8px';
+            block.innerHTML = `
+                <div class="dynamic-field-header" style="margin-bottom: 6px;">
+                    <span class="field-number" style="background: #6c757d;">Recommendation ${recommendationNumber}</span>
+                    <button type="button" class="remove-field-btn" onclick="removeRecommendationEntry(this)">Remove</button>
+                </div>
+                <div class="narrative-text-display recommendation-text" title="${escapeHtml(recommendationText)}">${escapeHtml(recommendationText)}</div>
+            `;
+            container.appendChild(block);
+
+            if (input) {
+                input.value = '';
+                input.focus();
+            }
+
+            const dropdown = document.getElementById('recommendationDropdown');
+            if (dropdown) dropdown.style.display = 'none';
+            recommendationHighlightIndex = -1;
+            renumberRecommendationBlocks();
+        };
+
+        window.removeRecommendationEntry = function (button) {
+            const block = button.closest('.dynamic-field-container');
+            if (block) {
+                block.remove();
+                renumberRecommendationBlocks();
+            }
+        };
 
         // Update counters when objectives/TTPs change
         function updateCounters() {
@@ -1478,15 +1870,16 @@
                 document.getElementById('metaNarrativeInput').value = '';
                 document.getElementById('metaNarrativeDropdown').style.display = 'none';
                 document.getElementById('meta-narratives-container').innerHTML = '';
-                
-                document.getElementById('dynamic-recommendations').innerHTML = `
-                    <div class="dynamic-field-container">
-                        <div class="dynamic-field-header">
-                            <span class="field-number">Recommendation 1</span>
-                        </div>
-                        <textarea class="recommendation-text" placeholder="Describe the first recommendation..." rows="3"></textarea>
-                    </div>
-                `;
+
+                // Reset incident response section
+                document.getElementById('actionTakenInput').value = '';
+                document.getElementById('actionTakenDate').value = '';
+                document.getElementById('actionTakenDropdown').style.display = 'none';
+                document.getElementById('actions-taken-container').innerHTML = '';
+
+                document.getElementById('recommendationInput').value = '';
+                document.getElementById('recommendationDropdown').style.display = 'none';
+                document.getElementById('recommendations-container').innerHTML = '';
                 
                 // Reset additional authors
                 document.getElementById('additional-authors').innerHTML = '';
@@ -1601,12 +1994,21 @@
                 
                 const ttpsSummary = [objectives, ttps].filter(text => text.trim()).join(' ');
                 
-                // Recommendations: actionsTaken + all recommendations
-                const actionsTaken = document.getElementById('actionsTaken')?.value || '';
-                const recommendations = Array.from(document.querySelectorAll('.recommendation-text'))
-                    .map(textarea => textarea.value)
+                // Recommendations: actions taken + recommendations
+                const actionsTaken = Array.from(document.querySelectorAll('#actions-taken-container .action-taken-entry'))
+                    .map(block => {
+                        const actionText = (block.getAttribute('data-action-text') || '').trim();
+                        const actionDate = (block.getAttribute('data-action-date') || '').trim();
+                        if (!actionText) return '';
+                        return actionDate ? `${actionText} (${actionDate})` : actionText;
+                    })
                     .filter(text => text.trim());
-                const recommendationsSummary = [actionsTaken, ...recommendations].filter(text => text.trim()).join(' ');
+
+                const recommendations = Array.from(document.querySelectorAll('#recommendations-container .recommendation-entry'))
+                    .map(block => (block.getAttribute('data-recommendation-text') || '').trim())
+                    .filter(text => text.trim());
+
+                const recommendationsSummary = [...actionsTaken, ...recommendations].filter(text => text.trim()).join(' ');
                 
                 // Create prompt for executive summary
                 const sections = [

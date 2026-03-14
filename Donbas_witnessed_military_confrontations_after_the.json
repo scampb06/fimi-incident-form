@@ -1,0 +1,221 @@
+{
+  "title": "Donbas witnessed military confrontations after the coup in Kyiv",
+  "date": "04-20-2021",
+  "organization": "EUvsDisinfo",
+  "url": "https://euvsdisinfo.eu/report/donbas-witnessed-military-confrontations-after-the-coup-in-kyiv",
+  "summary": {
+    "platforms": "Multiple Arabic-language news websites and outlets, including RT Arabic and various regional Arabic news sites across 21 different domains",
+    "mainTheme": "Framing the 2014 Maidan events as an illegitimate 'coup' and presenting the subsequent Donbas conflict as a legitimate response to this 'coup', thereby delegitimizing the post-2014 Ukrainian government",
+    "tactics": "Use of loaded terminology ('coup') to reframe democratic transition as illegitimate takeover; wide distribution across Arabic-language media ecosystem to reach Arabic-speaking audiences; presentation of separatist entities as having legitimate grievances arising from the 'coup'",
+    "impact": "Wide dissemination across Arabic-language information space through 21 different outlets, potentially shaping Arabic-speaking audiences' understanding of the Ukraine conflict's origins and legitimacy",
+    "countermeasures": "No specific countermeasures mentioned in the source material"
+  },
+  "targetedCountries": [
+    "UA"
+  ],
+  "threatActors": [
+    {
+      "name": "Russia",
+      "type": "Country"
+    },
+    {
+      "name": "RT",
+      "type": "Organization"
+    },
+    {
+      "name": "Newsformy",
+      "type": "Organization"
+    },
+    {
+      "name": "Akhbarak",
+      "type": "Organization"
+    },
+    {
+      "name": "Lomazoma",
+      "type": "Organization"
+    },
+    {
+      "name": "Eshraag",
+      "type": "Organization"
+    },
+    {
+      "name": "Kol-Masr",
+      "type": "Organization"
+    },
+    {
+      "name": "Nafeza2World",
+      "type": "Organization"
+    },
+    {
+      "name": "Ru4Arab",
+      "type": "Organization"
+    },
+    {
+      "name": "Belbalady",
+      "type": "Organization"
+    },
+    {
+      "name": "Bwabtk",
+      "type": "Organization"
+    },
+    {
+      "name": "Akher",
+      "type": "Organization"
+    },
+    {
+      "name": "Albawabhnews",
+      "type": "Organization"
+    },
+    {
+      "name": "Bawabaa",
+      "type": "Organization"
+    },
+    {
+      "name": "Roayahnews",
+      "type": "Organization"
+    },
+    {
+      "name": "Misr Alan",
+      "type": "Organization"
+    },
+    {
+      "name": "Alsiasi",
+      "type": "Organization"
+    },
+    {
+      "name": "Almaghribtoday",
+      "type": "Organization"
+    },
+    {
+      "name": "Misr-Alan",
+      "type": "Organization"
+    }
+  ],
+  "incidentDescription": "Multiple Arabic-language news outlets published reports describing the conflict in the Donbas region of southeastern Ukraine as 'military confrontations' that began in April 2015 between government forces and self-proclaimed Donetsk and Luhansk republics. The reports consistently frame the February 2014 Maidan events as a 'coup' and present the separatist republics' declaration of independence as occurring 'in the aftermath of the Ukrainian coup.' This framing delegitimizes Ukraine's post-2014 government by characterizing the democratic transition as an illegitimate seizure of power. The content was distributed across at least 21 different Arabic-language websites, including RT Arabic (Russian state media) and numerous regional Arabic news outlets, reaching Arabic-speaking audiences across multiple countries.",
+  "keyNarratives": [
+    "S007.3 - Ukraine fails to uphold democratic standards"
+  ],
+  "disarmTactics": [
+    "T0023 - Distort Facts",
+    "T0023.001 - Reframe Context",
+    "T0115 - Post Content",
+    "T0119.002 - Post Across Platform"
+  ],
+  "socialMediaEngagement": "No specific metrics provided",
+  "countermeasures": [],
+  "trustedUrls": [
+    {
+      "url": "https://euvsdisinfo.eu/report/donbas-witnessed-military-confrontations-after-the-coup-in-kyiv",
+      "domain": "euvsdisinfo.eu",
+      "archive": ""
+    }
+  ],
+  "suspiciousUrls": [
+    {
+      "url": "https://www.almaghribtoday.net/42/065135-زيلينسكي-يعلن-استعداده-لعقد-لقاء-مع-بوتين-في-شرق-أوكرانيا",
+      "channel": "almaghribtoday.net",
+      "archive": ""
+    },
+    {
+      "url": "https://www.albawabhnews.com/4324501",
+      "channel": "albawabhnews.com",
+      "archive": ""
+    },
+    {
+      "url": "https://arabic.rt.com/russia/1223861-زيلينسكي-يعلن-استعداده-لعقد-لقاء-مع-بوتين-في-شرق-أوكرانيا/",
+      "channel": "arabic.rt.com",
+      "archive": ""
+    },
+    {
+      "url": "https://bwabtk.com/294263.html",
+      "channel": "bwabtk.com",
+      "archive": ""
+    },
+    {
+      "url": "https://roayahnews.com/news/2021/04/21/736205/الرئيس-الأوكراني-مستعد-للقاء-بوتين-في/",
+      "channel": "roayahnews.com",
+      "archive": ""
+    },
+    {
+      "url": "https://lomazoma.com/world-news/8477008.html",
+      "channel": "lomazoma.com",
+      "archive": ""
+    },
+    {
+      "url": "https://www.nafeza2world.com/Akhbar-Al-Alm/632577",
+      "channel": "nafeza2world.com",
+      "archive": ""
+    },
+    {
+      "url": "https://kol-masr.com/mixtoday/uncategorized/266494/زيلينسكي-يعلن-استعداده-لعقد-لقاء-مع-بوتين-في-شرق-أوكرانيا",
+      "channel": "kol-masr.com",
+      "archive": ""
+    },
+    {
+      "url": "https://www.misr-alan.com/11485149",
+      "channel": "misr-alan.com",
+      "archive": ""
+    },
+    {
+      "url": "https://bwabtk.com/294837.html",
+      "channel": "bwabtk.com",
+      "archive": ""
+    },
+    {
+      "url": "https://akhbarak.net/news/2021/04/20/23407065/articles/41857028/زيلينسكي-يعلن-استعداده-لعقد-لقاء-مع-بوتين-في-شرق",
+      "channel": "akhbarak.net",
+      "archive": ""
+    },
+    {
+      "url": "https://bawabaa.org/news/world/846007/",
+      "channel": "bawabaa.org",
+      "archive": ""
+    },
+    {
+      "url": "https://akher.news/breaking_news/551467/زيلينسكي-يعلن-استعداده-لعقد-لقاء-مع-بوتين-في-شرق-أوكرانيا",
+      "channel": "akher.news",
+      "archive": ""
+    },
+    {
+      "url": "https://www.eshraag.com/1.7.89/964253.html",
+      "channel": "eshraag.com",
+      "archive": ""
+    },
+    {
+      "url": "https://alsiasi.com/زيلينسكي-يعلن-استعداده-لعقد-لقاء-مع-بو/",
+      "channel": "alsiasi.com",
+      "archive": ""
+    },
+    {
+      "url": "http://belbalady.net/Akhbar-Al-Alm/BELBALADY2931737/زيلينسكي-يعلن-استعداده-لعقد-لقاء-مع-بوتين-في-شرق-أوكرانيا.html",
+      "channel": "belbalady.net",
+      "archive": ""
+    },
+    {
+      "url": "https://akher.news/world/549585/زيلينسكي-يعلن-استعداده-لعقد-لقاء-مع-بوتين-في-شرق-أوكرانيا",
+      "channel": "akher.news",
+      "archive": ""
+    },
+    {
+      "url": "https://ru4arab.ru/زيلينسكي-يعلن-استعداده-لعقد-لقاء-مع-بوتين-في-شرق-أوكرانيا.html",
+      "channel": "ru4arab.ru",
+      "archive": ""
+    },
+    {
+      "url": "https://rtarab.com/زيلينسكي-يعلن-استعداده-لعقد-لقاء-مع-بو/",
+      "channel": "rtarab.com",
+      "archive": ""
+    },
+    {
+      "url": "https://newsformy.com/news-587088.html",
+      "channel": "newsformy.com",
+      "archive": ""
+    },
+    {
+      "url": "https://syriafriends.net/2021/04/زيلينسكي-يعلن-استعداده-لعقد-لقاء-مع-بو/",
+      "channel": "syriafriends.net",
+      "archive": ""
+    }
+  ],
+  "socialMediaUrls": []
+}
