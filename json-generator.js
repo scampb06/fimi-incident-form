@@ -17,12 +17,11 @@ function buildIncidentJson() {
     const reportUrl     = (document.getElementById('reporturlInput')?.value || '').trim();
 
     // ── Authors ───────────────────────────────────────────────────
-    const nameInputs = document.querySelectorAll('.author-name-input');
-    const orgInputs  = document.querySelectorAll('.author-org-input');
+    const authorEntries = document.querySelectorAll('#additional-authors .author-entry');
     const authors = [];
-    nameInputs.forEach((nameInput, i) => {
-        const name = (nameInput.value || '').trim();
-        const org  = (orgInputs[i]?.value || '').trim();
+    authorEntries.forEach(entry => {
+        const name = (entry.getAttribute('data-author-name') || '').trim();
+        const org  = (entry.getAttribute('data-author-org') || '').trim();
         if (name || org) {
             authors.push({ name, organization: org });
         }

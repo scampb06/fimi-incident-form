@@ -603,13 +603,13 @@
                     <div class="form-col">
                         <div class="form-group">
                             <label for="authorName1" title="Author Name">Author's Name:</label>
-                            <input type="text" id="authorName1" class="author-name-input" placeholder="Name">
+                            <input type="text" id="authorName1" class="author-name-input" placeholder="Name" onkeydown="handleAuthorInlineKeydown(event)">
                         </div>
                     </div>
                     <div class="form-col">
                         <div class="form-group">
                             <label for="authorOrg1" title="Author Organization">Author's Organization:</label>
-                            <input type="text" id="authorOrg1" class="author-org-input" placeholder="Organization">
+                            <input type="text" id="authorOrg1" class="author-org-input" placeholder="Organization" onkeydown="handleAuthorInlineKeydown(event)">
                         </div>
                     </div>
                     <div class="form-col">
@@ -620,7 +620,7 @@
                     </div>
                 </div>
 
-                <div id="additional-authors"></div>
+                <div id="additional-authors" class="selected-country-display" style="display: none; margin-top: 5px; margin-bottom: 5px;"></div>
             </div>
 
             <!-- Assessment Section -->
@@ -645,7 +645,7 @@
                     <div class="form-col" style="flex: 0 0 185px; min-width: 140px;">
                         <div class="form-group">
                             <label for="threatActorType">Threat Actor Type:</label>
-                            <select id="threatActorType">
+                            <select id="threatActorType" onkeydown="handleThreatActorTypeKeydown(event)">
                                 <option value="">-- Select Type --</option>
                                 <option value="Country">Country</option>
                                 <option value="Individual">Individual</option>
@@ -775,7 +775,7 @@
                     <div class="form-col" style="min-width: 0;">
                         <div class="form-group" style="margin-bottom: 0;">
                             <label for="actionTakenDate">Date:</label>
-                            <input type="date" id="actionTakenDate" style="width: 100%; max-width: 100%; min-width: 0;">
+                            <input type="date" id="actionTakenDate" onkeydown="handleActionTakenDateKeydown(event)" style="width: 100%; max-width: 100%; min-width: 0;">
                         </div>
                     </div>
                     <div class="form-col" style="min-width: 0;">
@@ -956,48 +956,107 @@
         // Dynamic field management functions
         // Note: subNarrativeCount, recommendationCount, and authorCount are declared in config.js
 
+        window.handleAuthorInlineKeydown = function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                addInlineAuthor();
+            }
+        };
+
+        window.handleThreatActorTypeKeydown = function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                if (typeof window.addThreatActorRow === 'function') {
+                    window.addThreatActorRow();
+                }
+            }
+        };
+
+        window.handleActionTakenDateKeydown = function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                if (typeof window.addActionTakenFromInput === 'function') {
+                    window.addActionTakenFromInput();
+                }
+            }
+        };
+
         function addInlineAuthor() {
-            authorCount++;
+            const nameInput = document.getElementById('authorName1');
+            const orgInput = document.getElementById('authorOrg1');
+            const name = (nameInput?.value || '').trim();
+            const org = (orgInput?.value || '').trim();
+
+            if (!name || !org) {
+                alert('Please enter both Author\'s Name and Author\'s Organization before adding.');
+                if (!name) {
+                    nameInput?.focus();
+                } else {
+                    orgInput?.focus();
+                }
+                return;
+            }
+
             const container = document.getElementById('additional-authors');
-            const newAuthorRow = document.createElement('div');
-            newAuthorRow.className = 'form-row';
-            newAuthorRow.innerHTML = `
-                <div class="form-col">
-                    <div class="form-group">
-                        <input type="text" id="authorName${authorCount}" class="author-name-input" placeholder="Name">
-                    </div>
+            const existingEntries = Array.from(container.querySelectorAll('.author-entry'));
+            const duplicateExists = existingEntries.some(entry => {
+                const existingName = (entry.getAttribute('data-author-name') || '').trim().toLowerCase();
+                const existingOrg = (entry.getAttribute('data-author-org') || '').trim().toLowerCase();
+                return existingName === name.toLowerCase() && existingOrg === org.toLowerCase();
+            });
+
+            if (duplicateExists) {
+                alert('This author entry is already added.');
+                nameInput.focus();
+                return;
+            }
+
+            authorCount++;
+
+            const authorItem = document.createElement('div');
+            authorItem.className = 'country-item author-entry';
+            authorItem.setAttribute('data-author-name', name);
+            authorItem.setAttribute('data-author-org', org);
+            authorItem.innerHTML = `
+                <div class="country-item-info" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                    <span><strong>${name.replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]))}</strong></span>
+                    <span style="color: #666;">${org.replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]))}</span>
                 </div>
-                <div class="form-col">
-                    <div class="form-group">
-                        <input type="text" id="authorOrg${authorCount}" class="author-org-input" placeholder="Organization">
-                    </div>
-                </div>
-                <div class="form-col">
-                    <div class="form-group">
-                        <button type="button" class="remove-field-btn" onclick="removeInlineAuthor(this)">Remove</button>
-                    </div>
-                </div>
+                <button type="button" class="remove-field-btn" onclick="removeInlineAuthor(this)">Remove</button>
             `;
-            container.appendChild(newAuthorRow);
+
+            container.appendChild(authorItem);
+            container.style.display = 'block';
+
+            nameInput.value = '';
+            orgInput.value = '';
+            nameInput.focus();
         }
 
         function removeInlineAuthor(button) {
-            button.closest('.form-row').remove();
+            const container = document.getElementById('additional-authors');
+            const item = button.closest('.author-entry');
+            if (item) {
+                item.remove();
+            }
+            if (!container.querySelector('.author-entry')) {
+                container.style.display = 'none';
+            }
         }
 
         // Function to collect all authors for form submission
         function collectAuthors() {
             const authors = [];
-            const nameInputs = document.querySelectorAll('.author-name-input');
-            const orgInputs = document.querySelectorAll('.author-org-input');
-            
-            for (let i = 0; i < nameInputs.length; i++) {
-                const name = nameInputs[i].value.trim();
-                const org = orgInputs[i].value.trim();
+
+            const authorEntries = document.querySelectorAll('#additional-authors .author-entry');
+            authorEntries.forEach(entry => {
+                const name = (entry.getAttribute('data-author-name') || '').trim();
+                const org = (entry.getAttribute('data-author-org') || '').trim();
                 if (name && org) {
                     authors.push(`${name}, ${org}`);
                 }
-            }
+            });
+
             return authors.join('; ');
         }
 
@@ -1884,6 +1943,7 @@
                 
                 // Reset additional authors
                 document.getElementById('additional-authors').innerHTML = '';
+                document.getElementById('additional-authors').style.display = 'none';
                 
                 narrativeMetaCount = 0;
                 recommendationCount = 1;

@@ -5,18 +5,15 @@
 
 // Form Data Collection
 function collectFormData() {
-    // Collect inline authors
-    const authors = [];
-    const nameInputs = document.querySelectorAll('.author-name-input');
-    const orgInputs = document.querySelectorAll('.author-org-input');
-    
-    for (let i = 0; i < nameInputs.length; i++) {
-        const name = nameInputs[i].value.trim();
-        const org = orgInputs[i].value.trim();
-        if (name && org) {
-            authors.push(`${name}, ${org}`);
-        }
-    }
+    // Collect added author entries
+    const authors = Array.from(document.querySelectorAll('#additional-authors .author-entry'))
+        .map(entry => {
+            const name = (entry.getAttribute('data-author-name') || '').trim();
+            const org = (entry.getAttribute('data-author-org') || '').trim();
+            if (!name || !org) return '';
+            return `${name}, ${org}`;
+        })
+        .filter(Boolean);
 
     // Helper function to safely get element value
     function safeGetValue(elementId, defaultValue = "") {
