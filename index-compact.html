@@ -421,6 +421,61 @@
         .ta-type-country     { background: #d4edda; color: #155724; }
         .ta-type-individual  { background: #cce5ff; color: #004085; }
         .ta-type-organization{ background: #fff3cd; color: #856404; }
+
+        /* Narrative autocomplete + display styles */
+        .narrative-autocomplete-wrapper {
+            position: relative;
+        }
+
+        .narrative-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            max-height: 220px;
+            overflow-y: auto;
+            z-index: 500;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.12);
+        }
+
+        .narrative-dropdown-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 14px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .narrative-dropdown-item:last-child { border-bottom: none; }
+
+        .narrative-dropdown-item:hover,
+        .narrative-dropdown-item.highlighted {
+            background: #e8f4fd;
+        }
+
+        .narrative-text-display {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            background: white;
+            box-sizing: border-box;
+            font-size: 14px;
+            color: #333;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .sub-narrative-single-line {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
         /* Hide original form fields that we'll replace with dynamic ones */
         #recommendations, 
         #sub-narratives-container,
@@ -590,30 +645,30 @@
             <!-- Narratives Section -->
             <div class="form-section">
                 <div class="section-header">📖 Narratives</div>
-                
-                <div id="meta-narratives-container">
-                    <!-- First meta-narrative (cannot be removed) -->
-                    <div class="meta-narrative-group" data-meta-index="1">
-                        <div class="dynamic-field-container" style="background: #f0f8ff; border: 2px solid #007cba;">
-                            <div class="dynamic-field-header">
-                                <span class="field-number" style="background: #007cba;">Meta-Narrative 1</span>
+
+                <div class="form-row" style="flex-wrap: wrap; gap: 10px;">
+                    <div class="form-col" style="flex: 3; min-width: 260px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="metaNarrativeInput">Meta-Narrative:</label>
+                            <div class="narrative-autocomplete-wrapper" id="metaNarrativeAutocompleteWrapper">
+                                <input type="text" id="metaNarrativeInput"
+                                       placeholder="Enter meta-narrative..."
+                                       oninput="handleMetaNarrativeInput(this.value)"
+                                       onkeydown="handleMetaNarrativeKeydown(event)"
+                                       autocomplete="off">
+                                <div id="metaNarrativeDropdown" class="narrative-dropdown"></div>
                             </div>
-                            <textarea class="meta-narrative-text" placeholder="Overarching narrative theme..." rows="4"></textarea>
-                            
-                            <div class="sub-narratives-container" data-meta-index="1" style="margin-top: 15px; padding-left: 20px; border-left: 3px solid #007cba;">
-                                <div class="dynamic-field-container" style="background: white; position: relative;">
-                                    <div class="dynamic-field-header">
-                                        <span class="field-number" style="background: #6c757d;">Sub-Narrative 1.1</span>
-                                    </div>
-                                    <textarea class="sub-narrative-text" placeholder="Describe the first sub-narrative..." rows="3"></textarea>
-                                </div>
-                            </div>
-                            <button type="button" class="add-field-btn" data-meta-index="1" style="margin-top: 10px; font-size: 13px; padding: 6px 12px;">+ Add Sub-Narrative</button>
+                        </div>
+                    </div>
+                    <div class="form-col" style="flex: 0 0 auto; min-width: 190px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label style="visibility: hidden;">Placeholder</label>
+                            <button type="button" class="add-field-btn" style="width: 180px; margin-top: 0;" onclick="addMetaNarrativeFromInput()">+ Add Meta-Narrative</button>
                         </div>
                     </div>
                 </div>
-                
-                <button type="button" class="add-field-btn" onclick="addMetaNarrative()" style="margin-top: 15px;">+ Add Another Meta-Narrative</button>
+
+                <div id="meta-narratives-container" style="margin-top: 10px;"></div>
             </div>
 
             <!-- DISARM Framework Section -->
@@ -878,115 +933,449 @@
             };
         });
 
-        // Track meta-narrative count
-        let metaNarrativeCount = 1;
+        // Narrative library + dynamic narrative block management
+        let narrativeMetaCount = 0;
+        let narrativeLibraryLoaded = false;
+        let narrativeLibraryLoadPromise = null;
+        let narrativeMetaLookup = {};
+        let narrativeMetaList = [];
+        let metaNarrativeHighlightIndex = -1;
+        const subNarrativeHighlightIndexByMeta = {};
 
-        function addMetaNarrative() {
-            metaNarrativeCount++;
-            const container = document.getElementById('meta-narratives-container');
-            const newMetaGroup = document.createElement('div');
-            newMetaGroup.className = 'meta-narrative-group';
-            newMetaGroup.setAttribute('data-meta-index', metaNarrativeCount);
-            newMetaGroup.innerHTML = `
-                <div class="dynamic-field-container" style="background: #f0f8ff; border: 2px solid #007cba; margin-top: 20px;">
-                    <div class="dynamic-field-header">
-                        <span class="field-number" style="background: #007cba;">Meta-Narrative ${metaNarrativeCount}</span>
-                        <button type="button" class="remove-field-btn" onclick="removeMetaNarrative(this)">Remove</button>
-                    </div>
-                    <textarea class="meta-narrative-text" placeholder="Overarching narrative theme..." rows="4"></textarea>
-                    
-                    <div class="sub-narratives-container" data-meta-index="${metaNarrativeCount}" style="margin-top: 15px; padding-left: 20px; border-left: 3px solid #007cba;">
-                        <div class="dynamic-field-container" style="background: white; position: relative;">
-                            <div class="dynamic-field-header">
-                                <span class="field-number" style="background: #6c757d;">Sub-Narrative ${metaNarrativeCount}.1</span>
-                            </div>
-                            <textarea class="sub-narrative-text" placeholder="Describe the first sub-narrative..." rows="3"></textarea>
-                        </div>
-                    </div>
-                    <button type="button" class="add-field-btn" data-meta-index="${metaNarrativeCount}" style="margin-top: 10px; font-size: 13px; padding: 6px 12px;">+ Add Sub-Narrative</button>
-                </div>
-            `;
-            container.appendChild(newMetaGroup);
+        const NARRATIVES_ENDPOINT = 'https://fimi-incident-form-genai.azurewebsites.net/get-narratives';
+        const NARRATIVES_FALLBACK = 'narratives.json';
+
+        function normalizeNarrativeEntry(item) {
+            if (!item || typeof item !== 'object') {
+                return { meta: '', sub: '' };
+            }
+
+            const metaRaw = item['meta-narrative'] || item['Meta-Narrative'] || item.metaNarrative || item.meta_narrative || '';
+            const subRaw = item['sub-narrative'] || item['Sub-Narrative'] || item.subNarrative || item.sub_narrative || '';
+
+            return {
+                meta: String(metaRaw).trim(),
+                sub: String(subRaw).trim()
+            };
         }
 
-        function removeMetaNarrative(button) {
-            button.closest('.meta-narrative-group').remove();
-            // Renumber remaining meta-narratives
-            renumberMetaNarratives();
+        function buildNarrativeLookup(entries) {
+            const lookup = {};
+            entries.forEach((entry) => {
+                const normalized = normalizeNarrativeEntry(entry);
+                if (!normalized.meta) return;
+                if (!lookup[normalized.meta]) {
+                    lookup[normalized.meta] = new Set();
+                }
+                if (normalized.sub) {
+                    lookup[normalized.meta].add(normalized.sub);
+                }
+            });
+
+            narrativeMetaLookup = {};
+            Object.keys(lookup).forEach((meta) => {
+                narrativeMetaLookup[meta] = Array.from(lookup[meta]);
+            });
+            narrativeMetaList = Object.keys(narrativeMetaLookup);
         }
 
-        function addSubNarrativeCompact(metaIndex) {
-            console.log('addSubNarrativeCompact called with metaIndex:', metaIndex);
-            const metaGroup = document.querySelector(`.meta-narrative-group[data-meta-index="${metaIndex}"]`);
-            console.log('Found metaGroup:', metaGroup);
-            if (!metaGroup) {
-                console.error('Meta group not found for index:', metaIndex);
+        async function loadNarrativesLibrary() {
+            if (narrativeLibraryLoaded) return;
+            if (narrativeLibraryLoadPromise) return narrativeLibraryLoadPromise;
+
+            narrativeLibraryLoadPromise = (async function () {
+                try {
+                    const response = await fetch(NARRATIVES_ENDPOINT, { cache: 'no-cache' });
+                    if (!response.ok) throw new Error('HTTP ' + response.status);
+                    const data = await response.json();
+                    if (!Array.isArray(data)) throw new Error('Narratives endpoint returned non-array payload');
+                    buildNarrativeLookup(data);
+                    narrativeLibraryLoaded = true;
+                    console.log('Narrative library loaded from endpoint (' + narrativeMetaList.length + ' meta-narratives).');
+                    return;
+                } catch (error) {
+                    console.warn('Narratives endpoint unavailable, falling back to local narratives.json. Reason:', error.message);
+                }
+
+                try {
+                    const response = await fetch(NARRATIVES_FALLBACK);
+                    if (!response.ok) throw new Error('HTTP ' + response.status);
+                    const data = await response.json();
+                    if (!Array.isArray(data)) throw new Error('Local narratives file returned non-array payload');
+                    buildNarrativeLookup(data);
+                    narrativeLibraryLoaded = true;
+                    console.log('Narrative library loaded from fallback file (' + narrativeMetaList.length + ' meta-narratives).');
+                } catch (error) {
+                    console.error('Failed to load narratives from endpoint and fallback file.', error);
+                }
+            })();
+
+            return narrativeLibraryLoadPromise;
+        }
+
+        function escapeHtml(text) {
+            const temp = document.createElement('div');
+            temp.textContent = text || '';
+            return temp.innerHTML;
+        }
+
+        function renderNarrativeDropdown(dropdownEl, matches, onSelect, setHighlightIndex) {
+            dropdownEl.innerHTML = '';
+            if (matches.length === 0) {
+                dropdownEl.style.display = 'none';
                 return;
             }
-            
-            const subContainer = metaGroup.querySelector('.sub-narratives-container');
-            console.log('Found subContainer:', subContainer);
-            const currentSubCount = subContainer.querySelectorAll('.dynamic-field-container').length;
-            const newSubIndex = currentSubCount + 1;
-            console.log('Creating sub-narrative:', metaIndex + '.' + newSubIndex);
-            
-            const newField = document.createElement('div');
-            newField.className = 'dynamic-field-container';
-            newField.style.background = 'white';
-            newField.style.position = 'relative';
-            newField.innerHTML = `
+
+            matches.forEach((matchText, index) => {
+                const item = document.createElement('div');
+                item.className = 'narrative-dropdown-item';
+                item.textContent = matchText;
+                item.addEventListener('mousedown', function (event) {
+                    event.preventDefault();
+                    onSelect(matchText);
+                });
+                item.addEventListener('mouseenter', function () {
+                    dropdownEl.querySelectorAll('.narrative-dropdown-item').forEach(function (element) {
+                        element.classList.remove('highlighted');
+                    });
+                    item.classList.add('highlighted');
+                    setHighlightIndex(index);
+                });
+                dropdownEl.appendChild(item);
+            });
+
+            dropdownEl.style.display = 'block';
+        }
+
+        function findMetaKeyCaseInsensitive(metaText) {
+            if (!metaText) return null;
+            const target = metaText.trim().toLowerCase();
+            return narrativeMetaList.find(function (meta) {
+                return meta.toLowerCase() === target;
+            }) || null;
+        }
+
+        function getMetaNarrativeMatches(query) {
+            if (!query) return [];
+            const q = query.toLowerCase();
+            return narrativeMetaList.filter(function (meta) {
+                return meta.toLowerCase().includes(q);
+            }).slice(0, 12);
+        }
+
+        function getSubNarrativeMatches(metaText, query) {
+            if (!metaText || !query) return [];
+            const metaKey = findMetaKeyCaseInsensitive(metaText);
+            if (!metaKey) return [];
+            const q = query.toLowerCase();
+            return (narrativeMetaLookup[metaKey] || []).filter(function (subNarrative) {
+                return subNarrative.toLowerCase().includes(q);
+            }).slice(0, 12);
+        }
+
+        window.handleMetaNarrativeInput = async function (value) {
+            await loadNarrativesLibrary();
+            metaNarrativeHighlightIndex = -1;
+            const dropdown = document.getElementById('metaNarrativeDropdown');
+            if (!value) {
+                dropdown.style.display = 'none';
+                return;
+            }
+            const matches = getMetaNarrativeMatches(value);
+            renderNarrativeDropdown(dropdown, matches, function (selectedValue) {
+                document.getElementById('metaNarrativeInput').value = selectedValue;
+                dropdown.style.display = 'none';
+            }, function (index) { metaNarrativeHighlightIndex = index; });
+        };
+
+        window.handleMetaNarrativeKeydown = function (event) {
+            const dropdown = document.getElementById('metaNarrativeDropdown');
+            const items = Array.from(dropdown.querySelectorAll('.narrative-dropdown-item'));
+
+            if (event.key === 'ArrowDown') {
+                metaNarrativeHighlightIndex = Math.min(metaNarrativeHighlightIndex + 1, items.length - 1);
+                items.forEach(function (item, index) { item.classList.toggle('highlighted', index === metaNarrativeHighlightIndex); });
+                event.preventDefault();
+            } else if (event.key === 'ArrowUp') {
+                metaNarrativeHighlightIndex = Math.max(metaNarrativeHighlightIndex - 1, 0);
+                items.forEach(function (item, index) { item.classList.toggle('highlighted', index === metaNarrativeHighlightIndex); });
+                event.preventDefault();
+            } else if (event.key === 'Enter') {
+                if (metaNarrativeHighlightIndex >= 0 && items[metaNarrativeHighlightIndex]) {
+                    items[metaNarrativeHighlightIndex].dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+                } else {
+                    window.addMetaNarrativeFromInput();
+                }
+                event.preventDefault();
+            } else if (event.key === 'Escape') {
+                dropdown.style.display = 'none';
+            }
+        };
+
+        function createMetaNarrativeBlock(metaText) {
+            narrativeMetaCount++;
+            const metaIndex = narrativeMetaCount;
+
+            const container = document.getElementById('meta-narratives-container');
+            const metaGroup = document.createElement('div');
+            metaGroup.className = 'meta-narrative-group';
+            metaGroup.setAttribute('data-meta-index', String(metaIndex));
+            metaGroup.setAttribute('data-meta-text', metaText);
+            metaGroup.style.marginTop = '15px';
+
+            metaGroup.innerHTML = `
+                <div class="dynamic-field-container" style="background: #f0f8ff; border: 2px solid #007cba;">
+                    <div class="dynamic-field-header">
+                        <span class="field-number" style="background: #007cba;">Meta-Narrative ${metaIndex}</span>
+                        <button type="button" class="remove-field-btn" onclick="removeMetaNarrative(this)">Remove</button>
+                    </div>
+                    <div class="narrative-text-display">${escapeHtml(metaText)}</div>
+
+                    <div class="form-row" style="flex-wrap: wrap; gap: 10px; margin-top: 12px; margin-bottom: 8px;">
+                        <div class="form-col" style="flex: 3; min-width: 240px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="subNarrativeInput-${metaIndex}">Sub-Narrative:</label>
+                                <div class="narrative-autocomplete-wrapper" id="subNarrativeAutocompleteWrapper-${metaIndex}">
+                                    <input type="text" id="subNarrativeInput-${metaIndex}"
+                                           placeholder="Enter sub-narrative..."
+                                           oninput="handleSubNarrativeInput(${metaIndex}, this.value)"
+                                           onkeydown="handleSubNarrativeKeydown(event, ${metaIndex})"
+                                           autocomplete="off">
+                                    <div id="subNarrativeDropdown-${metaIndex}" class="narrative-dropdown"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-col" style="flex: 0 0 auto; min-width: 190px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label style="visibility: hidden;">Placeholder</label>
+                                <button type="button" class="add-field-btn" style="width: 180px; margin-top: 0;" onclick="addSubNarrativeFromInput(${metaIndex})">+ Add Sub-Narrative</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sub-narratives-container" data-meta-index="${metaIndex}" style="margin-top: 10px; padding-left: 20px; border-left: 3px solid #007cba;"></div>
+                </div>
+            `;
+
+            container.appendChild(metaGroup);
+            return metaGroup;
+        }
+
+        function renumberNarrativeMetaGroups() {
+            const groups = Array.from(document.querySelectorAll('#meta-narratives-container .meta-narrative-group'));
+            groups.forEach(function (group, index) {
+                const newMetaIndex = index + 1;
+                const metaText = group.getAttribute('data-meta-text') || '';
+
+                group.setAttribute('data-meta-index', String(newMetaIndex));
+
+                const metaHeader = group.querySelector('.dynamic-field-header .field-number');
+                if (metaHeader) {
+                    metaHeader.textContent = `Meta-Narrative ${newMetaIndex}`;
+                }
+
+                const subInput = group.querySelector('input[id^="subNarrativeInput-"]');
+                if (subInput) {
+                    subInput.id = `subNarrativeInput-${newMetaIndex}`;
+                    subInput.setAttribute('oninput', `handleSubNarrativeInput(${newMetaIndex}, this.value)`);
+                    subInput.setAttribute('onkeydown', `handleSubNarrativeKeydown(event, ${newMetaIndex})`);
+                }
+
+                const subLabel = group.querySelector('label[for^="subNarrativeInput-"]');
+                if (subLabel) {
+                    subLabel.setAttribute('for', `subNarrativeInput-${newMetaIndex}`);
+                }
+
+                const subWrapper = group.querySelector('div[id^="subNarrativeAutocompleteWrapper-"]');
+                if (subWrapper) {
+                    subWrapper.id = `subNarrativeAutocompleteWrapper-${newMetaIndex}`;
+                }
+
+                const subDropdown = group.querySelector('div[id^="subNarrativeDropdown-"]');
+                if (subDropdown) {
+                    subDropdown.id = `subNarrativeDropdown-${newMetaIndex}`;
+                    subDropdown.style.display = 'none';
+                }
+
+                const addSubButton = group.querySelector('button[onclick^="addSubNarrativeFromInput("]');
+                if (addSubButton) {
+                    addSubButton.setAttribute('onclick', `addSubNarrativeFromInput(${newMetaIndex})`);
+                }
+
+                const subContainer = group.querySelector('.sub-narratives-container');
+                if (subContainer) {
+                    subContainer.setAttribute('data-meta-index', String(newMetaIndex));
+                    const subBlocks = Array.from(subContainer.querySelectorAll('.dynamic-field-container'));
+                    subBlocks.forEach(function (subBlock, subIndex) {
+                        const subHeader = subBlock.querySelector('.field-number');
+                        if (subHeader) {
+                            subHeader.textContent = `Sub-Narrative ${newMetaIndex}.${subIndex + 1}`;
+                        }
+                    });
+                }
+
+                group.setAttribute('data-meta-text', metaText);
+            });
+
+            narrativeMetaCount = groups.length;
+        }
+
+        window.addMetaNarrativeFromInput = async function () {
+            await loadNarrativesLibrary();
+            const input = document.getElementById('metaNarrativeInput');
+            const metaText = input.value.trim();
+            if (!metaText) {
+                input.focus();
+                return;
+            }
+
+            createMetaNarrativeBlock(metaText);
+
+            input.value = '';
+            metaNarrativeHighlightIndex = -1;
+            const dropdown = document.getElementById('metaNarrativeDropdown');
+            if (dropdown) dropdown.style.display = 'none';
+            input.focus();
+        };
+
+        window.removeMetaNarrative = function (button) {
+            const group = button.closest('.meta-narrative-group');
+            if (group) {
+                group.remove();
+                renumberNarrativeMetaGroups();
+            }
+        };
+
+        window.handleSubNarrativeInput = async function (metaIndex, value) {
+            await loadNarrativesLibrary();
+
+            const group = document.querySelector(`.meta-narrative-group[data-meta-index="${metaIndex}"]`);
+            if (!group) return;
+
+            const metaText = group.getAttribute('data-meta-text') || '';
+            const dropdown = document.getElementById(`subNarrativeDropdown-${metaIndex}`);
+            subNarrativeHighlightIndexByMeta[metaIndex] = -1;
+
+            if (!value) {
+                if (dropdown) dropdown.style.display = 'none';
+                return;
+            }
+
+            const matches = getSubNarrativeMatches(metaText, value);
+            if (!dropdown) return;
+
+            renderNarrativeDropdown(dropdown, matches, function (selectedValue) {
+                const input = document.getElementById(`subNarrativeInput-${metaIndex}`);
+                if (input) {
+                    input.value = selectedValue;
+                }
+                dropdown.style.display = 'none';
+            }, function (index) { subNarrativeHighlightIndexByMeta[metaIndex] = index; });
+        };
+
+        window.handleSubNarrativeKeydown = function (event, metaIndex) {
+            const dropdown = document.getElementById(`subNarrativeDropdown-${metaIndex}`);
+            if (!dropdown) return;
+
+            const items = Array.from(dropdown.querySelectorAll('.narrative-dropdown-item'));
+            const currentHighlight = subNarrativeHighlightIndexByMeta[metaIndex] ?? -1;
+
+            if (event.key === 'ArrowDown') {
+                const next = Math.min(currentHighlight + 1, items.length - 1);
+                subNarrativeHighlightIndexByMeta[metaIndex] = next;
+                items.forEach(function (item, index) { item.classList.toggle('highlighted', index === next); });
+                event.preventDefault();
+            } else if (event.key === 'ArrowUp') {
+                const next = Math.max(currentHighlight - 1, 0);
+                subNarrativeHighlightIndexByMeta[metaIndex] = next;
+                items.forEach(function (item, index) { item.classList.toggle('highlighted', index === next); });
+                event.preventDefault();
+            } else if (event.key === 'Enter') {
+                if (currentHighlight >= 0 && items[currentHighlight]) {
+                    items[currentHighlight].dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+                } else {
+                    window.addSubNarrativeFromInput(metaIndex);
+                }
+                event.preventDefault();
+            } else if (event.key === 'Escape') {
+                dropdown.style.display = 'none';
+            }
+        };
+
+        window.addSubNarrativeFromInput = function (metaIndex) {
+            const group = document.querySelector(`.meta-narrative-group[data-meta-index="${metaIndex}"]`);
+            if (!group) return;
+
+            const input = document.getElementById(`subNarrativeInput-${metaIndex}`);
+            const text = input ? input.value.trim() : '';
+            if (!text) {
+                if (input) input.focus();
+                return;
+            }
+
+            const subContainer = group.querySelector('.sub-narratives-container');
+            if (!subContainer) return;
+
+            const newSubIndex = subContainer.querySelectorAll('.dynamic-field-container').length + 1;
+            const subBlock = document.createElement('div');
+            subBlock.className = 'dynamic-field-container';
+            subBlock.style.background = 'white';
+            subBlock.style.position = 'relative';
+            subBlock.style.marginBottom = '8px';
+            subBlock.innerHTML = `
                 <div class="dynamic-field-header">
                     <span class="field-number" style="background: #6c757d;">Sub-Narrative ${metaIndex}.${newSubIndex}</span>
-                    <button type="button" class="remove-field-btn" onclick="removeSubNarrativeCompact(this)">Remove</button>
+                    <button type="button" class="remove-field-btn" onclick="removeSubNarrativeBlock(this)">Remove</button>
                 </div>
-                <textarea class="sub-narrative-text" placeholder="Describe this sub-narrative..." rows="3"></textarea>
+                <div class="narrative-text-display sub-narrative-text sub-narrative-single-line" title="${escapeHtml(text)}">${escapeHtml(text)}</div>
             `;
-            subContainer.appendChild(newField);
-            console.log('Sub-narrative added successfully');
-        }
+            subContainer.appendChild(subBlock);
 
-        function removeSubNarrativeCompact(button) {
+            if (input) {
+                input.value = '';
+                input.focus();
+            }
+
+            const dropdown = document.getElementById(`subNarrativeDropdown-${metaIndex}`);
+            if (dropdown) dropdown.style.display = 'none';
+            subNarrativeHighlightIndexByMeta[metaIndex] = -1;
+        };
+
+        window.removeSubNarrativeBlock = function (button) {
             const metaGroup = button.closest('.meta-narrative-group');
-            const metaIndex = metaGroup.getAttribute('data-meta-index');
-            button.closest('.dynamic-field-container').remove();
-            
-            // Renumber remaining sub-narratives in this meta-narrative
-            const subContainers = metaGroup.querySelectorAll('.sub-narratives-container .dynamic-field-container');
-            subContainers.forEach((container, index) => {
-                container.querySelector('.field-number').textContent = `Sub-Narrative ${metaIndex}.${index + 1}`;
-            });
-        }
+            const subBlock = button.closest('.dynamic-field-container');
+            if (!metaGroup || !subBlock) return;
 
-        function renumberMetaNarratives() {
-            const metaGroups = document.querySelectorAll('.meta-narrative-group');
-            metaGroups.forEach((group, index) => {
-                const newMetaIndex = index + 1;
-                group.setAttribute('data-meta-index', newMetaIndex);
-                
-                // Update meta-narrative number
-                const metaFieldNumber = group.querySelector('.dynamic-field-header > .field-number');
-                metaFieldNumber.textContent = `Meta-Narrative ${newMetaIndex}`;
-                
-                // Update sub-narratives container data attribute
-                const subNarrativesContainer = group.querySelector('.sub-narratives-container');
-                if (subNarrativesContainer) {
-                    subNarrativesContainer.setAttribute('data-meta-index', newMetaIndex);
-                }
-                
-                // Update sub-narrative numbers
-                const subContainers = group.querySelectorAll('.sub-narratives-container .dynamic-field-container');
-                subContainers.forEach((subContainer, subIndex) => {
-                    subContainer.querySelector('.field-number').textContent = `Sub-Narrative ${newMetaIndex}.${subIndex + 1}`;
-                });
-                
-                // Update the add button data-meta-index attribute
-                const addButton = group.querySelector('.add-field-btn[data-meta-index]');
-                if (addButton) {
-                    addButton.setAttribute('data-meta-index', newMetaIndex);
+            subBlock.remove();
+
+            const metaIndex = parseInt(metaGroup.getAttribute('data-meta-index'), 10);
+            const subBlocks = Array.from(metaGroup.querySelectorAll('.sub-narratives-container .dynamic-field-container'));
+            subBlocks.forEach(function (block, index) {
+                const header = block.querySelector('.field-number');
+                if (header) {
+                    header.textContent = `Sub-Narrative ${metaIndex}.${index + 1}`;
                 }
             });
-            metaNarrativeCount = metaGroups.length;
-        }
+        };
+
+        document.addEventListener('DOMContentLoaded', function () {
+            loadNarrativesLibrary();
+        });
+
+        document.addEventListener('click', function (event) {
+            if (!event.target.closest('#metaNarrativeAutocompleteWrapper')) {
+                const metaDropdown = document.getElementById('metaNarrativeDropdown');
+                if (metaDropdown) metaDropdown.style.display = 'none';
+            }
+
+            document.querySelectorAll('[id^="subNarrativeAutocompleteWrapper-"]').forEach(function (wrapper) {
+                if (!wrapper.contains(event.target)) {
+                    const metaIndex = wrapper.id.split('-').pop();
+                    const subDropdown = document.getElementById(`subNarrativeDropdown-${metaIndex}`);
+                    if (subDropdown) subDropdown.style.display = 'none';
+                }
+            });
+        });
 
         function addRecommendation() {
             recommendationCount++;
@@ -1077,52 +1466,16 @@
             }
             tryUpdateCounters();
             
-            // Add event delegation for add sub-narrative buttons
-            const metaNarrativesContainer = document.getElementById('meta-narratives-container');
-            if (metaNarrativesContainer) {
-                metaNarrativesContainer.addEventListener('click', function(e) {
-                    // Check if clicked element or its parent is the add sub-narrative button
-                    let target = e.target;
-                    if (!target.classList.contains('add-field-btn')) {
-                        target = target.closest('.add-field-btn');
-                    }
-                    
-                    if (target && target.hasAttribute('data-meta-index') && target.classList.contains('add-field-btn')) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        const metaIndex = parseInt(target.getAttribute('data-meta-index'));
-                        console.log('Button clicked, calling addSubNarrativeCompact with index:', metaIndex);
-                        addSubNarrativeCompact(metaIndex);
-                    }
-                });
-            }
         });
 
         function resetForm() {
             if (confirm('Are you sure you want to reset the entire form? This will clear all entered data.')) {
                 document.getElementById('incidentForm').reset();
                 
-                // Reset meta-narratives to just one with one sub-narrative
-                document.getElementById('meta-narratives-container').innerHTML = `
-                    <div class="meta-narrative-group" data-meta-index="1">
-                        <div class="dynamic-field-container" style="background: #f0f8ff; border: 2px solid #007cba;">
-                            <div class="dynamic-field-header">
-                                <span class="field-number" style="background: #007cba;">Meta-Narrative 1</span>
-                            </div>
-                            <textarea class="meta-narrative-text" placeholder="Overarching narrative theme..." rows="4"></textarea>
-                            
-                            <div class="sub-narratives-container" data-meta-index="1" style="margin-top: 15px; padding-left: 20px; border-left: 3px solid #007cba;">
-                                <div class="dynamic-field-container" style="background: white; position: relative;">
-                                    <div class="dynamic-field-header">
-                                        <span class="field-number" style="background: #6c757d;">Sub-Narrative 1.1</span>
-                                    </div>
-                                    <textarea class="sub-narrative-text" placeholder="Describe the first sub-narrative..." rows="3"></textarea>
-                                </div>
-                            </div>
-                            <button type="button" class="add-field-btn" data-meta-index="1" style="margin-top: 10px; font-size: 13px; padding: 6px 12px;">+ Add Sub-Narrative</button>
-                        </div>
-                    </div>
-                `;
+                // Reset narratives section
+                document.getElementById('metaNarrativeInput').value = '';
+                document.getElementById('metaNarrativeDropdown').style.display = 'none';
+                document.getElementById('meta-narratives-container').innerHTML = '';
                 
                 document.getElementById('dynamic-recommendations').innerHTML = `
                     <div class="dynamic-field-container">
@@ -1136,7 +1489,7 @@
                 // Reset additional authors
                 document.getElementById('additional-authors').innerHTML = '';
                 
-                metaNarrativeCount = 1;
+                narrativeMetaCount = 0;
                 recommendationCount = 1;
                 authorCount = 1;
                 
@@ -1468,7 +1821,8 @@ Make sure the summary is clear and professional.`;
         var taMainHighlightIdx = -1;
         var taLoadPromise = null;
 
-        var TA_ENDPOINT = 'https://fimi-incident-form-genai.azurewebsites.net/get-threat-actors';
+        // var TA_ENDPOINT = 'https://fimi-incident-form-genai.azurewebsites.net/get-threat-actors';
+        var TA_ENDPOINT = 'http://localhost:5239/get-threat-actors';
         var TA_FALLBACK  = 'threat_actors.json';
 
         async function loadThreatActors() {

@@ -42,6 +42,13 @@ function collectFormData() {
         return Array.from(element.selectedOptions).map(option => option.value).join(', ') || defaultValue;
     }
 
+    const collectedMetaNarratives = Array.from(
+        document.querySelectorAll('#meta-narratives-container .meta-narrative-group')
+    )
+        .map(group => (group.getAttribute('data-meta-text') || '').trim())
+        .filter(Boolean)
+        .join('; ');
+
     return {
         incidentNumber: safeGetValue("incidentNumber", "0000"),
         tlpLevel: safeGetValue("tlpLevel", "TLP:CLEAR"),
@@ -56,7 +63,7 @@ function collectFormData() {
         authors: authors.join('; '),
         summary: safeGetValue("executive-summary"),
         incident: safeGetValue("incidentDescription"),
-        metaNarrative: safeGetValue("metaNarrative"),
+        metaNarrative: collectedMetaNarratives || (document.getElementById('metaNarrative')?.value || ''),
         reach: safeGetValue("reach"),
         outcome: safeGetValue("outcome"),
         actionsTaken: safeGetValue("actionsTaken")
