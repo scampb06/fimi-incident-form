@@ -942,7 +942,8 @@
         let metaNarrativeHighlightIndex = -1;
         const subNarrativeHighlightIndexByMeta = {};
 
-        const NARRATIVES_ENDPOINT = 'https://fimi-incident-form-genai.azurewebsites.net/get-narratives';
+        // const NARRATIVES_ENDPOINT = 'https://fimi-incident-form-genai.azurewebsites.net/get-narratives';
+        const NARRATIVES_ENDPOINT = 'http://localhost:5239/get-narratives';
         const NARRATIVES_FALLBACK = 'narratives.json';
 
         function normalizeNarrativeEntry(item) {
@@ -964,6 +965,7 @@
             entries.forEach((entry) => {
                 const normalized = normalizeNarrativeEntry(entry);
                 if (!normalized.meta) return;
+                if (normalized.meta.toLowerCase() === 'nan') return; // skip Pandas NaN artifacts
                 if (!lookup[normalized.meta]) {
                     lookup[normalized.meta] = new Set();
                 }
