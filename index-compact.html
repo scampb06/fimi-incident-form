@@ -1069,10 +1069,25 @@
         let narrativeMetaList = [];
         let metaNarrativeHighlightIndex = -1;
         const subNarrativeHighlightIndexByMeta = {};
+        let narrativeAutocompleteEnabled = true;
 
         const NARRATIVES_ENDPOINT = 'https://fimi-incident-form-genai.azurewebsites.net/get-narratives';
-        // const NARRATIVES_ENDPOINT = 'http://localhost:5239/get-narratives';
-        const NARRATIVES_FALLBACK = 'narratives.json';
+
+        function disableNarrativeAutocomplete(reason) {
+            narrativeAutocompleteEnabled = false;
+            const metaInput = document.getElementById('metaNarrativeInput');
+            const metaDropdown = document.getElementById('metaNarrativeDropdown');
+            if (metaInput) {
+                metaInput.setAttribute('title', `Narrative autocomplete unavailable: ${reason}`);
+            }
+            if (metaDropdown) {
+                metaDropdown.style.display = 'none';
+            }
+
+            document.querySelectorAll('[id^="subNarrativeDropdown-"]').forEach(function (dropdown) {
+                dropdown.style.display = 'none';
+            });
+        }
 
         function normalizeNarrativeEntry(item) {
             if (!item || typeof item !== 'object') {
@@ -1110,7 +1125,8 @@
         }
 
         async function loadNarrativesLibrary() {
-            if (narrativeLibraryLoaded) return;
+            if (narrativeLibraryLoaded) return true;
+            if (!narrativeAutocompleteEnabled) return false;
             if (narrativeLibraryLoadPromise) return narrativeLibraryLoadPromise;
 
             narrativeLibraryLoadPromise = (async function () {
@@ -1122,21 +1138,11 @@
                     buildNarrativeLookup(data);
                     narrativeLibraryLoaded = true;
                     console.log('Narrative library loaded from endpoint (' + narrativeMetaList.length + ' meta-narratives).');
-                    return;
+                    return true;
                 } catch (error) {
-                    console.warn('Narratives endpoint unavailable, falling back to local narratives.json. Reason:', error.message);
-                }
-
-                try {
-                    const response = await fetch(NARRATIVES_FALLBACK);
-                    if (!response.ok) throw new Error('HTTP ' + response.status);
-                    const data = await response.json();
-                    if (!Array.isArray(data)) throw new Error('Local narratives file returned non-array payload');
-                    buildNarrativeLookup(data);
-                    narrativeLibraryLoaded = true;
-                    console.log('Narrative library loaded from fallback file (' + narrativeMetaList.length + ' meta-narratives).');
-                } catch (error) {
-                    console.error('Failed to load narratives from endpoint and fallback file.', error);
+                    console.error('Narratives endpoint unavailable. Narrative autocomplete disabled. Reason:', error.message);
+                    disableNarrativeAutocomplete(error.message || 'Endpoint unavailable');
+                    return false;
                 }
             })();
 
@@ -1205,6 +1211,7 @@
 
         window.handleMetaNarrativeInput = async function (value) {
             await loadNarrativesLibrary();
+            if (!narrativeAutocompleteEnabled) return;
             metaNarrativeHighlightIndex = -1;
             const dropdown = document.getElementById('metaNarrativeDropdown');
             if (!value) {
@@ -1378,6 +1385,7 @@
 
         window.handleSubNarrativeInput = async function (metaIndex, value) {
             await loadNarrativesLibrary();
+            if (!narrativeAutocompleteEnabled) return;
 
             const group = document.querySelector(`.meta-narrative-group[data-meta-index="${metaIndex}"]`);
             if (!group) return;
@@ -1524,10 +1532,30 @@
         let countermeasureItems = [];
         let actionTakenHighlightIndex = -1;
         let recommendationHighlightIndex = -1;
+        let countermeasureAutocompleteEnabled = true;
 
         const COUNTERMEASURES_ENDPOINT = 'https://fimi-incident-form-genai.azurewebsites.net/get-countermeasures';
-        // const COUNTERMEASURES_ENDPOINT = 'http://localhost:5239/get-countermeasures';
-        const COUNTERMEASURES_FALLBACK = 'countermeasures.json';
+
+        function disableCountermeasureAutocomplete(reason) {
+            countermeasureAutocompleteEnabled = false;
+            const actionInput = document.getElementById('actionTakenInput');
+            const actionDropdown = document.getElementById('actionTakenDropdown');
+            const recommendationInput = document.getElementById('recommendationInput');
+            const recommendationDropdown = document.getElementById('recommendationDropdown');
+
+            if (actionInput) {
+                actionInput.setAttribute('title', `Countermeasure autocomplete unavailable: ${reason}`);
+            }
+            if (recommendationInput) {
+                recommendationInput.setAttribute('title', `Countermeasure autocomplete unavailable: ${reason}`);
+            }
+            if (actionDropdown) {
+                actionDropdown.style.display = 'none';
+            }
+            if (recommendationDropdown) {
+                recommendationDropdown.style.display = 'none';
+            }
+        }
 
         function normalizeCountermeasureEntry(item) {
             if (!item || typeof item !== 'object') {
@@ -1559,7 +1587,8 @@
         }
 
         async function loadCountermeasureLibrary() {
-            if (countermeasureLibraryLoaded) return;
+            if (countermeasureLibraryLoaded) return true;
+            if (!countermeasureAutocompleteEnabled) return false;
             if (countermeasureLibraryLoadPromise) return countermeasureLibraryLoadPromise;
 
             countermeasureLibraryLoadPromise = (async function () {
@@ -1571,21 +1600,11 @@
                     buildCountermeasureLibrary(data);
                     countermeasureLibraryLoaded = true;
                     console.log('Countermeasure library loaded from endpoint (' + countermeasureItems.length + ' entries).');
-                    return;
+                    return true;
                 } catch (error) {
-                    console.warn('Countermeasures endpoint unavailable, falling back to local countermeasures.json. Reason:', error.message);
-                }
-
-                try {
-                    const response = await fetch(COUNTERMEASURES_FALLBACK);
-                    if (!response.ok) throw new Error('HTTP ' + response.status);
-                    const data = await response.json();
-                    if (!Array.isArray(data)) throw new Error('Local countermeasures file returned non-array payload');
-                    buildCountermeasureLibrary(data);
-                    countermeasureLibraryLoaded = true;
-                    console.log('Countermeasure library loaded from fallback file (' + countermeasureItems.length + ' entries).');
-                } catch (error) {
-                    console.error('Failed to load countermeasures from endpoint and fallback file.', error);
+                    console.error('Countermeasures endpoint unavailable. Countermeasure autocomplete disabled. Reason:', error.message);
+                    disableCountermeasureAutocomplete(error.message || 'Endpoint unavailable');
+                    return false;
                 }
             })();
 
@@ -1668,6 +1687,7 @@
 
         window.handleActionTakenInput = async function (value) {
             await loadCountermeasureLibrary();
+            if (!countermeasureAutocompleteEnabled) return;
             actionTakenHighlightIndex = -1;
 
             const dropdown = document.getElementById('actionTakenDropdown');
@@ -1769,6 +1789,7 @@
 
         window.handleRecommendationInput = async function (value) {
             await loadCountermeasureLibrary();
+            if (!countermeasureAutocompleteEnabled) return;
             recommendationHighlightIndex = -1;
 
             const dropdown = document.getElementById('recommendationDropdown');
@@ -2294,36 +2315,39 @@ Make sure the summary is clear and professional.`;
         var taDataLoaded = false;
         var taMainHighlightIdx = -1;
         var taLoadPromise = null;
+        var taAutocompleteEnabled = true;
 
         var TA_ENDPOINT = 'https://fimi-incident-form-genai.azurewebsites.net/get-threat-actors';
-        // var TA_ENDPOINT = 'http://localhost:5239/get-threat-actors';
-        var TA_FALLBACK  = 'threat_actors.json';
+
+        function disableThreatActorAutocomplete(reason) {
+            taAutocompleteEnabled = false;
+            const input = document.getElementById('threatActorInput');
+            const dropdown = document.getElementById('taMainDropdown');
+            if (input) {
+                input.setAttribute('title', `Threat actor autocomplete unavailable: ${reason}`);
+            }
+            if (dropdown) {
+                dropdown.style.display = 'none';
+            }
+        }
 
         async function loadThreatActors() {
-            if (taDataLoaded) return;
+            if (taDataLoaded) return true;
+            if (!taAutocompleteEnabled) return false;
             // Return existing in-flight promise so concurrent callers don't double-fetch
             if (taLoadPromise) return taLoadPromise;
             taLoadPromise = (async function () {
-                // Try the server endpoint first
                 try {
                     const resp = await fetch(TA_ENDPOINT, { cache: 'no-cache' });
                     if (!resp.ok) throw new Error('HTTP ' + resp.status);
                     threatActorsData = await resp.json();
                     taDataLoaded = true;
                     console.log('Threat actors loaded from endpoint (' + threatActorsData.length + ' entries).');
-                    return;
+                    return true;
                 } catch (e) {
-                    console.warn('Threat actor endpoint unavailable, falling back to local file. Reason:', e.message);
-                }
-                // Fallback: local threat_actors.json
-                try {
-                    const resp = await fetch(TA_FALLBACK);
-                    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-                    threatActorsData = await resp.json();
-                    taDataLoaded = true;
-                    console.log('Threat actors loaded from fallback file (' + threatActorsData.length + ' entries).');
-                } catch (e) {
-                    console.error('Failed to load threat actors from endpoint and fallback file.', e);
+                    console.error('Threat actor endpoint unavailable. Threat actor autocomplete disabled. Reason:', e.message);
+                    disableThreatActorAutocomplete(e.message || 'Endpoint unavailable');
+                    return false;
                 }
             })();
             return taLoadPromise;
@@ -2376,6 +2400,7 @@ Make sure the summary is clear and professional.`;
         // ---- Main Form Autocomplete ----
         window.handleTAMainInput = async function (value) {
             await loadThreatActors();
+            if (!taAutocompleteEnabled) return;
             taMainHighlightIdx = -1;
             const dropdown = document.getElementById('taMainDropdown');
             if (!value) { dropdown.style.display = 'none'; return; }
