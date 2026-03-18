@@ -25,7 +25,7 @@ const AI_CONFIG = {
 // ============================================================
 // Azure Configuration (imported from config.js)
 // ============================================================
-const baseUrl = window.AZURE_BASE_URL || `https://${window.AZURE_APP_NAME || 'fimi-incident-form-genai'}.azurewebsites.net`;
+const pdfAiBaseUrl = window.AZURE_BASE_URL || `https://${window.AZURE_APP_NAME || 'fimi-incident-form-genai'}.azurewebsites.net`;
 
 // PDF.js worker configuration (load from CDN)
 if (typeof pdfjsLib !== 'undefined') {
@@ -95,7 +95,7 @@ async function extractTextFromPDF(pdfUrl) {
     // Corsfix endpoints - reliable, fast CORS proxy service
     const corsFixProxies = [
         // Primary Azure endpoint (fastest)
-        `${baseUrl}/cors-proxy/pdf?url=`,
+        `${pdfAiBaseUrl}/cors-proxy/pdf?url=`,
         // Backup reliable proxies
         'https://proxy.corsfix.com/?',
         'https://api.corsfix.com/',
@@ -390,7 +390,7 @@ ${inputText}`;
         }); */
         
 //        const response = await fetch('http://localhost:5239/generate-text', { // Adjust port if needed
-        const response = await fetch(`${baseUrl}/generate-text`, {
+        const response = await fetch(`${pdfAiBaseUrl}/generate-text`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

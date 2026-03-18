@@ -6,8 +6,8 @@
 // ============================================================
 // Azure Configuration
 // ============================================================
-const AZURE_APP_NAME = 'fimi-incident-form-server-pt';
-const AZURE_BASE_URL = `https://${AZURE_APP_NAME}.azurewebsites.net`;
+window.AZURE_APP_NAME = 'fimi-incident-form-server-pt';
+window.AZURE_BASE_URL = `https://${window.AZURE_APP_NAME}.azurewebsites.net`;
 
 // Global state variables for form data
 let objectivesList = [];
