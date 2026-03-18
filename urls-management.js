@@ -8,6 +8,7 @@
 // Azure Configuration (imported from config.js)
 // ============================================================
 const urlsBaseUrl = window.AZURE_BASE_URL || `https://${window.AZURE_APP_NAME || 'fimi-incident-form-genai'}.azurewebsites.net`;
+const googleSheetsServiceAccountEmail = window.GSHEETS_SERVICE_ACCOUNT_EMAIL || 'gsheets-service@spheric-baton-459622-f4.iam.gserviceaccount.com';
 
 // Global arrays to store URLs data
 let urlsList = [];
@@ -1361,7 +1362,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                                 
                                 <div style="background: #f8f9fa; border-radius: 6px; padding: 15px; margin-bottom: 15px; text-align: center;">
                                     <p style="margin: 0 0 15px 0; font-family: monospace; background: #e9ecef; padding: 10px; border-radius: 4px; font-size: 14px; word-break: break-all;">
-                                        gsheets-service@spheric-baton-459622-f4.iam.gserviceaccount.com
+                                        ${googleSheetsServiceAccountEmail}
                                     </p>
                                     <button onclick="copyArchiveServiceAccountEmail()" 
                                             style="background: #28a745; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-size: 16px; display: flex; align-items: center; gap: 8px; margin: 0 auto;">
@@ -1450,7 +1451,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                 
                 // Copy service account email to clipboard for archive
                 function copyArchiveServiceAccountEmail() {
-                    const email = 'gsheets-service@spheric-baton-459622-f4.iam.gserviceaccount.com';
+                    const email = '${googleSheetsServiceAccountEmail}';
                     const button = event.target; // Get the button that was clicked
                     
                     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -1754,7 +1755,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                                 
                                 <div style="background: #f8f9fa; border-radius: 6px; padding: 15px; margin-bottom: 15px; text-align: center;">
                                     <p style="margin: 0 0 15px 0; font-family: monospace; background: #e9ecef; padding: 10px; border-radius: 4px; font-size: 14px; word-break: break-all;">
-                                        gsheets-service@spheric-baton-459622-f4.iam.gserviceaccount.com
+                                        ${googleSheetsServiceAccountEmail}
                                     </p>
                                     <button onclick="copyExtractDomainsServiceAccountEmail()" 
                                             style="background: #28a745; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-size: 16px; display: flex; align-items: center; gap: 8px; margin: 0 auto;">
@@ -1832,7 +1833,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                 
                 // Copy service account email to clipboard for extract domains
                 function copyExtractDomainsServiceAccountEmail() {
-                    const email = 'gsheets-service@spheric-baton-459622-f4.iam.gserviceaccount.com';
+                    const email = '${googleSheetsServiceAccountEmail}';
                     const button = event.target; // Get the button that was clicked
                     
                     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -2079,7 +2080,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                                 
                                 <div style="background: #f8f9fa; border-radius: 6px; padding: 15px; margin-bottom: 15px; text-align: center;">
                                     <p style="margin: 0 0 15px 0; font-family: monospace; background: #e9ecef; padding: 10px; border-radius: 4px; font-size: 14px; word-break: break-all;">
-                                        gsheets-service@spheric-baton-459622-f4.iam.gserviceaccount.com
+                                        ${googleSheetsServiceAccountEmail}
                                     </p>
                                     <button onclick="copyExtractChannelsServiceAccountEmail()" 
                                             style="background: #28a745; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-size: 16px; display: flex; align-items: center; gap: 8px; margin: 0 auto;">
@@ -2157,7 +2158,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                 
                 // Copy service account email to clipboard for extract channels
                 function copyExtractChannelsServiceAccountEmail() {
-                    const email = 'gsheets-service@spheric-baton-459622-f4.iam.gserviceaccount.com';
+                    const email = '${googleSheetsServiceAccountEmail}';
                     const button = event.target; // Get the button that was clicked
                     
                     if (navigator.clipboard && navigator.clipboard.writeText) {

@@ -9,6 +9,11 @@
 window.AZURE_APP_NAME = 'fimi-incident-form-server-pt';
 window.AZURE_BASE_URL = `https://${window.AZURE_APP_NAME}.azurewebsites.net`;
 
+// ============================================================
+// Google Sheets Configuration
+// ============================================================
+window.GSHEETS_SERVICE_ACCOUNT_EMAIL = 'gsheets-service@bright-lattice-490523-c6.iam.gserviceaccount.com';
+
 // Global state variables for form data
 let objectivesList = [];
 let ttpsList = [];
