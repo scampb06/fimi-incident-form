@@ -4,6 +4,11 @@
  * Supports both Trusted URLs and Malicious URLs with Platform field
  */
 
+// ============================================================
+// Azure Configuration (imported from config.js)
+// ============================================================
+const baseUrl = window.AZURE_BASE_URL || `https://${window.AZURE_APP_NAME || 'fimi-incident-form-genai'}.azurewebsites.net`;
+
 // Global arrays to store URLs data
 let urlsList = [];
 let maliciousUrlsList = [];
@@ -328,7 +333,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         
                         // Step 1: Check permissions first
                         console.log('Checking service account permissions...');
-                        const permissionResponse = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/check-permissions?url=\${encodeURIComponent(cleanUrl)}&checkWrite=true\`);
+                        const permissionResponse = await fetch(\`${baseUrl}/google-sheets/check-permissions?url=\${encodeURIComponent(cleanUrl)}&checkWrite=true\`);
                         
                         let hasPermission = false;
                         
@@ -368,7 +373,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                                 window.archiveButton.textContent = 'Starting archive job...';
                             }
 
-                            const endpoint = \`https://fimi-incident-form-genai.azurewebsites.net/bellingcat/auto-archiver-sheets-asynchronous?url=\${encodeURIComponent(cleanUrl)}\`;
+                            const endpoint = \`${baseUrl}/bellingcat/auto-archiver-sheets-asynchronous?url=\${encodeURIComponent(cleanUrl)}\`;
 
                             let response;
                             try {
@@ -462,7 +467,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             window.archiveButton.textContent = 'Getting URL count...';
                         }
                         
-                        const countResponse = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/data-for-url?url=\${encodeURIComponent(cleanUrl)}\`);
+                        const countResponse = await fetch(\`${baseUrl}/google-sheets/data-for-url?url=\${encodeURIComponent(cleanUrl)}\`);
                         
                         let estimatedUrls = 0;
                         if (countResponse.ok) {
@@ -506,7 +511,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         
                         // Wayback Machine endpoint with preValidation parameter
                         const preValidation = preValidationCheckbox ? preValidationCheckbox.checked : false;
-                        const endpoint = \`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}&preValidation=\${preValidation}\`;
+                        const endpoint = \`${baseUrl}/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}&preValidation=\${preValidation}\`;
                         
                         // Call the archive endpoint
                         let response;
@@ -604,7 +609,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         
                         // Step 1: Check permissions first
                         console.log('Checking service account permissions...');
-                        const permissionResponse = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/check-permissions?url=\${encodeURIComponent(cleanUrl)}&checkWrite=true\`);
+                        const permissionResponse = await fetch(\`${baseUrl}/google-sheets/check-permissions?url=\${encodeURIComponent(cleanUrl)}&checkWrite=true\`);
                         
                         let hasPermission = false;
                         
@@ -637,7 +642,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         console.log('Extracting domains for:', cleanUrl);
                         
                         // Call the extract-domains endpoint with cleaned URL
-                        const response = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/extract-domains?url=\${encodeURIComponent(cleanUrl)}\`, {
+                        const response = await fetch(\`${baseUrl}/google-sheets/extract-domains?url=\${encodeURIComponent(cleanUrl)}\`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
@@ -729,7 +734,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         
                         // Step 1: Check permissions first
                         console.log('Checking service account permissions...');
-                        const permissionResponse = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/check-permissions?url=\${encodeURIComponent(cleanUrl)}&checkWrite=true\`);
+                        const permissionResponse = await fetch(\`${baseUrl}/google-sheets/check-permissions?url=\${encodeURIComponent(cleanUrl)}&checkWrite=true\`);
                         
                         let hasPermission = false;
                         
@@ -764,7 +769,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         // Call the extract-channels endpoint with cleaned URL
                         let response;
                         try {
-                            response = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/extract-channels?url=\${encodeURIComponent(cleanUrl)}\`, {
+                            response = await fetch(\`${baseUrl}/google-sheets/extract-channels?url=\${encodeURIComponent(cleanUrl)}\`, {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json'
@@ -1175,7 +1180,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         }
                         
                         const jobId = window.currentBellingcatJobId;
-                        const endpoint = \`https://fimi-incident-form-genai.azurewebsites.net/bellingcat/auto-archiver/status/\${jobId}\`;
+                        const endpoint = \`${baseUrl}/bellingcat/auto-archiver/status/\${jobId}\`;
                         
                         const response = await fetch(endpoint);
                         
@@ -1522,7 +1527,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         console.log('Cleaned URL:', cleanUrl);
                         
                         // Step 1: Check permissions first
-                        const permissionResponse = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/check-permissions?url=\${encodeURIComponent(cleanUrl)}&checkWrite=true\`);
+                        const permissionResponse = await fetch(\`${baseUrl}/google-sheets/check-permissions?url=\${encodeURIComponent(cleanUrl)}&checkWrite=true\`);
                         
                         let hasPermission = false;
                         
@@ -1555,7 +1560,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         closeArchivePermissionDialog();
                         
                         // Get URL count for time estimation
-                        const countResponse = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/data-for-url?url=\${encodeURIComponent(cleanUrl)}\`);
+                        const countResponse = await fetch(\`${baseUrl}/google-sheets/data-for-url?url=\${encodeURIComponent(cleanUrl)}\`);
                         
                         let estimatedUrls = 0;
                         if (countResponse.ok) {
@@ -1609,11 +1614,11 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         let endpoint;
                         if (bellingcatRadio && bellingcatRadio.checked) {
                             // Bellingcat - no preValidation parameter
-                            endpoint = \`https://fimi-incident-form-genai.azurewebsites.net/bellingcat/auto-archiver-sheets-asynchronous?url=\${encodeURIComponent(cleanUrl)}\`;
+                            endpoint = \`${baseUrl}/bellingcat/auto-archiver-sheets-asynchronous?url=\${encodeURIComponent(cleanUrl)}\`;
                         } else {
                             // Wayback Machine - include preValidation parameter
                             const preValidation = preValidationCheckbox ? preValidationCheckbox.checked : false;
-                            endpoint = \`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}&preValidation=\${preValidation}\`;
+                            endpoint = \`${baseUrl}/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}&preValidation=\${preValidation}\`;
                         }
                         
                         // Call the archive endpoint with cleaned URL and preValidation parameter
@@ -1904,7 +1909,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         console.log('Cleaned URL:', cleanUrl);
                         
                         // Step 1: Check permissions first
-                        const permissionResponse = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/check-permissions?url=\${encodeURIComponent(cleanUrl)}&checkWrite=true\`);
+                        const permissionResponse = await fetch(\`${baseUrl}/google-sheets/check-permissions?url=\${encodeURIComponent(cleanUrl)}&checkWrite=true\`);
                         
                         let hasPermission = false;
                         
@@ -1939,7 +1944,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         console.log('Extracting domains for:', cleanUrl);
                         
                         // Call the extract-domains endpoint with cleaned URL
-                        const response = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/extract-domains?url=\${encodeURIComponent(cleanUrl)}\`, {
+                        const response = await fetch(\`${baseUrl}/google-sheets/extract-domains?url=\${encodeURIComponent(cleanUrl)}\`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
@@ -2229,7 +2234,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         console.log('Cleaned URL:', cleanUrl);
                         
                         // Step 1: Check permissions first
-                        const permissionResponse = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/check-permissions?url=\${encodeURIComponent(cleanUrl)}&checkWrite=true\`);
+                        const permissionResponse = await fetch(\`${baseUrl}/google-sheets/check-permissions?url=\${encodeURIComponent(cleanUrl)}&checkWrite=true\`);
                         
                         let hasPermission = false;
                         
@@ -2266,7 +2271,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         // Call the extract-channels endpoint with cleaned URL
                         let response;
                         try {
-                            response = await fetch(\`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/extract-channels?url=\${encodeURIComponent(cleanUrl)}\`, {
+                            response = await fetch(\`${baseUrl}/google-sheets/extract-channels?url=\${encodeURIComponent(cleanUrl)}\`, {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json'
@@ -2429,7 +2434,7 @@ async function loadUrlsFromGoogleSheetsData(googleSheetsUrl, urlType = 'trusted'
         console.log('Using URL:', googleSheetsUrl);
         
         // Call the new endpoint with the user-provided URL
-        const response = await fetch(`https://fimi-incident-form-genai.azurewebsites.net/google-sheets/data-for-url?url=${encodeURIComponent(googleSheetsUrl)}`);
+        const response = await fetch(`${baseUrl}/google-sheets/data-for-url?url=${encodeURIComponent(googleSheetsUrl)}`);
         
         // Check if the response is ok
         if (!response.ok) {

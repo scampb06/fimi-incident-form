@@ -22,6 +22,11 @@ const AI_CONFIG = {
     TEMPERATURE: 0.3 // Lower = more focused, higher = more creative
 };
 
+// ============================================================
+// Azure Configuration (imported from config.js)
+// ============================================================
+const baseUrl = window.AZURE_BASE_URL || `https://${window.AZURE_APP_NAME || 'fimi-incident-form-genai'}.azurewebsites.net`;
+
 // PDF.js worker configuration (load from CDN)
 if (typeof pdfjsLib !== 'undefined') {
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -89,11 +94,11 @@ async function generateIncidentDescription(pdfUrl) {
 async function extractTextFromPDF(pdfUrl) {
     // Corsfix endpoints - reliable, fast CORS proxy service
     const corsFixProxies = [
-        // Primary Corsfix endpoints (fastest)
-        'https://fimi-incident-form-genai.azurewebsites.net/cors-proxy/pdf?url=',
+        // Primary Azure endpoint (fastest)
+        `${baseUrl}/cors-proxy/pdf?url=`,
+        // Backup reliable proxies
         'https://proxy.corsfix.com/?',
         'https://api.corsfix.com/',
-        // Backup reliable proxies
         'https://api.codetabs.com/v1/proxy?quest=',
         'https://thingproxy.freeboard.io/fetch/'
     ];
@@ -385,7 +390,7 @@ ${inputText}`;
         }); */
         
 //        const response = await fetch('http://localhost:5239/generate-text', { // Adjust port if needed
-        const response = await fetch('https://fimi-incident-form-genai.azurewebsites.net/generate-text', {
+        const response = await fetch(`${baseUrl}/generate-text`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

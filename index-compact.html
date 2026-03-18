@@ -953,6 +953,11 @@
     <script src="main.js" defer></script>
 
     <script>
+        // ============================================================
+        // Azure Configuration (imported from config.js)
+        // ============================================================
+        const baseUrl = window.AZURE_BASE_URL || `https://${window.AZURE_APP_NAME || 'fimi-incident-form-genai'}.azurewebsites.net`;
+
         // Dynamic field management functions
         // Note: subNarrativeCount, recommendationCount, and authorCount are declared in config.js
 
@@ -1071,7 +1076,7 @@
         const subNarrativeHighlightIndexByMeta = {};
         let narrativeAutocompleteEnabled = true;
 
-        const NARRATIVES_ENDPOINT = 'https://fimi-incident-form-genai.azurewebsites.net/get-narratives';
+        const NARRATIVES_ENDPOINT = `${baseUrl}/get-narratives`;
 
         function disableNarrativeAutocomplete(reason) {
             narrativeAutocompleteEnabled = false;
@@ -1534,7 +1539,7 @@
         let recommendationHighlightIndex = -1;
         let countermeasureAutocompleteEnabled = true;
 
-        const COUNTERMEASURES_ENDPOINT = 'https://fimi-incident-form-genai.azurewebsites.net/get-countermeasures';
+        const COUNTERMEASURES_ENDPOINT = `${baseUrl}/get-countermeasures`;
 
         function disableCountermeasureAutocomplete(reason) {
             countermeasureAutocompleteEnabled = false;
@@ -2136,7 +2141,7 @@ Make sure the summary is clear and professional.`;
 
                 // Call the AI service
                 showProgressIndicator('Calling AI service...');
-                const response = await fetch('https://fimi-incident-form-genai.azurewebsites.net/generate-text', {
+                const response = await fetch(`${baseUrl}/generate-text`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -2317,7 +2322,7 @@ Make sure the summary is clear and professional.`;
         var taLoadPromise = null;
         var taAutocompleteEnabled = true;
 
-        var TA_ENDPOINT = 'https://fimi-incident-form-genai.azurewebsites.net/get-threat-actors';
+        var TA_ENDPOINT = `${baseUrl}/get-threat-actors`;
 
         function disableThreatActorAutocomplete(reason) {
             taAutocompleteEnabled = false;
