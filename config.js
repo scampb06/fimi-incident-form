@@ -6,7 +6,7 @@
 // ============================================================
 // Azure Configuration
 // ============================================================
-const AZURE_APP_NAME = 'fimi-incident-form-genai';
+const AZURE_APP_NAME = 'fimi-incident-form-server-pt';
 const AZURE_BASE_URL = `https://${AZURE_APP_NAME}.azurewebsites.net`;
 
 // Global state variables for form data
