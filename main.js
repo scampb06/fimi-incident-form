@@ -5,7 +5,7 @@
 
 // Initialize the application once the DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('CDN Incident Alert Generator loaded successfully');
+    console.log('FIMI Incident Report Generator loaded successfully');
     
     // Initialize all modules
     initializeConfig();
