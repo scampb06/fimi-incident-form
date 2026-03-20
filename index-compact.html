@@ -1364,9 +1364,10 @@
 
         function findMetaKeyCaseInsensitive(metaText) {
             if (!metaText) return null;
-            const target = metaText.trim().toLowerCase();
+            const target = metaText.trim().toLowerCase().replace(/^n\d{3}\s*[-:)]\s*/i, '').trim();
             return narrativeMetaList.find(function (meta) {
-                return meta.toLowerCase() === target;
+                const normalizedMeta = String(meta || '').toLowerCase().replace(/^n\d{3}\s*[-:)]\s*/i, '').trim();
+                return normalizedMeta === target;
             }) || null;
         }
 
@@ -1900,15 +1901,19 @@
                     }
                     : resolveMetaFromTypedValue(typedMeta);
 
-                const prefixedMetaText = buildPrefixedMetaNarrativeText(customMeta.metaText, customMeta.metaCode);
-                const metaKey = ensureMetaInNarrativeLibrary(prefixedMetaText, customMeta.metaCode);
+                const normalizedMetaText = String(customMeta.metaText || '')
+                    .replace(/^N\d{3}\s*[-:)]\s*/i, '')
+                    .trim();
+                const metaKey = ensureMetaInNarrativeLibrary(normalizedMetaText, customMeta.metaCode);
                 const subCode = getNextSubCode(metaKey);
-                const prefixedSubText = buildPrefixedSubNarrativeText(subText, subCode);
-                addSubNarrativeToLibrary(metaKey, prefixedSubText, subCode);
+                const normalizedSubText = String(subText || '')
+                    .replace(/^S\d{3}\.\d+\s*[-:)]\s*/i, '')
+                    .trim();
+                addSubNarrativeToLibrary(metaKey, normalizedSubText, subCode);
 
                 resolvedEntry = {
                     metaText: metaKey,
-                    subText: prefixedSubText,
+                    subText: normalizedSubText,
                     metaCode: narrativeMetaCodeLookup[metaKey],
                     subCode
                 };
