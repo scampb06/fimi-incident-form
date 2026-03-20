@@ -1441,8 +1441,11 @@
         function findExactSubNarrativeEntries(subText) {
             if (!subText) return [];
             const target = subText.trim().toLowerCase();
+            const strippedTarget = target.replace(/^s\d{3}\.\d+\s*[-:)]\s*/i, '').trim();
             return narrativeSubEntries.filter(function (entry) {
-                return entry.subText.toLowerCase() === target;
+                const plain = entry.subText.toLowerCase();
+                const prefixed = buildPrefixedSubNarrativeText(entry.subText, entry.subCode).toLowerCase();
+                return plain === target || prefixed === target || plain === strippedTarget;
             });
         }
 
@@ -1456,12 +1459,14 @@
             matches.forEach(function (entry, index) {
                 const item = document.createElement('div');
                 item.className = 'narrative-dropdown-item';
-                item.textContent = `${entry.subText} — ${entry.metaText}`;
+                const fullSubText = buildPrefixedSubNarrativeText(entry.subText, entry.subCode);
+                const fullMetaText = buildPrefixedMetaNarrativeText(entry.metaText, entry.metaCode);
+                item.textContent = `${fullSubText} — ${fullMetaText}`;
                 item.addEventListener('mousedown', function (event) {
                     event.preventDefault();
                     const input = document.getElementById('metaNarrativeInput');
                     if (input) {
-                        input.value = entry.subText;
+                        input.value = fullSubText;
                     }
                     selectedTopSubNarrativeEntry = entry;
                     dropdown.style.display = 'none';
@@ -1536,21 +1541,24 @@
         }
 
         function resolveMetaFromTypedValue(typed) {
+            const typedValue = String(typed || '').trim();
+            const typedWithoutPrefix = typedValue.replace(/^N\d{3}\s*[-:)]\s*/i, '').trim();
+
             const byCode = narrativeMetaList.find(function (meta) {
                 const existingCode = String(narrativeMetaCodeLookup[meta] || '').trim();
-                return existingCode === typed || formatMetaCodeLabel(existingCode).toLowerCase() === typed.toLowerCase();
+                return existingCode === typedValue || formatMetaCodeLabel(existingCode).toLowerCase() === typedValue.toLowerCase();
             });
             if (byCode) {
                 return { metaText: byCode, metaCode: narrativeMetaCodeLookup[byCode], isNewMeta: false };
             }
 
-            const byName = findMetaKeyCaseInsensitive(typed);
+            const byName = findMetaKeyCaseInsensitive(typedValue) || findMetaKeyCaseInsensitive(typedWithoutPrefix);
             if (byName) {
                 return { metaText: byName, metaCode: narrativeMetaCodeLookup[byName], isNewMeta: false };
             }
 
             const newMetaCode = String(narrativeMaxMetaCode + 1);
-            return { metaText: typed, metaCode: newMetaCode, isNewMeta: true };
+            return { metaText: typedWithoutPrefix || typedValue, metaCode: newMetaCode, isNewMeta: true };
         }
 
         window.handleCustomMetaNarrativeInput = async function (value) {
@@ -1577,13 +1585,14 @@
 
             matches.forEach(function (metaText, index) {
                 const metaCode = narrativeMetaCodeLookup[metaText] || '?';
+                const fullMetaText = buildPrefixedMetaNarrativeText(metaText, metaCode);
                 const item = document.createElement('div');
                 item.className = 'narrative-dropdown-item';
-                item.textContent = `${metaCode} — ${metaText}`;
+                item.textContent = fullMetaText;
                 item.addEventListener('mousedown', function (event) {
                     event.preventDefault();
                     const input = document.getElementById('customMetaNarrativeInput');
-                    if (input) input.value = metaText;
+                    if (input) input.value = fullMetaText;
                     selectedCustomMetaNarrativeEntry = { metaText, metaCode };
                     dropdown.style.display = 'none';
                 });
@@ -1758,7 +1767,7 @@
                         <span class="field-number" style="background: #007cba;">Meta-Narrative ${escapeHtml(formatMetaCodeLabel(String(metaCode || metaIndex)))}</span>
                         <button type="button" class="remove-field-btn" onclick="removeMetaNarrative(this)">Remove</button>
                     </div>
-                    <div class="narrative-text-display">${escapeHtml(metaText)}</div>
+                    <div class="narrative-text-display">${escapeHtml(buildPrefixedMetaNarrativeText(metaText, String(metaCode || metaIndex)))}</div>
                     <div class="sub-narratives-container" data-meta-index="${metaIndex}" style="margin-top: 10px; padding-left: 20px; border-left: 3px solid #007cba;"></div>
                 </div>
             `;
@@ -1827,12 +1836,13 @@
             subBlock.style.marginBottom = '8px';
             subBlock.setAttribute('data-sub-text', subText);
             subBlock.setAttribute('data-sub-code', subCode);
+            const fullSubText = buildPrefixedSubNarrativeText(subText, subCode);
             subBlock.innerHTML = `
                 <div class="dynamic-field-header">
                     <span class="field-number" style="background: #6c757d;">Sub-Narrative ${escapeHtml(formatSubCodeLabel(subCode))}</span>
                     <button type="button" class="remove-field-btn" onclick="removeSubNarrativeBlock(this)">Remove</button>
                 </div>
-                <div class="narrative-text-display sub-narrative-text sub-narrative-single-line" title="${escapeHtml(subText)}">${escapeHtml(subText)}</div>
+                <div class="narrative-text-display sub-narrative-text sub-narrative-single-line" title="${escapeHtml(fullSubText)}">${escapeHtml(fullSubText)}</div>
             `;
 
             subContainer.appendChild(subBlock);
@@ -1849,8 +1859,15 @@
 
             let resolvedEntry = null;
 
-            if (selectedTopSubNarrativeEntry && selectedTopSubNarrativeEntry.subText.toLowerCase() === subText.toLowerCase()) {
-                resolvedEntry = selectedTopSubNarrativeEntry;
+            if (selectedTopSubNarrativeEntry) {
+                const plainSelected = selectedTopSubNarrativeEntry.subText.toLowerCase();
+                const fullSelected = buildPrefixedSubNarrativeText(
+                    selectedTopSubNarrativeEntry.subText,
+                    selectedTopSubNarrativeEntry.subCode
+                ).toLowerCase();
+                if (plainSelected === subText.toLowerCase() || fullSelected === subText.toLowerCase()) {
+                    resolvedEntry = selectedTopSubNarrativeEntry;
+                }
             }
 
             if (!resolvedEntry) {
