@@ -1127,11 +1127,34 @@
             const metaCodeRaw = item['meta-number'] || item.metaNumber || item.meta_code || item.metaCode || item['meta-code'] || '';
             const subCodeRaw = item['sub-number'] || item.subNumber || item.sub_code || item.subCode || item['sub-code'] || '';
 
+            const normalizeMetaCodeValue = function (value) {
+                const text = String(value || '').trim();
+                if (!text) return '';
+                const match = text.match(/^N?0*(\d+)$/i);
+                if (match) return String(parseInt(match[1], 10));
+                const numeric = parseInt(text, 10);
+                return Number.isFinite(numeric) ? String(numeric) : '';
+            };
+
+            const normalizeSubCodeValue = function (value) {
+                const text = String(value || '').trim();
+                if (!text) return '';
+                const match = text.match(/^S?0*(\d+)\.(\d+)$/i);
+                if (match) return `${parseInt(match[1], 10)}.${parseInt(match[2], 10)}`;
+                const plain = text.match(/^(\d+)\.(\d+)$/);
+                if (plain) return `${parseInt(plain[1], 10)}.${parseInt(plain[2], 10)}`;
+                return '';
+            };
+
             const splitLeadingCode = function (text) {
                 const raw = String(text || '').trim();
-                const match = raw.match(/^(\d+(?:\.\d+)?)\s*[-:)]\s*(.+)$/);
+                const match = raw.match(/^([NS]?\d+(?:\.\d+)?)\s*[-:)]\s*(.+)$/i);
                 if (match) {
-                    return { code: match[1].trim(), text: match[2].trim() };
+                    const codeRaw = match[1].trim();
+                    const normalizedCode = codeRaw.toUpperCase().startsWith('N')
+                        ? normalizeMetaCodeValue(codeRaw)
+                        : normalizeSubCodeValue(codeRaw) || normalizeMetaCodeValue(codeRaw);
+                    return { code: normalizedCode, text: match[2].trim() };
                 }
                 return { code: '', text: raw };
             };
@@ -1142,9 +1165,58 @@
             return {
                 meta: parsedMeta.text,
                 sub: parsedSub.text,
-                metaCode: String(metaCodeRaw || parsedMeta.code || '').trim(),
-                subCode: String(subCodeRaw || parsedSub.code || '').trim()
+                metaCode: normalizeMetaCodeValue(metaCodeRaw || parsedMeta.code || ''),
+                subCode: normalizeSubCodeValue(subCodeRaw || parsedSub.code || '')
             };
+        }
+
+        function toMetaCodeNumber(value) {
+            const text = String(value || '').trim();
+            if (!text) return NaN;
+            const match = text.match(/^N?0*(\d+)$/i);
+            if (match) return parseInt(match[1], 10);
+            return parseInt(text, 10);
+        }
+
+        function toSubCodeParts(value) {
+            const text = String(value || '').trim();
+            if (!text) return null;
+            const match = text.match(/^S?0*(\d+)\.(\d+)$/i) || text.match(/^(\d+)\.(\d+)$/);
+            if (!match) return null;
+            const meta = parseInt(match[1], 10);
+            const sub = parseInt(match[2], 10);
+            if (!Number.isFinite(meta) || !Number.isFinite(sub)) return null;
+            return { meta, sub };
+        }
+
+        function formatMetaCodeLabel(value) {
+            const numeric = toMetaCodeNumber(value);
+            if (!Number.isFinite(numeric)) return String(value || '').trim();
+            return `N${String(numeric).padStart(3, '0')}`;
+        }
+
+        function formatSubCodeLabel(value) {
+            const parts = toSubCodeParts(value);
+            if (!parts) return String(value || '').trim();
+            return `S${String(parts.meta).padStart(3, '0')}.${parts.sub}`;
+        }
+
+        function buildPrefixedMetaNarrativeText(metaText, metaCode) {
+            const baseText = String(metaText || '').trim();
+            if (!baseText) return '';
+            const alreadyPrefixed = baseText.match(/^N\d{3}\s*[-:)]\s*/i);
+            if (alreadyPrefixed) return baseText;
+            const codeLabel = formatMetaCodeLabel(metaCode);
+            return codeLabel ? `${codeLabel} - ${baseText}` : baseText;
+        }
+
+        function buildPrefixedSubNarrativeText(subText, subCode) {
+            const baseText = String(subText || '').trim();
+            if (!baseText) return '';
+            const alreadyPrefixed = baseText.match(/^S\d{3}\.\d+\s*[-:)]\s*/i);
+            if (alreadyPrefixed) return baseText;
+            const codeLabel = formatSubCodeLabel(subCode);
+            return codeLabel ? `${codeLabel} - ${baseText}` : baseText;
         }
 
         function refreshNarrativeSubEntries() {
@@ -1170,7 +1242,7 @@
             let maxMetaCode = 0;
 
             const updateMaxMetaCode = function (code) {
-                const numeric = parseInt(String(code || '').split('.')[0], 10);
+                const numeric = toMetaCodeNumber(code);
                 if (Number.isFinite(numeric) && numeric > maxMetaCode) {
                     maxMetaCode = numeric;
                 }
@@ -1220,8 +1292,8 @@
             narrativeMaxMetaCode = maxMetaCode;
 
             narrativeMetaList = Object.keys(narrativeMetaLookup).sort(function (a, b) {
-                const aCode = parseInt(String(narrativeMetaCodeLookup[a] || ''), 10);
-                const bCode = parseInt(String(narrativeMetaCodeLookup[b] || ''), 10);
+                const aCode = toMetaCodeNumber(narrativeMetaCodeLookup[a] || '');
+                const bCode = toMetaCodeNumber(narrativeMetaCodeLookup[b] || '');
                 if (Number.isFinite(aCode) && Number.isFinite(bCode) && aCode !== bCode) {
                     return aCode - bCode;
                 }
@@ -1412,7 +1484,7 @@
             if (candidates.length === 1) return candidates[0];
 
             const optionsText = candidates.map(function (candidate, index) {
-                return `${index + 1}. ${candidate.metaCode || '?'} - ${candidate.metaText}`;
+                return `${index + 1}. ${formatMetaCodeLabel(candidate.metaCode || '?')} - ${candidate.metaText}`;
             }).join('\n');
 
             const response = prompt(
@@ -1465,7 +1537,8 @@
 
         function resolveMetaFromTypedValue(typed) {
             const byCode = narrativeMetaList.find(function (meta) {
-                return String(narrativeMetaCodeLookup[meta] || '').trim() === typed;
+                const existingCode = String(narrativeMetaCodeLookup[meta] || '').trim();
+                return existingCode === typed || formatMetaCodeLabel(existingCode).toLowerCase() === typed.toLowerCase();
             });
             if (byCode) {
                 return { metaText: byCode, metaCode: narrativeMetaCodeLookup[byCode], isNewMeta: false };
@@ -1569,8 +1642,8 @@
 
             narrativeMetaList.push(existingMeta);
             narrativeMetaList.sort(function (a, b) {
-                const aCode = parseInt(String(narrativeMetaCodeLookup[a] || ''), 10);
-                const bCode = parseInt(String(narrativeMetaCodeLookup[b] || ''), 10);
+                const aCode = toMetaCodeNumber(narrativeMetaCodeLookup[a] || '');
+                const bCode = toMetaCodeNumber(narrativeMetaCodeLookup[b] || '');
                 if (Number.isFinite(aCode) && Number.isFinite(bCode) && aCode !== bCode) {
                     return aCode - bCode;
                 }
@@ -1608,11 +1681,10 @@
             let maxSuffix = 0;
 
             existingCodes.forEach(function (code) {
-                const text = String(code || '').trim();
-                const match = text.match(/^(\d+)\.(\d+)$/);
-                if (!match) return;
-                if (match[1] !== String(metaCode)) return;
-                const suffix = parseInt(match[2], 10);
+                const parts = toSubCodeParts(code);
+                if (!parts) return;
+                if (String(parts.meta) !== String(metaCode)) return;
+                const suffix = parts.sub;
                 if (Number.isFinite(suffix) && suffix > maxSuffix) {
                     maxSuffix = suffix;
                 }
@@ -1683,7 +1755,7 @@
             metaGroup.innerHTML = `
                 <div class="dynamic-field-container" style="background: #f0f8ff; border: 2px solid #007cba;">
                     <div class="dynamic-field-header">
-                        <span class="field-number" style="background: #007cba;">Meta-Narrative ${escapeHtml(String(metaCode || metaIndex))}</span>
+                        <span class="field-number" style="background: #007cba;">Meta-Narrative ${escapeHtml(formatMetaCodeLabel(String(metaCode || metaIndex)))}</span>
                         <button type="button" class="remove-field-btn" onclick="removeMetaNarrative(this)">Remove</button>
                     </div>
                     <div class="narrative-text-display">${escapeHtml(metaText)}</div>
@@ -1706,7 +1778,7 @@
                 const metaHeader = group.querySelector('.dynamic-field-header .field-number');
                 if (metaHeader) {
                     const metaCode = group.getAttribute('data-meta-code') || newMetaIndex;
-                    metaHeader.textContent = `Meta-Narrative ${metaCode}`;
+                    metaHeader.textContent = `Meta-Narrative ${formatMetaCodeLabel(metaCode)}`;
                 }
 
                 const subContainer = group.querySelector('.sub-narratives-container');
@@ -1718,7 +1790,7 @@
                         if (subHeader) {
                             const subCode = subBlock.getAttribute('data-sub-code') || '';
                             if (subCode) {
-                                subHeader.textContent = `Sub-Narrative ${subCode}`;
+                                subHeader.textContent = `Sub-Narrative ${formatSubCodeLabel(subCode)}`;
                             }
                         }
                     });
@@ -1757,7 +1829,7 @@
             subBlock.setAttribute('data-sub-code', subCode);
             subBlock.innerHTML = `
                 <div class="dynamic-field-header">
-                    <span class="field-number" style="background: #6c757d;">Sub-Narrative ${escapeHtml(subCode)}</span>
+                    <span class="field-number" style="background: #6c757d;">Sub-Narrative ${escapeHtml(formatSubCodeLabel(subCode))}</span>
                     <button type="button" class="remove-field-btn" onclick="removeSubNarrativeBlock(this)">Remove</button>
                 </div>
                 <div class="narrative-text-display sub-narrative-text sub-narrative-single-line" title="${escapeHtml(subText)}">${escapeHtml(subText)}</div>
@@ -1811,13 +1883,15 @@
                     }
                     : resolveMetaFromTypedValue(typedMeta);
 
-                const metaKey = ensureMetaInNarrativeLibrary(customMeta.metaText, customMeta.metaCode);
+                const prefixedMetaText = buildPrefixedMetaNarrativeText(customMeta.metaText, customMeta.metaCode);
+                const metaKey = ensureMetaInNarrativeLibrary(prefixedMetaText, customMeta.metaCode);
                 const subCode = getNextSubCode(metaKey);
-                addSubNarrativeToLibrary(metaKey, subText, subCode);
+                const prefixedSubText = buildPrefixedSubNarrativeText(subText, subCode);
+                addSubNarrativeToLibrary(metaKey, prefixedSubText, subCode);
 
                 resolvedEntry = {
                     metaText: metaKey,
-                    subText,
+                    subText: prefixedSubText,
                     metaCode: narrativeMetaCodeLookup[metaKey],
                     subCode
                 };
