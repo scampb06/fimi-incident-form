@@ -698,12 +698,12 @@
                 <div class="form-row" style="flex-wrap: wrap; gap: 10px;">
                     <div class="form-col" style="flex: 3; min-width: 260px;">
                         <div class="form-group" style="margin-bottom: 0;">
-                            <label for="metaNarrativeInput">Meta-Narrative:</label>
+                            <label for="metaNarrativeInput">Sub-Narrative:</label>
                             <div class="narrative-autocomplete-wrapper" id="metaNarrativeAutocompleteWrapper">
                                 <input type="text" id="metaNarrativeInput"
-                                       placeholder="Enter meta-narrative..."
-                                       oninput="handleMetaNarrativeInput(this.value)"
-                                       onkeydown="handleMetaNarrativeKeydown(event)"
+                                       placeholder="Enter sub-narrative..."
+                                       oninput="handleTopSubNarrativeInput(this.value)"
+                                       onkeydown="handleTopSubNarrativeKeydown(event)"
                                        autocomplete="off">
                                 <div id="metaNarrativeDropdown" class="narrative-dropdown"></div>
                             </div>
@@ -712,7 +712,7 @@
                     <div class="form-col" style="flex: 0 0 auto; min-width: 190px;">
                         <div class="form-group" style="margin-bottom: 0;">
                             <label style="visibility: hidden;">Placeholder</label>
-                            <button type="button" class="add-field-btn" style="width: 180px; margin-top: 0;" onclick="addMetaNarrativeFromInput()">+ Add Meta-Narrative</button>
+                            <button type="button" class="add-field-btn" style="width: 180px; margin-top: 0;" onclick="addSubNarrativeFromTopInput()">+ Add Sub-Narrative</button>
                         </div>
                     </div>
                 </div>
@@ -1072,8 +1072,12 @@
         let narrativeLibraryLoadPromise = null;
         let narrativeMetaLookup = {};
         let narrativeMetaList = [];
-        let metaNarrativeHighlightIndex = -1;
-        const subNarrativeHighlightIndexByMeta = {};
+        let narrativeMetaCodeLookup = {};
+        let narrativeSubCodeLookup = {};
+        let narrativeMaxMetaCode = 0;
+        let narrativeSubEntries = [];
+        let topSubNarrativeHighlightIndex = -1;
+        let selectedTopSubNarrativeEntry = null;
         let narrativeAutocompleteEnabled = true;
 
         const NARRATIVES_ENDPOINT = `${baseUrl}/get-narratives`;
@@ -1089,36 +1093,98 @@
                 metaDropdown.style.display = 'none';
             }
 
-            document.querySelectorAll('[id^="subNarrativeDropdown-"]').forEach(function (dropdown) {
-                dropdown.style.display = 'none';
-            });
         }
 
         function normalizeNarrativeEntry(item) {
             if (!item || typeof item !== 'object') {
-                return { meta: '', sub: '' };
+                return { meta: '', sub: '', metaCode: '', subCode: '' };
             }
 
-            const metaRaw = item['meta-narrative'] || item['Meta-Narrative'] || item.metaNarrative || item.meta_narrative || '';
-            const subRaw = item['sub-narrative'] || item['Sub-Narrative'] || item.subNarrative || item.sub_narrative || '';
+            const metaRaw = item['meta-narrative'] || item['Meta-Narrative'] || item.metaNarrative || item.meta_narrative || item.meta || '';
+            const subRaw = item['sub-narrative'] || item['Sub-Narrative'] || item.subNarrative || item.sub_narrative || item.sub || '';
+            const metaCodeRaw = item['meta-number'] || item.metaNumber || item.meta_code || item.metaCode || item['meta-code'] || '';
+            const subCodeRaw = item['sub-number'] || item.subNumber || item.sub_code || item.subCode || item['sub-code'] || '';
+
+            const splitLeadingCode = function (text) {
+                const raw = String(text || '').trim();
+                const match = raw.match(/^(\d+(?:\.\d+)?)\s*[-:)]\s*(.+)$/);
+                if (match) {
+                    return { code: match[1].trim(), text: match[2].trim() };
+                }
+                return { code: '', text: raw };
+            };
+
+            const parsedMeta = splitLeadingCode(metaRaw);
+            const parsedSub = splitLeadingCode(subRaw);
 
             return {
-                meta: String(metaRaw).trim(),
-                sub: String(subRaw).trim()
+                meta: parsedMeta.text,
+                sub: parsedSub.text,
+                metaCode: String(metaCodeRaw || parsedMeta.code || '').trim(),
+                subCode: String(subCodeRaw || parsedSub.code || '').trim()
             };
+        }
+
+        function refreshNarrativeSubEntries() {
+            const entries = [];
+            narrativeMetaList.forEach(function (metaText) {
+                const subList = narrativeMetaLookup[metaText] || [];
+                subList.forEach(function (subText) {
+                    entries.push({
+                        metaText,
+                        subText,
+                        metaCode: narrativeMetaCodeLookup[metaText] || '',
+                        subCode: (narrativeSubCodeLookup[metaText] || {})[subText] || ''
+                    });
+                });
+            });
+            narrativeSubEntries = entries;
         }
 
         function buildNarrativeLookup(entries) {
             const lookup = {};
+            const metaCodeLookup = {};
+            const subCodeLookup = {};
+            let maxMetaCode = 0;
+
+            const updateMaxMetaCode = function (code) {
+                const numeric = parseInt(String(code || '').split('.')[0], 10);
+                if (Number.isFinite(numeric) && numeric > maxMetaCode) {
+                    maxMetaCode = numeric;
+                }
+            };
+
             entries.forEach((entry) => {
                 const normalized = normalizeNarrativeEntry(entry);
                 if (!normalized.meta) return;
                 if (normalized.meta.toLowerCase() === 'nan') return; // skip Pandas NaN artifacts
+
                 if (!lookup[normalized.meta]) {
                     lookup[normalized.meta] = new Set();
+                    subCodeLookup[normalized.meta] = {};
                 }
+
+                if (!metaCodeLookup[normalized.meta]) {
+                    if (normalized.metaCode) {
+                        metaCodeLookup[normalized.meta] = normalized.metaCode;
+                        updateMaxMetaCode(normalized.metaCode);
+                    } else {
+                        metaCodeLookup[normalized.meta] = String(maxMetaCode + 1);
+                        maxMetaCode += 1;
+                    }
+                }
+
                 if (normalized.sub) {
                     lookup[normalized.meta].add(normalized.sub);
+
+                    if (!subCodeLookup[normalized.meta][normalized.sub]) {
+                        if (normalized.subCode) {
+                            subCodeLookup[normalized.meta][normalized.sub] = normalized.subCode;
+                        } else {
+                            const nextSubIndex = Object.keys(subCodeLookup[normalized.meta]).length + 1;
+                            subCodeLookup[normalized.meta][normalized.sub] = `${metaCodeLookup[normalized.meta]}.${nextSubIndex}`;
+                        }
+                    }
                 }
             });
 
@@ -1126,7 +1192,21 @@
             Object.keys(lookup).forEach((meta) => {
                 narrativeMetaLookup[meta] = Array.from(lookup[meta]);
             });
-            narrativeMetaList = Object.keys(narrativeMetaLookup);
+
+            narrativeMetaCodeLookup = metaCodeLookup;
+            narrativeSubCodeLookup = subCodeLookup;
+            narrativeMaxMetaCode = maxMetaCode;
+
+            narrativeMetaList = Object.keys(narrativeMetaLookup).sort(function (a, b) {
+                const aCode = parseInt(String(narrativeMetaCodeLookup[a] || ''), 10);
+                const bCode = parseInt(String(narrativeMetaCodeLookup[b] || ''), 10);
+                if (Number.isFinite(aCode) && Number.isFinite(bCode) && aCode !== bCode) {
+                    return aCode - bCode;
+                }
+                return a.localeCompare(b);
+            });
+
+            refreshNarrativeSubEntries();
         }
 
         async function loadNarrativesLibrary() {
@@ -1196,57 +1276,215 @@
             }) || null;
         }
 
-        function getMetaNarrativeMatches(query) {
+        function findSubNarrativeMatches(query) {
             if (!query) return [];
             const q = query.toLowerCase();
-            return narrativeMetaList.filter(function (meta) {
-                return meta.toLowerCase().includes(q);
+            return narrativeSubEntries.filter(function (entry) {
+                return entry.subText.toLowerCase().includes(q);
             }).slice(0, 12);
         }
 
-        function getSubNarrativeMatches(metaText, query) {
-            if (!metaText || !query) return [];
-            const metaKey = findMetaKeyCaseInsensitive(metaText);
-            if (!metaKey) return [];
-            const q = query.toLowerCase();
-            return (narrativeMetaLookup[metaKey] || []).filter(function (subNarrative) {
-                return subNarrative.toLowerCase().includes(q);
-            }).slice(0, 12);
+        function findExactSubNarrativeEntries(subText) {
+            if (!subText) return [];
+            const target = subText.trim().toLowerCase();
+            return narrativeSubEntries.filter(function (entry) {
+                return entry.subText.toLowerCase() === target;
+            });
         }
 
-        window.handleMetaNarrativeInput = async function (value) {
+        function renderTopSubNarrativeDropdown(dropdown, matches) {
+            dropdown.innerHTML = '';
+            if (!matches.length) {
+                dropdown.style.display = 'none';
+                return;
+            }
+
+            matches.forEach(function (entry, index) {
+                const item = document.createElement('div');
+                item.className = 'narrative-dropdown-item';
+                item.textContent = `${entry.subText} — ${entry.metaText}`;
+                item.addEventListener('mousedown', function (event) {
+                    event.preventDefault();
+                    const input = document.getElementById('metaNarrativeInput');
+                    if (input) {
+                        input.value = entry.subText;
+                    }
+                    selectedTopSubNarrativeEntry = entry;
+                    dropdown.style.display = 'none';
+                });
+                item.addEventListener('mouseenter', function () {
+                    dropdown.querySelectorAll('.narrative-dropdown-item').forEach(function (element) {
+                        element.classList.remove('highlighted');
+                    });
+                    item.classList.add('highlighted');
+                    topSubNarrativeHighlightIndex = index;
+                });
+                dropdown.appendChild(item);
+            });
+
+            dropdown.style.display = 'block';
+        }
+
+        function chooseMetaFromCandidates(candidates, subText) {
+            if (!candidates.length) return null;
+            if (candidates.length === 1) return candidates[0];
+
+            const optionsText = candidates.map(function (candidate, index) {
+                return `${index + 1}. ${candidate.metaCode || '?'} - ${candidate.metaText}`;
+            }).join('\n');
+
+            const response = prompt(
+                `Multiple meta-narratives were found for "${subText}".\nEnter the number of the meta-narrative to use (Cancel to stop):\n\n${optionsText}`,
+                '1'
+            );
+
+            if (!response) return null;
+            const chosen = parseInt(response.trim(), 10);
+            if (!Number.isFinite(chosen) || chosen < 1 || chosen > candidates.length) return null;
+            return candidates[chosen - 1];
+        }
+
+        function resolveMetaForCustomSubNarrative(subText) {
+            const metaOptions = narrativeMetaList.map(function (meta) {
+                return `${narrativeMetaCodeLookup[meta] || '?'}: ${meta}`;
+            });
+
+            const previewLimit = 25;
+            const shownOptions = metaOptions.slice(0, previewLimit).join('\n');
+            const hiddenCount = Math.max(metaOptions.length - previewLimit, 0);
+            const hiddenLine = hiddenCount > 0
+                ? `\n...and ${hiddenCount} more meta-narratives not shown.`
+                : '';
+
+            const response = prompt(
+                `"${subText}" was not found in the narrative library.\nEnter an existing meta code/name, or type a new meta-narrative (Cancel to stop):\n\n${shownOptions}${hiddenLine}`,
+                ''
+            );
+
+            if (!response) return null;
+            const typed = response.trim();
+            if (!typed) return null;
+
+            const byCode = narrativeMetaList.find(function (meta) {
+                return String(narrativeMetaCodeLookup[meta] || '').trim() === typed;
+            });
+            if (byCode) {
+                return { metaText: byCode, metaCode: narrativeMetaCodeLookup[byCode], isNewMeta: false };
+            }
+
+            const byName = findMetaKeyCaseInsensitive(typed);
+            if (byName) {
+                return { metaText: byName, metaCode: narrativeMetaCodeLookup[byName], isNewMeta: false };
+            }
+
+            const newMetaCode = String(narrativeMaxMetaCode + 1);
+            return { metaText: typed, metaCode: newMetaCode, isNewMeta: true };
+        }
+
+        function ensureMetaInNarrativeLibrary(metaText, metaCode) {
+            let existingMeta = findMetaKeyCaseInsensitive(metaText);
+            if (existingMeta) return existingMeta;
+
+            existingMeta = metaText.trim();
+            narrativeMetaLookup[existingMeta] = [];
+            narrativeSubCodeLookup[existingMeta] = {};
+            narrativeMetaCodeLookup[existingMeta] = String(metaCode || narrativeMaxMetaCode + 1);
+
+            const numeric = parseInt(String(narrativeMetaCodeLookup[existingMeta]), 10);
+            if (Number.isFinite(numeric) && numeric > narrativeMaxMetaCode) {
+                narrativeMaxMetaCode = numeric;
+            }
+
+            narrativeMetaList.push(existingMeta);
+            narrativeMetaList.sort(function (a, b) {
+                const aCode = parseInt(String(narrativeMetaCodeLookup[a] || ''), 10);
+                const bCode = parseInt(String(narrativeMetaCodeLookup[b] || ''), 10);
+                if (Number.isFinite(aCode) && Number.isFinite(bCode) && aCode !== bCode) {
+                    return aCode - bCode;
+                }
+                return a.localeCompare(b);
+            });
+
+            return existingMeta;
+        }
+
+        function addSubNarrativeToLibrary(metaText, subText, subCode) {
+            const metaKey = ensureMetaInNarrativeLibrary(metaText);
+            const subList = narrativeMetaLookup[metaKey] || [];
+
+            if (!subList.some(function (item) { return item.toLowerCase() === subText.toLowerCase(); })) {
+                subList.push(subText);
+                narrativeMetaLookup[metaKey] = subList;
+            }
+
+            if (!narrativeSubCodeLookup[metaKey]) {
+                narrativeSubCodeLookup[metaKey] = {};
+            }
+
+            if (!narrativeSubCodeLookup[metaKey][subText]) {
+                narrativeSubCodeLookup[metaKey][subText] = subCode;
+            }
+
+            refreshNarrativeSubEntries();
+            return metaKey;
+        }
+
+        function getNextSubCode(metaText) {
+            const metaKey = ensureMetaInNarrativeLibrary(metaText);
+            const metaCode = narrativeMetaCodeLookup[metaKey] || '1';
+            const existingCodes = Object.values(narrativeSubCodeLookup[metaKey] || {});
+            let maxSuffix = 0;
+
+            existingCodes.forEach(function (code) {
+                const text = String(code || '').trim();
+                const match = text.match(/^(\d+)\.(\d+)$/);
+                if (!match) return;
+                if (match[1] !== String(metaCode)) return;
+                const suffix = parseInt(match[2], 10);
+                if (Number.isFinite(suffix) && suffix > maxSuffix) {
+                    maxSuffix = suffix;
+                }
+            });
+
+            return `${metaCode}.${maxSuffix + 1}`;
+        }
+
+        window.handleTopSubNarrativeInput = async function (value) {
             await loadNarrativesLibrary();
             if (!narrativeAutocompleteEnabled) return;
-            metaNarrativeHighlightIndex = -1;
+
+            topSubNarrativeHighlightIndex = -1;
+            selectedTopSubNarrativeEntry = null;
+
             const dropdown = document.getElementById('metaNarrativeDropdown');
+            if (!dropdown) return;
             if (!value) {
                 dropdown.style.display = 'none';
                 return;
             }
-            const matches = getMetaNarrativeMatches(value);
-            renderNarrativeDropdown(dropdown, matches, function (selectedValue) {
-                document.getElementById('metaNarrativeInput').value = selectedValue;
-                dropdown.style.display = 'none';
-            }, function (index) { metaNarrativeHighlightIndex = index; });
+
+            const matches = findSubNarrativeMatches(value);
+            renderTopSubNarrativeDropdown(dropdown, matches);
         };
 
-        window.handleMetaNarrativeKeydown = function (event) {
+        window.handleTopSubNarrativeKeydown = function (event) {
             const dropdown = document.getElementById('metaNarrativeDropdown');
+            if (!dropdown) return;
             const items = Array.from(dropdown.querySelectorAll('.narrative-dropdown-item'));
 
             if (event.key === 'ArrowDown') {
-                metaNarrativeHighlightIndex = Math.min(metaNarrativeHighlightIndex + 1, items.length - 1);
-                items.forEach(function (item, index) { item.classList.toggle('highlighted', index === metaNarrativeHighlightIndex); });
+                topSubNarrativeHighlightIndex = Math.min(topSubNarrativeHighlightIndex + 1, items.length - 1);
+                items.forEach(function (item, index) { item.classList.toggle('highlighted', index === topSubNarrativeHighlightIndex); });
                 event.preventDefault();
             } else if (event.key === 'ArrowUp') {
-                metaNarrativeHighlightIndex = Math.max(metaNarrativeHighlightIndex - 1, 0);
-                items.forEach(function (item, index) { item.classList.toggle('highlighted', index === metaNarrativeHighlightIndex); });
+                topSubNarrativeHighlightIndex = Math.max(topSubNarrativeHighlightIndex - 1, 0);
+                items.forEach(function (item, index) { item.classList.toggle('highlighted', index === topSubNarrativeHighlightIndex); });
                 event.preventDefault();
             } else if (event.key === 'Enter') {
-                if (metaNarrativeHighlightIndex >= 0 && items[metaNarrativeHighlightIndex]) {
-                    items[metaNarrativeHighlightIndex].dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+                if (topSubNarrativeHighlightIndex >= 0 && items[topSubNarrativeHighlightIndex]) {
+                    items[topSubNarrativeHighlightIndex].dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
                 } else {
-                    window.addMetaNarrativeFromInput();
+                    window.addSubNarrativeFromTopInput();
                 }
                 event.preventDefault();
             } else if (event.key === 'Escape') {
@@ -1254,7 +1492,7 @@
             }
         };
 
-        function createMetaNarrativeBlock(metaText) {
+        function createMetaNarrativeBlock(metaText, metaCode) {
             narrativeMetaCount++;
             const metaIndex = narrativeMetaCount;
 
@@ -1263,38 +1501,16 @@
             metaGroup.className = 'meta-narrative-group';
             metaGroup.setAttribute('data-meta-index', String(metaIndex));
             metaGroup.setAttribute('data-meta-text', metaText);
+            metaGroup.setAttribute('data-meta-code', String(metaCode || metaIndex));
             metaGroup.style.marginTop = '15px';
 
             metaGroup.innerHTML = `
                 <div class="dynamic-field-container" style="background: #f0f8ff; border: 2px solid #007cba;">
                     <div class="dynamic-field-header">
-                        <span class="field-number" style="background: #007cba;">Meta-Narrative ${metaIndex}</span>
+                        <span class="field-number" style="background: #007cba;">Meta-Narrative ${escapeHtml(String(metaCode || metaIndex))}</span>
                         <button type="button" class="remove-field-btn" onclick="removeMetaNarrative(this)">Remove</button>
                     </div>
                     <div class="narrative-text-display">${escapeHtml(metaText)}</div>
-
-                    <div class="form-row" style="flex-wrap: wrap; gap: 10px; margin-top: 12px; margin-bottom: 8px;">
-                        <div class="form-col" style="flex: 3; min-width: 240px;">
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label for="subNarrativeInput-${metaIndex}">Sub-Narrative:</label>
-                                <div class="narrative-autocomplete-wrapper" id="subNarrativeAutocompleteWrapper-${metaIndex}">
-                                    <input type="text" id="subNarrativeInput-${metaIndex}"
-                                           placeholder="Enter sub-narrative..."
-                                           oninput="handleSubNarrativeInput(${metaIndex}, this.value)"
-                                           onkeydown="handleSubNarrativeKeydown(event, ${metaIndex})"
-                                           autocomplete="off">
-                                    <div id="subNarrativeDropdown-${metaIndex}" class="narrative-dropdown"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="form-col" style="flex: 0 0 auto; min-width: 190px;">
-                            <div class="form-group" style="margin-bottom: 0;">
-                                <label style="visibility: hidden;">Placeholder</label>
-                                <button type="button" class="add-field-btn" style="width: 180px; margin-top: 0;" onclick="addSubNarrativeFromInput(${metaIndex})">+ Add Sub-Narrative</button>
-                            </div>
-                        </div>
-                    </div>
-
                     <div class="sub-narratives-container" data-meta-index="${metaIndex}" style="margin-top: 10px; padding-left: 20px; border-left: 3px solid #007cba;"></div>
                 </div>
             `;
@@ -1313,45 +1529,21 @@
 
                 const metaHeader = group.querySelector('.dynamic-field-header .field-number');
                 if (metaHeader) {
-                    metaHeader.textContent = `Meta-Narrative ${newMetaIndex}`;
-                }
-
-                const subInput = group.querySelector('input[id^="subNarrativeInput-"]');
-                if (subInput) {
-                    subInput.id = `subNarrativeInput-${newMetaIndex}`;
-                    subInput.setAttribute('oninput', `handleSubNarrativeInput(${newMetaIndex}, this.value)`);
-                    subInput.setAttribute('onkeydown', `handleSubNarrativeKeydown(event, ${newMetaIndex})`);
-                }
-
-                const subLabel = group.querySelector('label[for^="subNarrativeInput-"]');
-                if (subLabel) {
-                    subLabel.setAttribute('for', `subNarrativeInput-${newMetaIndex}`);
-                }
-
-                const subWrapper = group.querySelector('div[id^="subNarrativeAutocompleteWrapper-"]');
-                if (subWrapper) {
-                    subWrapper.id = `subNarrativeAutocompleteWrapper-${newMetaIndex}`;
-                }
-
-                const subDropdown = group.querySelector('div[id^="subNarrativeDropdown-"]');
-                if (subDropdown) {
-                    subDropdown.id = `subNarrativeDropdown-${newMetaIndex}`;
-                    subDropdown.style.display = 'none';
-                }
-
-                const addSubButton = group.querySelector('button[onclick^="addSubNarrativeFromInput("]');
-                if (addSubButton) {
-                    addSubButton.setAttribute('onclick', `addSubNarrativeFromInput(${newMetaIndex})`);
+                    const metaCode = group.getAttribute('data-meta-code') || newMetaIndex;
+                    metaHeader.textContent = `Meta-Narrative ${metaCode}`;
                 }
 
                 const subContainer = group.querySelector('.sub-narratives-container');
                 if (subContainer) {
                     subContainer.setAttribute('data-meta-index', String(newMetaIndex));
                     const subBlocks = Array.from(subContainer.querySelectorAll('.dynamic-field-container'));
-                    subBlocks.forEach(function (subBlock, subIndex) {
+                    subBlocks.forEach(function (subBlock) {
                         const subHeader = subBlock.querySelector('.field-number');
                         if (subHeader) {
-                            subHeader.textContent = `Sub-Narrative ${newMetaIndex}.${subIndex + 1}`;
+                            const subCode = subBlock.getAttribute('data-sub-code') || '';
+                            if (subCode) {
+                                subHeader.textContent = `Sub-Narrative ${subCode}`;
+                            }
                         }
                     });
                 }
@@ -1362,23 +1554,111 @@
             narrativeMetaCount = groups.length;
         }
 
-        window.addMetaNarrativeFromInput = async function () {
+        function getOrCreateMetaNarrativeGroup(metaText, metaCode) {
+            const groups = Array.from(document.querySelectorAll('#meta-narratives-container .meta-narrative-group'));
+            const existing = groups.find(function (group) {
+                return (group.getAttribute('data-meta-text') || '').trim().toLowerCase() === metaText.trim().toLowerCase();
+            });
+            if (existing) return existing;
+            return createMetaNarrativeBlock(metaText, metaCode);
+        }
+
+        function addSubNarrativeBlock(metaGroup, subText, subCode) {
+            const subContainer = metaGroup.querySelector('.sub-narratives-container');
+            if (!subContainer) return;
+
+            const alreadyExists = Array.from(subContainer.querySelectorAll('.dynamic-field-container')).some(function (block) {
+                return (block.getAttribute('data-sub-text') || '').trim().toLowerCase() === subText.trim().toLowerCase();
+            });
+            if (alreadyExists) return;
+
+            const subBlock = document.createElement('div');
+            subBlock.className = 'dynamic-field-container';
+            subBlock.style.background = 'white';
+            subBlock.style.position = 'relative';
+            subBlock.style.marginBottom = '8px';
+            subBlock.setAttribute('data-sub-text', subText);
+            subBlock.setAttribute('data-sub-code', subCode);
+            subBlock.innerHTML = `
+                <div class="dynamic-field-header">
+                    <span class="field-number" style="background: #6c757d;">Sub-Narrative ${escapeHtml(subCode)}</span>
+                    <button type="button" class="remove-field-btn" onclick="removeSubNarrativeBlock(this)">Remove</button>
+                </div>
+                <div class="narrative-text-display sub-narrative-text sub-narrative-single-line" title="${escapeHtml(subText)}">${escapeHtml(subText)}</div>
+            `;
+
+            subContainer.appendChild(subBlock);
+        }
+
+        window.addSubNarrativeFromTopInput = async function () {
             await loadNarrativesLibrary();
             const input = document.getElementById('metaNarrativeInput');
-            const metaText = input.value.trim();
-            if (!metaText) {
+            const subText = input.value.trim();
+            if (!subText) {
                 input.focus();
                 return;
             }
 
-            createMetaNarrativeBlock(metaText);
+            let resolvedEntry = null;
+
+            if (selectedTopSubNarrativeEntry && selectedTopSubNarrativeEntry.subText.toLowerCase() === subText.toLowerCase()) {
+                resolvedEntry = selectedTopSubNarrativeEntry;
+            }
+
+            if (!resolvedEntry) {
+                const exactMatches = findExactSubNarrativeEntries(subText);
+                if (exactMatches.length === 1) {
+                    resolvedEntry = exactMatches[0];
+                } else if (exactMatches.length > 1) {
+                    resolvedEntry = chooseMetaFromCandidates(exactMatches, subText);
+                    if (!resolvedEntry) {
+                        input.focus();
+                        return;
+                    }
+                }
+            }
+
+            if (!resolvedEntry) {
+                const customMeta = resolveMetaForCustomSubNarrative(subText);
+                if (!customMeta) {
+                    input.focus();
+                    return;
+                }
+
+                const metaKey = ensureMetaInNarrativeLibrary(customMeta.metaText, customMeta.metaCode);
+                const subCode = getNextSubCode(metaKey);
+                addSubNarrativeToLibrary(metaKey, subText, subCode);
+
+                resolvedEntry = {
+                    metaText: metaKey,
+                    subText,
+                    metaCode: narrativeMetaCodeLookup[metaKey],
+                    subCode
+                };
+            } else {
+                const metaKey = ensureMetaInNarrativeLibrary(resolvedEntry.metaText, resolvedEntry.metaCode);
+                const subCode = resolvedEntry.subCode || getNextSubCode(metaKey);
+                addSubNarrativeToLibrary(metaKey, resolvedEntry.subText, subCode);
+                resolvedEntry = {
+                    metaText: metaKey,
+                    subText: resolvedEntry.subText,
+                    metaCode: narrativeMetaCodeLookup[metaKey],
+                    subCode: (narrativeSubCodeLookup[metaKey] || {})[resolvedEntry.subText] || subCode
+                };
+            }
+
+            const metaGroup = getOrCreateMetaNarrativeGroup(resolvedEntry.metaText, resolvedEntry.metaCode);
+            addSubNarrativeBlock(metaGroup, resolvedEntry.subText, resolvedEntry.subCode);
 
             input.value = '';
-            metaNarrativeHighlightIndex = -1;
+            topSubNarrativeHighlightIndex = -1;
+            selectedTopSubNarrativeEntry = null;
             const dropdown = document.getElementById('metaNarrativeDropdown');
             if (dropdown) dropdown.style.display = 'none';
             input.focus();
         };
+
+        window.addMetaNarrativeFromInput = window.addSubNarrativeFromTopInput;
 
         window.removeMetaNarrative = function (button) {
             const group = button.closest('.meta-narrative-group');
@@ -1388,101 +1668,7 @@
             }
         };
 
-        window.handleSubNarrativeInput = async function (metaIndex, value) {
-            await loadNarrativesLibrary();
-            if (!narrativeAutocompleteEnabled) return;
-
-            const group = document.querySelector(`.meta-narrative-group[data-meta-index="${metaIndex}"]`);
-            if (!group) return;
-
-            const metaText = group.getAttribute('data-meta-text') || '';
-            const dropdown = document.getElementById(`subNarrativeDropdown-${metaIndex}`);
-            subNarrativeHighlightIndexByMeta[metaIndex] = -1;
-
-            if (!value) {
-                if (dropdown) dropdown.style.display = 'none';
-                return;
-            }
-
-            const matches = getSubNarrativeMatches(metaText, value);
-            if (!dropdown) return;
-
-            renderNarrativeDropdown(dropdown, matches, function (selectedValue) {
-                const input = document.getElementById(`subNarrativeInput-${metaIndex}`);
-                if (input) {
-                    input.value = selectedValue;
-                }
-                dropdown.style.display = 'none';
-            }, function (index) { subNarrativeHighlightIndexByMeta[metaIndex] = index; });
-        };
-
-        window.handleSubNarrativeKeydown = function (event, metaIndex) {
-            const dropdown = document.getElementById(`subNarrativeDropdown-${metaIndex}`);
-            if (!dropdown) return;
-
-            const items = Array.from(dropdown.querySelectorAll('.narrative-dropdown-item'));
-            const currentHighlight = subNarrativeHighlightIndexByMeta[metaIndex] ?? -1;
-
-            if (event.key === 'ArrowDown') {
-                const next = Math.min(currentHighlight + 1, items.length - 1);
-                subNarrativeHighlightIndexByMeta[metaIndex] = next;
-                items.forEach(function (item, index) { item.classList.toggle('highlighted', index === next); });
-                event.preventDefault();
-            } else if (event.key === 'ArrowUp') {
-                const next = Math.max(currentHighlight - 1, 0);
-                subNarrativeHighlightIndexByMeta[metaIndex] = next;
-                items.forEach(function (item, index) { item.classList.toggle('highlighted', index === next); });
-                event.preventDefault();
-            } else if (event.key === 'Enter') {
-                if (currentHighlight >= 0 && items[currentHighlight]) {
-                    items[currentHighlight].dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
-                } else {
-                    window.addSubNarrativeFromInput(metaIndex);
-                }
-                event.preventDefault();
-            } else if (event.key === 'Escape') {
-                dropdown.style.display = 'none';
-            }
-        };
-
-        window.addSubNarrativeFromInput = function (metaIndex) {
-            const group = document.querySelector(`.meta-narrative-group[data-meta-index="${metaIndex}"]`);
-            if (!group) return;
-
-            const input = document.getElementById(`subNarrativeInput-${metaIndex}`);
-            const text = input ? input.value.trim() : '';
-            if (!text) {
-                if (input) input.focus();
-                return;
-            }
-
-            const subContainer = group.querySelector('.sub-narratives-container');
-            if (!subContainer) return;
-
-            const newSubIndex = subContainer.querySelectorAll('.dynamic-field-container').length + 1;
-            const subBlock = document.createElement('div');
-            subBlock.className = 'dynamic-field-container';
-            subBlock.style.background = 'white';
-            subBlock.style.position = 'relative';
-            subBlock.style.marginBottom = '8px';
-            subBlock.innerHTML = `
-                <div class="dynamic-field-header">
-                    <span class="field-number" style="background: #6c757d;">Sub-Narrative ${metaIndex}.${newSubIndex}</span>
-                    <button type="button" class="remove-field-btn" onclick="removeSubNarrativeBlock(this)">Remove</button>
-                </div>
-                <div class="narrative-text-display sub-narrative-text sub-narrative-single-line" title="${escapeHtml(text)}">${escapeHtml(text)}</div>
-            `;
-            subContainer.appendChild(subBlock);
-
-            if (input) {
-                input.value = '';
-                input.focus();
-            }
-
-            const dropdown = document.getElementById(`subNarrativeDropdown-${metaIndex}`);
-            if (dropdown) dropdown.style.display = 'none';
-            subNarrativeHighlightIndexByMeta[metaIndex] = -1;
-        };
+        window.addSubNarrativeFromInput = window.addSubNarrativeFromTopInput;
 
         window.removeSubNarrativeBlock = function (button) {
             const metaGroup = button.closest('.meta-narrative-group');
@@ -1490,15 +1676,6 @@
             if (!metaGroup || !subBlock) return;
 
             subBlock.remove();
-
-            const metaIndex = parseInt(metaGroup.getAttribute('data-meta-index'), 10);
-            const subBlocks = Array.from(metaGroup.querySelectorAll('.sub-narratives-container .dynamic-field-container'));
-            subBlocks.forEach(function (block, index) {
-                const header = block.querySelector('.field-number');
-                if (header) {
-                    header.textContent = `Sub-Narrative ${metaIndex}.${index + 1}`;
-                }
-            });
         };
 
         document.addEventListener('DOMContentLoaded', function () {
@@ -1511,14 +1688,6 @@
                 const metaDropdown = document.getElementById('metaNarrativeDropdown');
                 if (metaDropdown) metaDropdown.style.display = 'none';
             }
-
-            document.querySelectorAll('[id^="subNarrativeAutocompleteWrapper-"]').forEach(function (wrapper) {
-                if (!wrapper.contains(event.target)) {
-                    const metaIndex = wrapper.id.split('-').pop();
-                    const subDropdown = document.getElementById(`subNarrativeDropdown-${metaIndex}`);
-                    if (subDropdown) subDropdown.style.display = 'none';
-                }
-            });
 
             if (!event.target.closest('#actionTakenAutocompleteWrapper')) {
                 const actionDropdown = document.getElementById('actionTakenDropdown');
