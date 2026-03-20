@@ -717,6 +717,25 @@
                     </div>
                 </div>
 
+                <div id="customMetaNarrativeRow" style="display: none; margin-top: 10px;">
+                    <div class="form-row" style="flex-wrap: wrap; gap: 10px; margin-bottom: 0;">
+                        <div class="form-col" style="flex: 3; min-width: 260px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="customMetaNarrativeInput">Associated Meta-Narrative:</label>
+                                <div class="narrative-autocomplete-wrapper" id="customMetaNarrativeAutocompleteWrapper">
+                                    <input type="text" id="customMetaNarrativeInput"
+                                           placeholder="Type to find existing meta-narratives or enter a new one..."
+                                           oninput="handleCustomMetaNarrativeInput(this.value)"
+                                           onkeydown="handleCustomMetaNarrativeKeydown(event)"
+                                           autocomplete="off">
+                                    <div id="customMetaNarrativeDropdown" class="narrative-dropdown"></div>
+                                </div>
+                                <div id="customMetaNarrativeHint" style="font-size: 12px; color: #666; margin-top: 4px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="meta-narratives-container" style="margin-top: 10px;"></div>
             </div>
 
@@ -1078,6 +1097,9 @@
         let narrativeSubEntries = [];
         let topSubNarrativeHighlightIndex = -1;
         let selectedTopSubNarrativeEntry = null;
+        let customMetaNarrativeHighlightIndex = -1;
+        let selectedCustomMetaNarrativeEntry = null;
+        let pendingCustomSubNarrative = '';
         let narrativeAutocompleteEnabled = true;
 
         const NARRATIVES_ENDPOINT = `${baseUrl}/get-narratives`;
@@ -1276,6 +1298,16 @@
             }) || null;
         }
 
+        function findMetaNarrativeMatches(query) {
+            if (!query) return [];
+            const q = query.toLowerCase();
+            return narrativeMetaList.filter(function (meta) {
+                const metaText = String(meta || '').toLowerCase();
+                const metaCode = String(narrativeMetaCodeLookup[meta] || '').toLowerCase();
+                return metaText.includes(q) || metaCode.includes(q);
+            }).slice(0, 12);
+        }
+
         function findSubNarrativeMatches(query) {
             if (!query) return [];
             const q = query.toLowerCase();
@@ -1394,27 +1426,44 @@
             return candidates[chosen - 1];
         }
 
-        function resolveMetaForCustomSubNarrative(subText) {
-            const metaOptions = narrativeMetaList.map(function (meta) {
-                return `${narrativeMetaCodeLookup[meta] || '?'}: ${meta}`;
-            });
+        function showCustomMetaNarrativeInput(subText) {
+            pendingCustomSubNarrative = subText;
+            selectedCustomMetaNarrativeEntry = null;
+            customMetaNarrativeHighlightIndex = -1;
 
-            const previewLimit = 25;
-            const shownOptions = metaOptions.slice(0, previewLimit).join('\n');
-            const hiddenCount = Math.max(metaOptions.length - previewLimit, 0);
-            const hiddenLine = hiddenCount > 0
-                ? `\n...and ${hiddenCount} more meta-narratives not shown.`
-                : '';
+            const row = document.getElementById('customMetaNarrativeRow');
+            const input = document.getElementById('customMetaNarrativeInput');
+            const hint = document.getElementById('customMetaNarrativeHint');
+            const dropdown = document.getElementById('customMetaNarrativeDropdown');
 
-            const response = prompt(
-                `"${subText}" was not found in the narrative library.\nEnter an existing meta code/name, or type a new meta-narrative (Cancel to stop):\n\n${shownOptions}${hiddenLine}`,
-                ''
-            );
+            if (row) row.style.display = 'block';
+            if (hint) {
+                hint.textContent = `"${subText}" is new. Select an existing meta-narrative or type a new one, then click + Add Sub-Narrative again.`;
+            }
+            if (dropdown) dropdown.style.display = 'none';
+            if (input) {
+                input.value = '';
+                input.focus();
+            }
+        }
 
-            if (!response) return null;
-            const typed = response.trim();
-            if (!typed) return null;
+        function hideCustomMetaNarrativeInput() {
+            pendingCustomSubNarrative = '';
+            selectedCustomMetaNarrativeEntry = null;
+            customMetaNarrativeHighlightIndex = -1;
 
+            const row = document.getElementById('customMetaNarrativeRow');
+            const input = document.getElementById('customMetaNarrativeInput');
+            const hint = document.getElementById('customMetaNarrativeHint');
+            const dropdown = document.getElementById('customMetaNarrativeDropdown');
+
+            if (row) row.style.display = 'none';
+            if (input) input.value = '';
+            if (hint) hint.textContent = '';
+            if (dropdown) dropdown.style.display = 'none';
+        }
+
+        function resolveMetaFromTypedValue(typed) {
             const byCode = narrativeMetaList.find(function (meta) {
                 return String(narrativeMetaCodeLookup[meta] || '').trim() === typed;
             });
@@ -1430,6 +1479,79 @@
             const newMetaCode = String(narrativeMaxMetaCode + 1);
             return { metaText: typed, metaCode: newMetaCode, isNewMeta: true };
         }
+
+        window.handleCustomMetaNarrativeInput = async function (value) {
+            await loadNarrativesLibrary();
+            if (!narrativeAutocompleteEnabled) return;
+
+            selectedCustomMetaNarrativeEntry = null;
+            customMetaNarrativeHighlightIndex = -1;
+
+            const dropdown = document.getElementById('customMetaNarrativeDropdown');
+            if (!dropdown) return;
+
+            if (!value) {
+                dropdown.style.display = 'none';
+                return;
+            }
+
+            const matches = findMetaNarrativeMatches(value);
+            dropdown.innerHTML = '';
+            if (!matches.length) {
+                dropdown.style.display = 'none';
+                return;
+            }
+
+            matches.forEach(function (metaText, index) {
+                const metaCode = narrativeMetaCodeLookup[metaText] || '?';
+                const item = document.createElement('div');
+                item.className = 'narrative-dropdown-item';
+                item.textContent = `${metaCode} — ${metaText}`;
+                item.addEventListener('mousedown', function (event) {
+                    event.preventDefault();
+                    const input = document.getElementById('customMetaNarrativeInput');
+                    if (input) input.value = metaText;
+                    selectedCustomMetaNarrativeEntry = { metaText, metaCode };
+                    dropdown.style.display = 'none';
+                });
+                item.addEventListener('mouseenter', function () {
+                    dropdown.querySelectorAll('.narrative-dropdown-item').forEach(function (element) {
+                        element.classList.remove('highlighted');
+                    });
+                    item.classList.add('highlighted');
+                    customMetaNarrativeHighlightIndex = index;
+                });
+                dropdown.appendChild(item);
+            });
+
+            dropdown.style.display = 'block';
+        };
+
+        window.handleCustomMetaNarrativeKeydown = function (event) {
+            const dropdown = document.getElementById('customMetaNarrativeDropdown');
+            if (!dropdown) return;
+
+            const items = Array.from(dropdown.querySelectorAll('.narrative-dropdown-item'));
+
+            if (event.key === 'ArrowDown') {
+                customMetaNarrativeHighlightIndex = Math.min(customMetaNarrativeHighlightIndex + 1, items.length - 1);
+                items.forEach(function (item, index) { item.classList.toggle('highlighted', index === customMetaNarrativeHighlightIndex); });
+                event.preventDefault();
+            } else if (event.key === 'ArrowUp') {
+                customMetaNarrativeHighlightIndex = Math.max(customMetaNarrativeHighlightIndex - 1, 0);
+                items.forEach(function (item, index) { item.classList.toggle('highlighted', index === customMetaNarrativeHighlightIndex); });
+                event.preventDefault();
+            } else if (event.key === 'Enter') {
+                if (customMetaNarrativeHighlightIndex >= 0 && items[customMetaNarrativeHighlightIndex]) {
+                    items[customMetaNarrativeHighlightIndex].dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+                } else {
+                    window.addSubNarrativeFromTopInput();
+                }
+                event.preventDefault();
+            } else if (event.key === 'Escape') {
+                dropdown.style.display = 'none';
+            }
+        };
 
         function ensureMetaInNarrativeLibrary(metaText, metaCode) {
             let existingMeta = findMetaKeyCaseInsensitive(metaText);
@@ -1502,6 +1624,10 @@
         window.handleTopSubNarrativeInput = async function (value) {
             await loadNarrativesLibrary();
             if (!narrativeAutocompleteEnabled) return;
+
+            if (pendingCustomSubNarrative && pendingCustomSubNarrative.toLowerCase() !== String(value || '').trim().toLowerCase()) {
+                hideCustomMetaNarrativeInput();
+            }
 
             topSubNarrativeHighlightIndex = -1;
             selectedTopSubNarrativeEntry = null;
@@ -1669,11 +1795,21 @@
             }
 
             if (!resolvedEntry) {
-                const customMeta = resolveMetaForCustomSubNarrative(subText);
-                if (!customMeta) {
-                    input.focus();
+                const customMetaInput = document.getElementById('customMetaNarrativeInput');
+                const typedMeta = String(customMetaInput?.value || '').trim();
+
+                if (!typedMeta) {
+                    showCustomMetaNarrativeInput(subText);
                     return;
                 }
+
+                const customMeta = selectedCustomMetaNarrativeEntry
+                    ? {
+                        metaText: selectedCustomMetaNarrativeEntry.metaText,
+                        metaCode: selectedCustomMetaNarrativeEntry.metaCode,
+                        isNewMeta: false
+                    }
+                    : resolveMetaFromTypedValue(typedMeta);
 
                 const metaKey = ensureMetaInNarrativeLibrary(customMeta.metaText, customMeta.metaCode);
                 const subCode = getNextSubCode(metaKey);
@@ -1705,6 +1841,7 @@
             selectedTopSubNarrativeEntry = null;
             const dropdown = document.getElementById('metaNarrativeDropdown');
             if (dropdown) dropdown.style.display = 'none';
+            hideCustomMetaNarrativeInput();
             input.focus();
         };
 
@@ -1737,6 +1874,11 @@
             if (!event.target.closest('#metaNarrativeAutocompleteWrapper')) {
                 const metaDropdown = document.getElementById('metaNarrativeDropdown');
                 if (metaDropdown) metaDropdown.style.display = 'none';
+            }
+
+            if (!event.target.closest('#customMetaNarrativeAutocompleteWrapper')) {
+                const customMetaDropdown = document.getElementById('customMetaNarrativeDropdown');
+                if (customMetaDropdown) customMetaDropdown.style.display = 'none';
             }
 
             if (!event.target.closest('#actionTakenAutocompleteWrapper')) {
@@ -2174,7 +2316,10 @@
                 // Reset narratives section
                 document.getElementById('metaNarrativeInput').value = '';
                 document.getElementById('metaNarrativeDropdown').style.display = 'none';
+                const customMetaDropdown = document.getElementById('customMetaNarrativeDropdown');
+                if (customMetaDropdown) customMetaDropdown.style.display = 'none';
                 document.getElementById('meta-narratives-container').innerHTML = '';
+                hideCustomMetaNarrativeInput();
 
                 // Reset incident response section
                 document.getElementById('actionTakenInput').value = '';
