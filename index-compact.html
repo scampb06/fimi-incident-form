@@ -1279,9 +1279,59 @@
         function findSubNarrativeMatches(query) {
             if (!query) return [];
             const q = query.toLowerCase();
-            return narrativeSubEntries.filter(function (entry) {
-                return entry.subText.toLowerCase().includes(q);
-            }).slice(0, 12);
+
+            const filtered = narrativeSubEntries.filter(function (entry) {
+                const subText = String(entry.subText || '').toLowerCase();
+                const subCode = String(entry.subCode || '').toLowerCase();
+                return subText.includes(q) || subCode.includes(q);
+            });
+
+            const byMeta = new Map();
+            filtered.forEach(function (entry) {
+                const key = entry.metaText || '';
+                if (!byMeta.has(key)) {
+                    byMeta.set(key, []);
+                }
+                byMeta.get(key).push(entry);
+            });
+
+            byMeta.forEach(function (items) {
+                items.sort(function (a, b) {
+                    const aText = String(a.subText || '').toLowerCase();
+                    const bText = String(b.subText || '').toLowerCase();
+                    const aStarts = aText.startsWith(q) ? 0 : 1;
+                    const bStarts = bText.startsWith(q) ? 0 : 1;
+                    if (aStarts !== bStarts) return aStarts - bStarts;
+                    return aText.localeCompare(bText);
+                });
+            });
+
+            const metaKeys = Array.from(byMeta.keys()).sort(function (a, b) {
+                const aCode = parseFloat(String(narrativeMetaCodeLookup[a] || ''));
+                const bCode = parseFloat(String(narrativeMetaCodeLookup[b] || ''));
+                if (Number.isFinite(aCode) && Number.isFinite(bCode) && aCode !== bCode) {
+                    return aCode - bCode;
+                }
+                return String(a || '').localeCompare(String(b || ''));
+            });
+
+            const maxResults = 24;
+            const results = [];
+            let keepLooping = true;
+
+            while (keepLooping && results.length < maxResults) {
+                keepLooping = false;
+                metaKeys.forEach(function (key) {
+                    if (results.length >= maxResults) return;
+                    const bucket = byMeta.get(key);
+                    if (bucket && bucket.length) {
+                        results.push(bucket.shift());
+                        keepLooping = true;
+                    }
+                });
+            }
+
+            return results;
         }
 
         function findExactSubNarrativeEntries(subText) {
