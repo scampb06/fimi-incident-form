@@ -2392,7 +2392,9 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                 // Handle the Done button click
                 function handleDoneClick() {
                     // Close this window and trigger the data loading in the parent
-                    window.opener.loadUrlsFromGoogleSheetsData(window.userGoogleSheetsUrl, '${urlType}');
+                    const urlColumnInput = document.getElementById('urlColumnInput');
+                    const urlColumn = urlColumnInput && urlColumnInput.value.trim() ? urlColumnInput.value.trim() : null;
+                    window.opener.loadUrlsFromGoogleSheetsData(window.userGoogleSheetsUrl, '${urlType}', urlColumn);
                     window.close();
                 }
                 
@@ -2458,7 +2460,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
 }
 
 // Function to actually load the data from Google Sheets (called after editing)
-async function loadUrlsFromGoogleSheetsData(googleSheetsUrl, urlType = 'trusted') {
+async function loadUrlsFromGoogleSheetsData(googleSheetsUrl, urlType = 'trusted', urlColumn = null) {
     const config = URL_TYPES[urlType];
     const urlsArray = getUrlsArray(urlType);
     
@@ -2509,7 +2511,7 @@ async function loadUrlsFromGoogleSheetsData(googleSheetsUrl, urlType = 'trusted'
                 // Add fields based on URL type configuration
                 config.fields.forEach(field => {
                     if (field === 'url') {
-                        newEntry[field] = record.URL || record.url || '';
+                        newEntry[field] = (urlColumn ? record[urlColumn] : null) || record.URL || record.url || '';
                     } else if (field === 'domain') {
                         newEntry[field] = record.Domain || record.domain || '';
                     } else if (field === 'channel') {
