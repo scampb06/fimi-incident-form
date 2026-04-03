@@ -554,9 +554,11 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         
                         if (!response.ok) {
                             hideArchiveProgress();
-                            throw new Error(\`Archive request failed with status \${response.status}. Please check that the archive server is running properly.\`);
+                            const body = await response.json().catch(() => null);
+                            const message = body?.message ?? \`Archive request failed with status \${response.status}. Please check that the archive server is running properly.\`;
+                            throw new Error(message);
                         }
-                        
+
                         const result = await response.json();
                         console.log('Archive response:', result);
                         
@@ -1693,7 +1695,9 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         } else {
                             // Archive failed for other reasons
                             hideArchiveProgress();
-                            throw new Error(\`Archive request failed with status \${response.status}. Please check that the archive server is running properly.\`);
+                            const body = await response.json().catch(() => null);
+                            const message = body?.message ?? \`Archive request failed with status \${response.status}. Please check that the archive server is running properly.\`;
+                            throw new Error(message);
                         }
                         
                     } catch (error) {
