@@ -271,6 +271,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         Bellingcat Auto Archiver
                     </label>
                     <button id="checkStatusButton" onclick="checkBellingcatStatus()" style="padding: 5px 15px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; white-space: nowrap;">Check Status</button>
+                    <input type="text" id="urlColumnInput" placeholder="URL column header (optional)" style="display: none; padding: 5px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; min-width: 200px;">
                 </div>
             </div>
             
@@ -374,7 +375,12 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                                 window.archiveButton.textContent = 'Starting archive job...';
                             }
 
-                            const endpoint = \`${urlsBaseUrl}/bellingcat/auto-archiver-sheets-asynchronous?url=\${encodeURIComponent(cleanUrl)}\`;
+                            const urlColumnInput = document.getElementById('urlColumnInput');
+                            const urlColumnValue = urlColumnInput && urlColumnInput.value.trim() ? urlColumnInput.value.trim() : null;
+                            let endpoint = \`${urlsBaseUrl}/bellingcat/auto-archiver-sheets-asynchronous?url=\${encodeURIComponent(cleanUrl)}\`;
+                            if (urlColumnValue) {
+                                endpoint += \`&urlColumn=\${encodeURIComponent(urlColumnValue)}\`;
+                            }
 
                             let response;
                             try {
@@ -1615,7 +1621,12 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         let endpoint;
                         if (bellingcatRadio && bellingcatRadio.checked) {
                             // Bellingcat - no preValidation parameter
+                            const urlColumnInput = document.getElementById('urlColumnInput');
+                            const urlColumnValue = urlColumnInput && urlColumnInput.value.trim() ? urlColumnInput.value.trim() : null;
                             endpoint = \`${urlsBaseUrl}/bellingcat/auto-archiver-sheets-asynchronous?url=\${encodeURIComponent(cleanUrl)}\`;
+                            if (urlColumnValue) {
+                                endpoint += \`&urlColumn=\${encodeURIComponent(urlColumnValue)}\`;
+                            }
                         } else {
                             // Wayback Machine - include preValidation parameter
                             const preValidation = preValidationCheckbox ? preValidationCheckbox.checked : false;
@@ -2370,7 +2381,8 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                     const preValidationCheckbox = document.getElementById('preValidationCheckbox');
                     const preValidationLabel = document.getElementById('preValidationLabel');
                     const checkStatusButton = document.getElementById('checkStatusButton');
-                    
+                    const urlColumnInput = document.getElementById('urlColumnInput');
+
                     function updateControlStates() {
                         if (bellingcatRadio && bellingcatRadio.checked) {
                             // Bellingcat selected - gray out prevalidation but keep the state
@@ -2378,12 +2390,17 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             preValidationLabel.style.cursor = 'not-allowed';
                             preValidationCheckbox.style.cursor = 'not-allowed';
                             preValidationLabel.style.pointerEvents = 'none';
-                            
+
                             // Enable Check Status button
                             if (checkStatusButton) {
                                 checkStatusButton.disabled = false;
                                 checkStatusButton.style.opacity = '1';
                                 checkStatusButton.style.cursor = 'pointer';
+                            }
+
+                            // Show URL column input
+                            if (urlColumnInput) {
+                                urlColumnInput.style.display = 'inline-block';
                             }
                         } else {
                             // Wayback Machine selected - enable prevalidation
@@ -2391,12 +2408,17 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             preValidationLabel.style.cursor = 'pointer';
                             preValidationCheckbox.style.cursor = 'pointer';
                             preValidationLabel.style.pointerEvents = 'auto';
-                            
+
                             // Disable Check Status button
                             if (checkStatusButton) {
                                 checkStatusButton.disabled = true;
                                 checkStatusButton.style.opacity = '0.4';
                                 checkStatusButton.style.cursor = 'not-allowed';
+                            }
+
+                            // Hide URL column input
+                            if (urlColumnInput) {
+                                urlColumnInput.style.display = 'none';
                             }
                         }
                     }
