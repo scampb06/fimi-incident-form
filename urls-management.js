@@ -271,7 +271,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         Bellingcat Auto Archiver
                     </label>
                     <button id="checkStatusButton" onclick="checkBellingcatStatus()" style="padding: 5px 15px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; white-space: nowrap;">Check Status</button>
-                    <input type="text" id="urlColumnInput" placeholder="URL column header (optional)" style="display: none; padding: 5px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; min-width: 200px;">
+                    <input type="text" id="urlColumnInput" placeholder="URL column header (optional)" style="display: inline-block; padding: 5px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; min-width: 200px;">
                 </div>
             </div>
             
@@ -518,7 +518,10 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         
                         // Wayback Machine endpoint with preValidation parameter
                         const preValidation = preValidationCheckbox ? preValidationCheckbox.checked : false;
-                        const endpoint = \`${urlsBaseUrl}/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}&preValidation=\${preValidation}\`;
+                        const urlColumnInput = document.getElementById('urlColumnInput');
+                        const urlColumnValue = urlColumnInput && urlColumnInput.value.trim() ? urlColumnInput.value.trim() : null;
+                        let endpoint = \`${urlsBaseUrl}/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}&preValidation=\${preValidation}\`;
+                        if (urlColumnValue) { endpoint += \`&urlColumn=\${encodeURIComponent(urlColumnValue)}\`; }
                         
                         // Call the archive endpoint
                         let response;
@@ -645,11 +648,15 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         if (window.extractDomainsButton) {
                             window.extractDomainsButton.textContent = 'Extracting domains...';
                         }
-                        
+
                         console.log('Extracting domains for:', cleanUrl);
-                        
+
                         // Call the extract-domains endpoint with cleaned URL
-                        const response = await fetch(\`${urlsBaseUrl}/google-sheets/extract-domains?url=\${encodeURIComponent(cleanUrl)}\`, {
+                        const urlColumnInputED1 = document.getElementById('urlColumnInput');
+                        const urlColumnValueED1 = urlColumnInputED1 && urlColumnInputED1.value.trim() ? urlColumnInputED1.value.trim() : null;
+                        let extractDomainsUrl1 = \`${urlsBaseUrl}/google-sheets/extract-domains?url=\${encodeURIComponent(cleanUrl)}\`;
+                        if (urlColumnValueED1) { extractDomainsUrl1 += \`&urlColumn=\${encodeURIComponent(urlColumnValueED1)}\`; }
+                        const response = await fetch(extractDomainsUrl1, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
@@ -770,13 +777,17 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         if (window.extractChannelsButton) {
                             window.extractChannelsButton.textContent = 'Extracting channels...';
                         }
-                        
+
                         console.log('Extracting channels for:', cleanUrl);
-                        
+
                         // Call the extract-channels endpoint with cleaned URL
+                        const urlColumnInputEC1 = document.getElementById('urlColumnInput');
+                        const urlColumnValueEC1 = urlColumnInputEC1 && urlColumnInputEC1.value.trim() ? urlColumnInputEC1.value.trim() : null;
+                        let extractChannelsUrl1 = \`${urlsBaseUrl}/google-sheets/extract-channels?url=\${encodeURIComponent(cleanUrl)}\`;
+                        if (urlColumnValueEC1) { extractChannelsUrl1 += \`&urlColumn=\${encodeURIComponent(urlColumnValueEC1)}\`; }
                         let response;
                         try {
-                            response = await fetch(\`${urlsBaseUrl}/google-sheets/extract-channels?url=\${encodeURIComponent(cleanUrl)}\`, {
+                            response = await fetch(extractChannelsUrl1, {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json'
@@ -1630,7 +1641,10 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         } else {
                             // Wayback Machine - include preValidation parameter
                             const preValidation = preValidationCheckbox ? preValidationCheckbox.checked : false;
+                            const urlColumnInput = document.getElementById('urlColumnInput');
+                            const urlColumnValue = urlColumnInput && urlColumnInput.value.trim() ? urlColumnInput.value.trim() : null;
                             endpoint = \`${urlsBaseUrl}/google-sheets/archive-urls?url=\${encodeURIComponent(cleanUrl)}&preValidation=\${preValidation}\`;
+                            if (urlColumnValue) { endpoint += \`&urlColumn=\${encodeURIComponent(urlColumnValue)}\`; }
                         }
                         
                         // Call the archive endpoint with cleaned URL and preValidation parameter
@@ -1952,11 +1966,15 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         
                         // Close the permission dialog immediately
                         closeExtractDomainsPermissionDialog();
-                        
+
                         console.log('Extracting domains for:', cleanUrl);
-                        
+
                         // Call the extract-domains endpoint with cleaned URL
-                        const response = await fetch(\`${urlsBaseUrl}/google-sheets/extract-domains?url=\${encodeURIComponent(cleanUrl)}\`, {
+                        const urlColumnInputED2 = document.getElementById('urlColumnInput');
+                        const urlColumnValueED2 = urlColumnInputED2 && urlColumnInputED2.value.trim() ? urlColumnInputED2.value.trim() : null;
+                        let extractDomainsUrl2 = \`${urlsBaseUrl}/google-sheets/extract-domains?url=\${encodeURIComponent(cleanUrl)}\`;
+                        if (urlColumnValueED2) { extractDomainsUrl2 += \`&urlColumn=\${encodeURIComponent(urlColumnValueED2)}\`; }
+                        const response = await fetch(extractDomainsUrl2, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
@@ -2277,13 +2295,17 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         
                         // Close the permission dialog immediately
                         closeExtractChannelsPermissionDialog();
-                        
+
                         console.log('Extracting channels for:', cleanUrl);
-                        
+
                         // Call the extract-channels endpoint with cleaned URL
+                        const urlColumnInputEC2 = document.getElementById('urlColumnInput');
+                        const urlColumnValueEC2 = urlColumnInputEC2 && urlColumnInputEC2.value.trim() ? urlColumnInputEC2.value.trim() : null;
+                        let extractChannelsUrl2 = \`${urlsBaseUrl}/google-sheets/extract-channels?url=\${encodeURIComponent(cleanUrl)}\`;
+                        if (urlColumnValueEC2) { extractChannelsUrl2 += \`&urlColumn=\${encodeURIComponent(urlColumnValueEC2)}\`; }
                         let response;
                         try {
-                            response = await fetch(\`${urlsBaseUrl}/google-sheets/extract-channels?url=\${encodeURIComponent(cleanUrl)}\`, {
+                            response = await fetch(extractChannelsUrl2, {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json'
@@ -2381,8 +2403,6 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                     const preValidationCheckbox = document.getElementById('preValidationCheckbox');
                     const preValidationLabel = document.getElementById('preValidationLabel');
                     const checkStatusButton = document.getElementById('checkStatusButton');
-                    const urlColumnInput = document.getElementById('urlColumnInput');
-
                     function updateControlStates() {
                         if (bellingcatRadio && bellingcatRadio.checked) {
                             // Bellingcat selected - gray out prevalidation but keep the state
@@ -2397,11 +2417,6 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                                 checkStatusButton.style.opacity = '1';
                                 checkStatusButton.style.cursor = 'pointer';
                             }
-
-                            // Show URL column input
-                            if (urlColumnInput) {
-                                urlColumnInput.style.display = 'inline-block';
-                            }
                         } else {
                             // Wayback Machine selected - enable prevalidation
                             preValidationLabel.style.opacity = '1';
@@ -2414,11 +2429,6 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                                 checkStatusButton.disabled = true;
                                 checkStatusButton.style.opacity = '0.4';
                                 checkStatusButton.style.cursor = 'not-allowed';
-                            }
-
-                            // Hide URL column input
-                            if (urlColumnInput) {
-                                urlColumnInput.style.display = 'none';
                             }
                         }
                     }
