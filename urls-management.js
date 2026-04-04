@@ -406,8 +406,12 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                                     // Try to parse the error response body
                                     const errorData = await response.json();
                                     
+                                    // Check for conflict (409)
+                                    if (response.status === 409) {
+                                        errorMessage = errorData.message || 'A conflicting archiving job is already in progress for this sheet. Please wait for it to complete.';
+
                                     // Check if this is the timeout validation error
-                                    if (response.status === 413 && errorData.detail) {
+                                    } else if (response.status === 413 && errorData.detail) {
                                         const detail = errorData.detail.toLowerCase();
                                         
                                         if (detail.includes('estimated processing time') && detail.includes('exceeds')) {
@@ -555,6 +559,9 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         if (!response.ok) {
                             hideArchiveProgress();
                             const body = await response.json().catch(() => null);
+                            if (response.status === 409) {
+                                throw new Error(body?.message || 'A conflicting operation is already in progress for this sheet. Please try again shortly.');
+                            }
                             const message = body?.message ?? \`Archive request failed with status \${response.status}. Please check that the archive server is running properly.\`;
                             throw new Error(message);
                         }
@@ -667,15 +674,16 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         
                         if (!response.ok) {
                             // Handle different error types
-                            if (response.status === 400) {
-                                const errorData = await response.json().catch(() => ({}));
-                                const errorMessage = errorData.detail?.message || errorData.message || 'Bad request - please check the Google Sheets URL';
-                                throw new Error(errorMessage);
+                            const errorData = await response.json().catch(() => ({}));
+                            if (response.status === 409) {
+                                throw new Error(errorData.message || 'A conflicting operation is already in progress for this sheet. Please try again shortly.');
+                            } else if (response.status === 400) {
+                                throw new Error(errorData.detail?.message || errorData.message || 'Bad request - please check the Google Sheets URL');
                             } else {
                                 throw new Error(\`Extract domains request failed: \${response.status} \${response.statusText}\`);
                             }
                         }
-                        
+
                         const result = await response.json();
                         console.log('Extract domains response:', result);
                         
@@ -801,17 +809,18 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         
                         if (!response.ok) {
                             // Handle different error types
-                            if (response.status === 404) {
+                            const errorData = await response.json().catch(() => ({}));
+                            if (response.status === 409) {
+                                throw new Error(errorData.message || 'A conflicting operation is already in progress for this sheet. Please try again shortly.');
+                            } else if (response.status === 404) {
                                 throw new Error('Extract channels endpoint not found. The server may not have implemented the /extract-channels endpoint yet. Please contact your administrator or use the extract domains functionality instead.');
                             } else if (response.status === 400) {
-                                const errorData = await response.json().catch(() => ({}));
-                                const errorMessage = errorData.detail?.message || errorData.message || 'Bad request - please check the Google Sheets URL';
-                                throw new Error(errorMessage);
+                                throw new Error(errorData.detail?.message || errorData.message || 'Bad request - please check the Google Sheets URL');
                             } else {
                                 throw new Error(\`Extract channels request failed: \${response.status} \${response.statusText}\`);
                             }
                         }
-                        
+
                         const result = await response.json();
                         console.log('Extract channels response:', result);
                         
@@ -1696,6 +1705,9 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             // Archive failed for other reasons
                             hideArchiveProgress();
                             const body = await response.json().catch(() => null);
+                            if (response.status === 409) {
+                                throw new Error(body?.message || 'A conflicting operation is already in progress for this sheet. Please try again shortly.');
+                            }
                             const message = body?.message ?? \`Archive request failed with status \${response.status}. Please check that the archive server is running properly.\`;
                             throw new Error(message);
                         }
@@ -2020,10 +2032,11 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             
                         } else {
                             // Extract domains failed for other reasons
-                            if (response.status === 400) {
-                                const errorData = await response.json().catch(() => ({}));
-                                const errorMessage = errorData.detail?.message || errorData.message || 'Bad request - please check the Google Sheets URL';
-                                throw new Error(errorMessage);
+                            const errorData = await response.json().catch(() => ({}));
+                            if (response.status === 409) {
+                                throw new Error(errorData.message || 'A conflicting operation is already in progress for this sheet. Please try again shortly.');
+                            } else if (response.status === 400) {
+                                throw new Error(errorData.detail?.message || errorData.message || 'Bad request - please check the Google Sheets URL');
                             } else {
                                 throw new Error(\`Extract domains request failed: \${response.status} \${response.statusText}\`);
                             }
@@ -2354,12 +2367,13 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             
                         } else {
                             // Extract channels failed for other reasons
-                            if (response.status === 404) {
+                            const errorData = await response.json().catch(() => ({}));
+                            if (response.status === 409) {
+                                throw new Error(errorData.message || 'A conflicting operation is already in progress for this sheet. Please try again shortly.');
+                            } else if (response.status === 404) {
                                 throw new Error('Extract channels endpoint not found. The server may not have implemented the /extract-channels endpoint yet. Please contact your administrator or use the extract domains functionality instead.');
                             } else if (response.status === 400) {
-                                const errorData = await response.json().catch(() => ({}));
-                                const errorMessage = errorData.detail?.message || errorData.message || 'Bad request - please check the Google Sheets URL';
-                                throw new Error(errorMessage);
+                                throw new Error(errorData.detail?.message || errorData.message || 'Bad request - please check the Google Sheets URL');
                             } else {
                                 throw new Error(\`Extract channels request failed: \${response.status} \${response.statusText}\`);
                             }
