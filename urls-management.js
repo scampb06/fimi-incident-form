@@ -271,6 +271,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         Bellingcat Auto Archiver
                     </label>
                     <button id="checkStatusButton" onclick="checkBellingcatStatus()" style="padding: 5px 15px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; white-space: nowrap;">Check Status</button>
+                    <button id="seeAllJobsButton" onclick="showAllJobs()" style="display: none; padding: 5px 15px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; white-space: nowrap;">See All Jobs</button>
                     <input type="text" id="urlColumnInput" placeholder="URL column header (optional)" style="display: inline-block; padding: 5px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; min-width: 200px;">
                 </div>
             </div>
@@ -2423,6 +2424,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                     const preValidationCheckbox = document.getElementById('preValidationCheckbox');
                     const preValidationLabel = document.getElementById('preValidationLabel');
                     const checkStatusButton = document.getElementById('checkStatusButton');
+                    const seeAllJobsButton = document.getElementById('seeAllJobsButton');
                     function updateControlStates() {
                         if (bellingcatRadio && bellingcatRadio.checked) {
                             // Bellingcat selected - gray out prevalidation but keep the state
@@ -2431,11 +2433,14 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             preValidationCheckbox.style.cursor = 'not-allowed';
                             preValidationLabel.style.pointerEvents = 'none';
 
-                            // Enable Check Status button
+                            // Enable Check Status and See All Jobs buttons
                             if (checkStatusButton) {
                                 checkStatusButton.disabled = false;
                                 checkStatusButton.style.opacity = '1';
                                 checkStatusButton.style.cursor = 'pointer';
+                            }
+                            if (seeAllJobsButton) {
+                                seeAllJobsButton.style.display = 'inline-block';
                             }
                         } else {
                             // Wayback Machine selected - enable prevalidation
@@ -2444,11 +2449,14 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             preValidationCheckbox.style.cursor = 'pointer';
                             preValidationLabel.style.pointerEvents = 'auto';
 
-                            // Disable Check Status button
+                            // Disable Check Status button and hide See All Jobs button
                             if (checkStatusButton) {
                                 checkStatusButton.disabled = true;
                                 checkStatusButton.style.opacity = '0.4';
                                 checkStatusButton.style.cursor = 'not-allowed';
+                            }
+                            if (seeAllJobsButton) {
+                                seeAllJobsButton.style.display = 'none';
                             }
                         }
                     }
@@ -2464,6 +2472,186 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                     updateControlStates();
                 }
                 
+                // ── See All Jobs ──────────────────────────────────────────────
+                let allJobsRefreshTimer = null;
+
+                async function showAllJobs() {
+                    // Create or reuse the overlay
+                    let overlay = document.getElementById('all-jobs-overlay');
+                    if (!overlay) {
+                        overlay = document.createElement('div');
+                        overlay.id = 'all-jobs-overlay';
+                        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center;';
+                        overlay.innerHTML = \`
+                            <div id="all-jobs-panel" style="background:#fff;border-radius:8px;padding:24px;width:90%;max-width:900px;max-height:85vh;display:flex;flex-direction:column;gap:12px;box-shadow:0 4px 24px rgba(0,0,0,0.3);">
+                                <div style="display:flex;align-items:center;justify-content:space-between;">
+                                    <h2 style="margin:0;font-size:18px;">Bellingcat Auto Archiver — All Jobs</h2>
+                                    <button onclick="closeAllJobs()" style="background:none;border:none;font-size:22px;cursor:pointer;line-height:1;" title="Close">&times;</button>
+                                </div>
+                                <div id="all-jobs-summary" style="display:flex;gap:16px;flex-wrap:wrap;"></div>
+                                <div id="all-jobs-table-wrapper" style="overflow-y:auto;flex:1;">
+                                    <p style="color:#888;">Loading…</p>
+                                </div>
+                                <div id="all-jobs-refresh-note" style="font-size:12px;color:#888;text-align:right;"></div>
+                            </div>
+                        \`;
+                        document.body.appendChild(overlay);
+                        // Close on backdrop click
+                        overlay.addEventListener('click', function(e) { if (e.target === overlay) closeAllJobs(); });
+                    }
+                    await refreshAllJobs();
+                }
+
+                function closeAllJobs() {
+                    if (allJobsRefreshTimer) { clearInterval(allJobsRefreshTimer); allJobsRefreshTimer = null; }
+                    const overlay = document.getElementById('all-jobs-overlay');
+                    if (overlay) overlay.remove();
+                }
+
+                async function refreshAllJobs() {
+                    const tableWrapper = document.getElementById('all-jobs-table-wrapper');
+                    const summaryDiv  = document.getElementById('all-jobs-summary');
+                    const refreshNote = document.getElementById('all-jobs-refresh-note');
+                    if (!tableWrapper) return;
+
+                    let data;
+                    try {
+                        const resp = await fetch(\`${urlsBaseUrl}/bellingcat/auto-archiver/jobs\`);
+                        if (!resp.ok) {
+                            const body = await resp.json().catch(() => null);
+                            throw new Error(body?.message || \`Request failed (\${resp.status})\`);
+                        }
+                        data = await resp.json();
+                    } catch (err) {
+                        tableWrapper.innerHTML = \`<p style="color:#c00;">Error loading jobs: \${err.message}</p>\`;
+                        return;
+                    }
+
+                    // ── Summary chips ────────────────────────────────────────────
+                    const chips = [
+                        { label: 'Total',     value: data.totalJobs,     bg: '#e9ecef', fg: '#333' },
+                        { label: 'Running',   value: data.runningJobs,   bg: '#cfe2ff', fg: '#084298' },
+                        { label: 'Completed', value: data.completedJobs, bg: '#d1e7dd', fg: '#0a3622' },
+                        { label: 'Failed',    value: data.failedJobs,    bg: '#f8d7da', fg: '#842029' },
+                    ];
+                    summaryDiv.innerHTML = chips.map(c =>
+                        \`<span style="background:\${c.bg};color:\${c.fg};padding:6px 14px;border-radius:20px;font-weight:bold;font-size:14px;">\${c.label}: \${c.value}</span>\`
+                    ).join('');
+
+                    // ── Jobs table ───────────────────────────────────────────────
+                    const statusStyle = {
+                        starting:  'background:#fff3cd;color:#664d03;',
+                        running:   'background:#cfe2ff;color:#084298;',
+                        completed: 'background:#d1e7dd;color:#0a3622;',
+                        failed:    'background:#f8d7da;color:#842029;',
+                    };
+
+                    function fmtTime(iso) {
+                        if (!iso) return '—';
+                        const d = new Date(iso);
+                        return d.toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'medium' });
+                    }
+
+                    if (!data.jobs || data.jobs.length === 0) {
+                        tableWrapper.innerHTML = '<p style="color:#888;">No jobs found.</p>';
+                    } else {
+                        const rows = data.jobs.map(job => {
+                            const ss = statusStyle[job.status] || '';
+                            const sheetUrl = \`https://docs.google.com/spreadsheets/d/\${job.spreadsheetId}\`;
+                            const statusUrl = \`${urlsBaseUrl}\${job.statusUrl}\`;
+                            return \`<tr style="border-bottom:1px solid #dee2e6;">
+                                <td style="padding:8px;white-space:nowrap;">\${fmtTime(job.startTime)}</td>
+                                <td style="padding:8px;"><span style="\${ss}padding:3px 10px;border-radius:12px;font-size:12px;font-weight:bold;white-space:nowrap;">\${job.status}</span></td>
+                                <td style="padding:8px;font-family:monospace;white-space:nowrap;">\${job.duration || '—'}</td>
+                                <td style="padding:8px;"><a href="\${sheetUrl}" target="_blank" style="color:#0d6efd;">View Sheet</a></td>
+                                <td style="padding:8px;"><button onclick="viewJobDetails('\${statusUrl}', '\${job.jobId}')" style="padding:3px 10px;background:#6c757d;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;">Details</button></td>
+                            </tr>\`;
+                        }).join('');
+                        tableWrapper.innerHTML = \`
+                            <table style="width:100%;border-collapse:collapse;font-size:14px;">
+                                <thead>
+                                    <tr style="background:#f8f9fa;text-align:left;">
+                                        <th style="padding:8px;border-bottom:2px solid #dee2e6;">Start Time</th>
+                                        <th style="padding:8px;border-bottom:2px solid #dee2e6;">Status</th>
+                                        <th style="padding:8px;border-bottom:2px solid #dee2e6;">Duration</th>
+                                        <th style="padding:8px;border-bottom:2px solid #dee2e6;">Sheet</th>
+                                        <th style="padding:8px;border-bottom:2px solid #dee2e6;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>\${rows}</tbody>
+                            </table>
+                        \`;
+                    }
+
+                    // ── Auto-refresh while jobs are active ───────────────────────
+                    const hasActive = data.jobs && data.jobs.some(j => j.status === 'starting' || j.status === 'running');
+                    if (hasActive) {
+                        if (!allJobsRefreshTimer) {
+                            allJobsRefreshTimer = setInterval(async () => {
+                                if (!document.getElementById('all-jobs-overlay')) {
+                                    clearInterval(allJobsRefreshTimer); allJobsRefreshTimer = null; return;
+                                }
+                                await refreshAllJobs();
+                            }, 12000);
+                        }
+                        refreshNote.textContent = 'Auto-refreshing every 12 s while jobs are active.';
+                    } else {
+                        if (allJobsRefreshTimer) { clearInterval(allJobsRefreshTimer); allJobsRefreshTimer = null; }
+                        refreshNote.textContent = '';
+                    }
+                }
+
+                async function viewJobDetails(statusUrl, jobId) {
+                    let detailOverlay = document.getElementById('job-detail-overlay');
+                    if (detailOverlay) detailOverlay.remove();
+                    detailOverlay = document.createElement('div');
+                    detailOverlay.id = 'job-detail-overlay';
+                    detailOverlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:10001;display:flex;align-items:center;justify-content:center;';
+                    detailOverlay.innerHTML = \`
+                        <div style="background:#fff;border-radius:8px;padding:24px;width:90%;max-width:700px;max-height:80vh;display:flex;flex-direction:column;gap:12px;box-shadow:0 4px 24px rgba(0,0,0,0.4);">
+                            <div style="display:flex;align-items:center;justify-content:space-between;">
+                                <h3 style="margin:0;font-size:16px;">Job Details — <span style="font-family:monospace;font-size:13px;">\${jobId}</span></h3>
+                                <button onclick="document.getElementById('job-detail-overlay').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;line-height:1;" title="Close">&times;</button>
+                            </div>
+                            <div id="job-detail-content" style="overflow-y:auto;flex:1;"><p style="color:#888;">Loading…</p></div>
+                        </div>
+                    \`;
+                    document.body.appendChild(detailOverlay);
+                    detailOverlay.addEventListener('click', function(e) { if (e.target === detailOverlay) detailOverlay.remove(); });
+
+                    try {
+                        const resp = await fetch(statusUrl);
+                        if (!resp.ok) {
+                            const body = await resp.json().catch(() => null);
+                            throw new Error(body?.message || \`Request failed (\${resp.status})\`);
+                        }
+                        const d = await resp.json();
+                        const content = document.getElementById('job-detail-content');
+                        const sheetUrl = d.spreadsheetId ? \`https://docs.google.com/spreadsheets/d/\${d.spreadsheetId}\` : null;
+                        content.innerHTML = \`
+                            <table style="width:100%;border-collapse:collapse;font-size:14px;">
+                                \${[
+                                    ['Job ID',       \`<span style="font-family:monospace">\${d.jobId || '—'}</span>\`],
+                                    ['Status',       d.status || '—'],
+                                    ['Type',         d.jobType || '—'],
+                                    ['Start Time',   d.startTime ? new Date(d.startTime).toLocaleString() : '—'],
+                                    ['End Time',     d.endTime   ? new Date(d.endTime).toLocaleString()   : '—'],
+                                    ['Duration',     d.duration  || '—'],
+                                    ['Sheet',        sheetUrl ? \`<a href="\${sheetUrl}" target="_blank" style="color:#0d6efd;">Open Sheet</a>\` : '—'],
+                                    ['Error',        d.error     || d.errorMessage || '—'],
+                                    ['Log',          d.log       || d.message      || '—'],
+                                ].map(([k, v]) => \`<tr style="border-bottom:1px solid #dee2e6;">
+                                    <th style="padding:8px;text-align:left;white-space:nowrap;color:#555;font-weight:600;width:120px;">\${k}</th>
+                                    <td style="padding:8px;">\${v}</td>
+                                </tr>\`).join('')}
+                            </table>
+                        \`;
+                    } catch (err) {
+                        document.getElementById('job-detail-content').innerHTML = \`<p style="color:#c00;">Error: \${err.message}</p>\`;
+                    }
+                }
+                // ── End See All Jobs ──────────────────────────────────────────
+
                 // Load the editor when the page loads
                 window.addEventListener('load', function() {
                     loadGoogleSheetsEditor();
