@@ -2560,7 +2560,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             const sheetUrl = \`https://docs.google.com/spreadsheets/d/\${job.spreadsheetId}\`;
                             const statusUrl = \`${urlsBaseUrl}\${job.statusUrl}\`;
                             const logLink = job.logUrl
-                                ? \`<a href="\${urlsBaseUrl}\${job.logUrl}" target="_blank" style="color:#0d6efd;font-size:12px;">View Logs</a>\`
+                                ? \`<a href="${urlsBaseUrl}\${job.logUrl}" target="_blank" style="color:#0d6efd;font-size:12px;">View Logs</a>\`
                                 : '—';
                             return \`<tr style="border-bottom:1px solid #dee2e6;">
                                 <td style="padding:8px;white-space:nowrap;">\${fmtTime(job.startTime)}</td>
