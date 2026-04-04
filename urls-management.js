@@ -2559,11 +2559,15 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             const ss = statusStyle[job.status] || '';
                             const sheetUrl = \`https://docs.google.com/spreadsheets/d/\${job.spreadsheetId}\`;
                             const statusUrl = \`${urlsBaseUrl}\${job.statusUrl}\`;
+                            const logLink = job.logUrl
+                                ? \`<a href="\${urlsBaseUrl}\${job.logUrl}" target="_blank" style="color:#0d6efd;font-size:12px;">View Logs</a>\`
+                                : '—';
                             return \`<tr style="border-bottom:1px solid #dee2e6;">
                                 <td style="padding:8px;white-space:nowrap;">\${fmtTime(job.startTime)}</td>
                                 <td style="padding:8px;"><span style="\${ss}padding:3px 10px;border-radius:12px;font-size:12px;font-weight:bold;white-space:nowrap;">\${job.status}</span></td>
                                 <td style="padding:8px;font-family:monospace;white-space:nowrap;">\${job.duration || '—'}</td>
                                 <td style="padding:8px;"><a href="\${sheetUrl}" target="_blank" style="color:#0d6efd;">View Sheet</a></td>
+                                <td style="padding:8px;">\${logLink}</td>
                                 <td style="padding:8px;"><button onclick="viewJobDetails('\${statusUrl}', '\${job.jobId}')" style="padding:3px 10px;background:#6c757d;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;">Details</button></td>
                             </tr>\`;
                         }).join('');
@@ -2575,6 +2579,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                                         <th style="padding:8px;border-bottom:2px solid #dee2e6;">Status</th>
                                         <th style="padding:8px;border-bottom:2px solid #dee2e6;">Duration</th>
                                         <th style="padding:8px;border-bottom:2px solid #dee2e6;">Sheet</th>
+                                        <th style="padding:8px;border-bottom:2px solid #dee2e6;">Logs</th>
                                         <th style="padding:8px;border-bottom:2px solid #dee2e6;"></th>
                                     </tr>
                                 </thead>
@@ -2628,6 +2633,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         const d = await resp.json();
                         const content = document.getElementById('job-detail-content');
                         const sheetUrl = d.spreadsheetId ? \`https://docs.google.com/spreadsheets/d/\${d.spreadsheetId}\` : null;
+                        const fullLogUrl = d.logUrl ? \`${urlsBaseUrl}\${d.logUrl}\` : null;
                         content.innerHTML = \`
                             <table style="width:100%;border-collapse:collapse;font-size:14px;">
                                 \${[
@@ -2637,7 +2643,8 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                                     ['Start Time',   d.startTime ? new Date(d.startTime).toLocaleString() : '—'],
                                     ['End Time',     d.endTime   ? new Date(d.endTime).toLocaleString()   : '—'],
                                     ['Duration',     d.duration  || '—'],
-                                    ['Sheet',        sheetUrl ? \`<a href="\${sheetUrl}" target="_blank" style="color:#0d6efd;">Open Sheet</a>\` : '—'],
+                                    ['Sheet',        sheetUrl  ? \`<a href="\${sheetUrl}" target="_blank" style="color:#0d6efd;">Open Sheet</a>\` : '—'],
+                                    ['Logs',         fullLogUrl ? \`<a href="\${fullLogUrl}" target="_blank" style="color:#0d6efd;">View full logs</a>\` : '—'],
                                     ['Error',        d.error     || d.errorMessage || '—'],
                                     ['Log',          d.log       || d.message      || '—'],
                                 ].map(([k, v]) => \`<tr style="border-bottom:1px solid #dee2e6;">
