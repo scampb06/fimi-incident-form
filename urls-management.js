@@ -1107,6 +1107,12 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             word-wrap: break-word;
                         \`;
                         logContainer.textContent = logOutput || '';
+                        // Auto-expand log for live jobs so updates are immediately visible
+                        if (isLive) {
+                            logContainer.style.display = 'block';
+                            modal.style.maxWidth = '800px';
+                            modal.style.width = '95%';
+                        }
                         modal.appendChild(logContainer);
                     }
 
@@ -1180,7 +1186,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         }
 
                         toggleLogButton = document.createElement('button');
-                        toggleLogButton.textContent = 'Show Log';
+                        toggleLogButton.textContent = isLive ? 'Hide Log' : 'Show Log';
                         toggleLogButton.style.cssText = \`
                             padding: 10px 30px;
                             background: #28a745;
@@ -1207,6 +1213,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             }
                         });
 
+                        if (isLive) downloadLogButton.style.display = 'inline-block';
                         buttonContainer.appendChild(downloadLogButton);
                         buttonContainer.appendChild(toggleLogButton);
                     }
@@ -1351,7 +1358,10 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                                     const logEl = document.getElementById('log-output-container');
                                     if (msgEl) msgEl.textContent = newMsg;
                                     if (titleEl) titleEl.textContent = newTitle;
-                                    if (logEl && pollStatus.logOutput) logEl.textContent = pollStatus.logOutput;
+                                    if (logEl && pollStatus.logOutput) {
+                                        logEl.textContent = pollStatus.logOutput;
+                                        logEl.scrollTop = logEl.scrollHeight;
+                                    }
 
                                     const nowDone = pollStatus.status === 'completed' || pollStatus.status === 'failed';
                                     if (nowDone) {
