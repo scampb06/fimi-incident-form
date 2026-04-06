@@ -1029,13 +1029,13 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                 }
                 
                 // Show custom message dialog (similar to permission dialog)
-                function showMessageDialog(message, title = 'Archive Status', logOutput = null) {
+                function showMessageDialog(message, title = 'Archive Status', logOutput = null, options = {}) {
+                    const { logUrl = null, isLive = false, onClose = null } = options;
+
                     // Remove any existing message dialog
                     const existing = document.getElementById('message-modal-overlay');
-                    if (existing) {
-                        existing.remove();
-                    }
-                    
+                    if (existing) existing.remove();
+
                     // Create modal overlay
                     const modalOverlay = document.createElement('div');
                     modalOverlay.id = 'message-modal-overlay';
@@ -1051,7 +1051,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         align-items: center;
                         z-index: 10000;
                     \`;
-                    
+
                     // Create modal dialog
                     const modal = document.createElement('div');
                     modal.style.cssText = \`
@@ -1064,19 +1064,31 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
                         transition: max-width 0.3s ease, width 0.3s ease;
                     \`;
-                    
-                    // Create message content
+
+                    // Create message content — IDs allow in-place update by the status poller
                     const messageDiv = document.createElement('div');
                     messageDiv.innerHTML = \`
-                        <h2 style="margin: 0 0 20px 0; color: #333; font-size: 24px;">\${title}</h2>
-                        <div style="color: #666; font-size: 16px; line-height: 1.6; white-space: pre-line; margin-bottom: 25px;">\${message}</div>
+                        <h2 id="status-dialog-title" style="margin: 0 0 20px 0; color: #333; font-size: 24px;">\${title}</h2>
+                        <div id="status-message-text" style="color: #666; font-size: 16px; line-height: 1.6; white-space: pre-line; margin-bottom: 25px;">\${message}</div>
                     \`;
-                    
                     modal.appendChild(messageDiv);
-                    
-                    // Create log container (hidden by default)
+
+                    // Create log section when there is log content or live updates are expected
+                    const hasLog = logOutput !== null || isLive;
                     let logContainer = null;
-                    if (logOutput) {
+                    let toggleLogButton = null;
+                    let downloadLogButton = null;
+
+                    if (hasLog) {
+                        // Heading row with live indicator
+                        const logHeadingDiv = document.createElement('div');
+                        logHeadingDiv.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:6px;';
+                        logHeadingDiv.innerHTML = \`
+                            <span style="font-weight:600;font-size:13px;color:#555;">Log Output</span>
+                            <span id="log-live-indicator" style="display:\${isLive ? 'inline' : 'none'};color:#28a745;font-size:12px;font-weight:bold;">● Live</span>
+                        \`;
+                        modal.appendChild(logHeadingDiv);
+
                         logContainer = document.createElement('div');
                         logContainer.id = 'log-output-container';
                         logContainer.style.cssText = \`
@@ -1094,18 +1106,17 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             white-space: pre-wrap;
                             word-wrap: break-word;
                         \`;
-                        logContainer.textContent = logOutput;
+                        logContainer.textContent = logOutput || '';
                         modal.appendChild(logContainer);
                     }
-                    
+
                     // Create button container
                     const buttonContainer = document.createElement('div');
                     buttonContainer.style.cssText = 'text-align: right; display: flex; gap: 10px; justify-content: flex-end;';
-                    
-                    // Add Show/Hide Log button if logOutput exists
-                    if (logOutput) {
-                        // Create Download Log button (initially hidden)
-                        const downloadLogButton = document.createElement('button');
+
+                    if (hasLog) {
+                        // Download Log button (initially hidden, uses live container content)
+                        downloadLogButton = document.createElement('button');
                         downloadLogButton.textContent = 'Download Log';
                         downloadLogButton.style.cssText = \`
                             padding: 10px 30px;
@@ -1118,13 +1129,9 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             font-weight: bold;
                             display: none;
                         \`;
-                        
                         downloadLogButton.addEventListener('click', function() {
-                            // Create a blob with the log content
-                            const blob = new Blob([logOutput], { type: 'text/plain' });
+                            const blob = new Blob([logContainer.textContent], { type: 'text/plain' });
                             const url = URL.createObjectURL(blob);
-                            
-                            // Create a temporary link and trigger download
                             const a = document.createElement('a');
                             a.href = url;
                             a.download = \`archive-log-\${new Date().toISOString().replace(/:/g, '-').split('.')[0]}.txt\`;
@@ -1133,8 +1140,46 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             document.body.removeChild(a);
                             URL.revokeObjectURL(url);
                         });
-                        
-                        const toggleLogButton = document.createElement('button');
+
+                        // "View Full Logs" button — only for already-completed/failed jobs with a logUrl
+                        if (logUrl && !isLive) {
+                            const viewFullLogsButton = document.createElement('button');
+                            viewFullLogsButton.textContent = 'View Full Logs';
+                            viewFullLogsButton.style.cssText = \`
+                                padding: 10px 30px;
+                                background: #17a2b8;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 16px;
+                                font-weight: bold;
+                            \`;
+                            viewFullLogsButton.addEventListener('click', async function() {
+                                viewFullLogsButton.textContent = 'Loading…';
+                                viewFullLogsButton.disabled = true;
+                                try {
+                                    const resp = await fetch(\`${urlsBaseUrl}\${logUrl}\`);
+                                    if (!resp.ok) throw new Error(\`HTTP \${resp.status}\`);
+                                    logContainer.textContent = await resp.text();
+                                    if (logContainer.style.display === 'none') {
+                                        logContainer.style.display = 'block';
+                                        if (toggleLogButton) toggleLogButton.textContent = 'Hide Log';
+                                        if (downloadLogButton) downloadLogButton.style.display = 'inline-block';
+                                        modal.style.maxWidth = '800px';
+                                        modal.style.width = '95%';
+                                    }
+                                } catch (err) {
+                                    logContainer.textContent = \`Error loading full logs: \${err.message}\`;
+                                    logContainer.style.display = 'block';
+                                } finally {
+                                    viewFullLogsButton.remove();
+                                }
+                            });
+                            buttonContainer.appendChild(viewFullLogsButton);
+                        }
+
+                        toggleLogButton = document.createElement('button');
                         toggleLogButton.textContent = 'Show Log';
                         toggleLogButton.style.cssText = \`
                             padding: 10px 30px;
@@ -1146,17 +1191,14 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                             font-size: 16px;
                             font-weight: bold;
                         \`;
-                        
                         toggleLogButton.addEventListener('click', function() {
                             if (logContainer.style.display === 'none') {
-                                // Show log
                                 logContainer.style.display = 'block';
                                 toggleLogButton.textContent = 'Hide Log';
                                 downloadLogButton.style.display = 'inline-block';
                                 modal.style.maxWidth = '800px';
                                 modal.style.width = '95%';
                             } else {
-                                // Hide log
                                 logContainer.style.display = 'none';
                                 toggleLogButton.textContent = 'Show Log';
                                 downloadLogButton.style.display = 'none';
@@ -1164,11 +1206,11 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                                 modal.style.width = '90%';
                             }
                         });
-                        
+
                         buttonContainer.appendChild(downloadLogButton);
                         buttonContainer.appendChild(toggleLogButton);
                     }
-                    
+
                     // Add OK button
                     const okButton = document.createElement('button');
                     okButton.textContent = 'OK';
@@ -1182,153 +1224,160 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                         font-size: 16px;
                         font-weight: bold;
                     \`;
-                    okButton.addEventListener('click', function() {
+
+                    function closeDialog() {
                         modalOverlay.remove();
-                    });
-                    
+                        if (onClose) onClose();
+                    }
+
+                    okButton.addEventListener('click', closeDialog);
                     buttonContainer.appendChild(okButton);
                     modal.appendChild(buttonContainer);
-                    
+
                     modalOverlay.appendChild(modal);
                     document.body.appendChild(modalOverlay);
-                    
+
                     // Close on overlay click
                     modalOverlay.addEventListener('click', function(e) {
-                        if (e.target === modalOverlay) {
-                            modalOverlay.remove();
-                        }
+                        if (e.target === modalOverlay) closeDialog();
                     });
                 }
                 
+                // Helper: parse "HH:MM:SS[.fff]" duration string to whole minutes
+                function parseDurationMinutes(duration) {
+                    if (!duration) return 0;
+                    const parts = duration.split(':');
+                    if (parts.length < 3) return 0;
+                    const hours = parseInt(parts[0]);
+                    const minutes = parseInt(parts[1]);
+                    const seconds = Math.floor(parseFloat(parts[2]));
+                    return hours * 60 + minutes + Math.round(seconds / 60);
+                }
+
+                // Helper: build status message text and dialog title from a status API response
+                function buildStatusInfo(status) {
+                    const durationMinutes = parseDurationMinutes(status.duration);
+                    const urlCount = status.urlCount || 0;
+                    const startTime = new Date(status.startTime).toLocaleString();
+
+                    let estimatedTotalMinutes = 0;
+                    if (window.currentBellingcatEstimatedTime && window.currentBellingcatEstimatedTime !== 'Unknown') {
+                        const timeStr = String(window.currentBellingcatEstimatedTime);
+                        const firstPart = (timeStr.split(/\s+/)[0] || '');
+                        const dashSplit = firstPart.split('-');
+                        if (dashSplit.length >= 2) {
+                            const lo = parseInt(dashSplit[0]), hi = parseInt(dashSplit[1]);
+                            estimatedTotalMinutes = (!isNaN(lo) && !isNaN(hi)) ? Math.round((lo + hi) / 2) : urlCount * 3.5;
+                        } else {
+                            estimatedTotalMinutes = urlCount * 3.5;
+                        }
+                    } else {
+                        estimatedTotalMinutes = urlCount * 3.5;
+                    }
+                    const remainingMinutes = Math.max(0, Math.round(estimatedTotalMinutes - durationMinutes));
+
+                    let message, dialogTitle;
+                    if (status.status === 'completed') {
+                        message = \`Archive job started at \${startTime} completed in \${durationMinutes} minutes. ✅ Results written to Google Sheet.\`;
+                        dialogTitle = 'Archive Job Completed';
+                    } else if (status.status === 'running') {
+                        message = \`Archive job started at \${startTime} has been running for \${durationMinutes} minutes. Remaining time estimated at \${remainingMinutes} minutes.\`;
+                        dialogTitle = 'Archive Job Running';
+                    } else if (status.status === 'failed') {
+                        message = \`Archive job started at \${startTime} failed after \${durationMinutes} minutes. ❌ Check the server logs for details.\`;
+                        dialogTitle = 'Archive Job Failed';
+                    } else {
+                        message = \`Archive job started at \${startTime}. Status: \${status.status}\`;
+                        dialogTitle = 'Archive Job Status';
+                    }
+                    if (status.note) message += \`\\n\${status.note}\`;
+                    return { message, dialogTitle, durationMinutes };
+                }
+
                 // Check Bellingcat job status
                 async function checkBellingcatStatus() {
                     try {
-                        // Check if we have a jobId
                         if (!window.currentBellingcatJobId) {
                             showMessageDialog('No archive job found. Please click "Archive unarchived URLs" first to initiate archiving.', 'No Job Found');
                             return;
                         }
-                        
+
                         const jobId = window.currentBellingcatJobId;
                         const endpoint = \`${urlsBaseUrl}/bellingcat/auto-archiver/status/\${jobId}\`;
-                        
+
                         const response = await fetch(endpoint);
-                        
                         if (response.status === 404) {
                             showMessageDialog('Job not found. It may have been removed from the server.', 'Job Not Found');
                             return;
                         }
-                        
                         if (!response.ok) {
                             throw new Error(\`Status check failed with status \${response.status}\`);
                         }
-                        
+
                         const status = await response.json();
                         console.log('Bellingcat job status:', status);
-                        
-                        // Format duration
-                        const duration = status.duration;
-                        let durationMinutes = 0;
-                        if (duration) {
-                            // Parse duration string (format: \"HH:MM:SS.fffffff\")
-                            const parts = duration.split(':');
-                            if (parts.length >= 3) {
-                                const hours = parseInt(parts[0]);
-                                const minutes = parseInt(parts[1]);
-                                const seconds = Math.floor(parseFloat(parts[2]));
-                                durationMinutes = hours * 60 + minutes + Math.round(seconds / 60);
-                            }
-                        }
-                        
-                        const startTime = new Date(status.startTime).toLocaleString();
-                        const urlCount = status.urlCount || 0;
-                        const logOutput = status.logOutput || '';
 
-                        // Calculate estimated remaining time using backend's estimate
-                        // Backend returns format like "14-35 minutes"
-                        let estimatedTotalMinutes = 0;
-                        
-                        console.log('Stored estimated time:', window.currentBellingcatEstimatedTime);
-                        console.log('Type:', typeof window.currentBellingcatEstimatedTime);
-                        console.log('String representation:', JSON.stringify(window.currentBellingcatEstimatedTime));
-                        console.log('Length:', window.currentBellingcatEstimatedTime ? window.currentBellingcatEstimatedTime.length : 'N/A');
-                        
-                        // Check character codes of first few characters
-                        if (window.currentBellingcatEstimatedTime) {
-                            for (let i = 0; i < Math.min(5, window.currentBellingcatEstimatedTime.length); i++) {
-                                console.log(\`Char \${i}: '\${window.currentBellingcatEstimatedTime[i]}' = \${window.currentBellingcatEstimatedTime.charCodeAt(i)}\`);
-                            }
+                        const { message, dialogTitle } = buildStatusInfo(status);
+                        const isActive = status.status === 'running' || status.status === 'starting';
+
+                        // Clear any existing poll timer before opening a fresh dialog
+                        if (window.bellingcatStatusPollTimer) {
+                            clearInterval(window.bellingcatStatusPollTimer);
+                            window.bellingcatStatusPollTimer = null;
                         }
-                        
-                        console.log('Duration minutes:', durationMinutes);
-                        console.log('URL count:', urlCount);
-                        
-                        if (window.currentBellingcatEstimatedTime && window.currentBellingcatEstimatedTime !== 'Unknown') {
-                            // Try simple split by space and extract numbers
-                            const timeStr = String(window.currentBellingcatEstimatedTime);
-                            const parts = timeStr.split(/\s+/);
-                            console.log('Split by space:', parts);
-                            console.log('First part:', parts[0]);
-                            
-                            // Extract all numbers from the string - try multiple patterns
-                            const allNumbers = timeStr.match(/\d+/g);
-                            console.log('All numbers found with \\d+:', allNumbers);
-                            
-                            const allNumbers2 = timeStr.match(/[0-9]+/g);
-                            console.log('All numbers found with [0-9]+:', allNumbers2);
-                            
-                            // Manual extraction from first part
-                            const firstPart = parts[0] || '';
-                            const dashSplit = firstPart.split('-');
-                            console.log('Dash split:', dashSplit);
-                            
-                            // Use dash split if we have two parts
-                            if (dashSplit && dashSplit.length >= 2) {
-                                const minEstimate = parseInt(dashSplit[0]);
-                                const maxEstimate = parseInt(dashSplit[1]);
-                                if (!isNaN(minEstimate) && !isNaN(maxEstimate)) {
-                                    estimatedTotalMinutes = Math.round((minEstimate + maxEstimate) / 2);
-                                    console.log('Parsed from dash split - min:', minEstimate, 'max:', maxEstimate, 'average:', estimatedTotalMinutes);
-                                } else {
-                                    console.log('parseInt failed. Trying fallback calculation.');
-                                    estimatedTotalMinutes = urlCount * 3.5;
+
+                        showMessageDialog(message, dialogTitle, status.logOutput || null, {
+                            logUrl: isActive ? null : (status.logUrl || null),
+                            isLive: isActive,
+                            onClose: function() {
+                                if (window.bellingcatStatusPollTimer) {
+                                    clearInterval(window.bellingcatStatusPollTimer);
+                                    window.bellingcatStatusPollTimer = null;
                                 }
-                            } else {
-                                console.log('Could not split by dash. Trying fallback calculation.');
-                                estimatedTotalMinutes = urlCount * 3.5;
                             }
-                        } else {
-                            console.log('No stored estimate found. Using fallback calculation.');
-                            // Fallback: assume 2-5 minutes per URL
-                            estimatedTotalMinutes = urlCount * 3.5;
+                        });
+
+                        if (isActive) {
+                            window.bellingcatStatusPollTimer = setInterval(async function() {
+                                try {
+                                    const pollResp = await fetch(endpoint);
+                                    if (!pollResp.ok) return;
+                                    const pollStatus = await pollResp.json();
+                                    const { message: newMsg, dialogTitle: newTitle } = buildStatusInfo(pollStatus);
+
+                                    // Update message and title in-place
+                                    const msgEl = document.getElementById('status-message-text');
+                                    const titleEl = document.getElementById('status-dialog-title');
+                                    const logEl = document.getElementById('log-output-container');
+                                    if (msgEl) msgEl.textContent = newMsg;
+                                    if (titleEl) titleEl.textContent = newTitle;
+                                    if (logEl && pollStatus.logOutput) logEl.textContent = pollStatus.logOutput;
+
+                                    const nowDone = pollStatus.status === 'completed' || pollStatus.status === 'failed';
+                                    if (nowDone) {
+                                        clearInterval(window.bellingcatStatusPollTimer);
+                                        window.bellingcatStatusPollTimer = null;
+
+                                        // Remove live indicator
+                                        const liveEl = document.getElementById('log-live-indicator');
+                                        if (liveEl) liveEl.style.display = 'none';
+
+                                        // Fetch and display full log if available
+                                        if (pollStatus.logUrl && logEl) {
+                                            try {
+                                                const logResp = await fetch(\`${urlsBaseUrl}\${pollStatus.logUrl}\`);
+                                                if (logResp.ok) logEl.textContent = await logResp.text();
+                                            } catch (e) {
+                                                console.error('Failed to fetch full log:', e);
+                                            }
+                                        }
+                                    }
+                                } catch (pollErr) {
+                                    console.error('Error polling Bellingcat status:', pollErr);
+                                }
+                            }, 12000);
                         }
-                        
-                        const remainingMinutes = Math.max(0, Math.round(estimatedTotalMinutes - durationMinutes));
-                        console.log('Estimated total:', estimatedTotalMinutes, 'Remaining:', remainingMinutes);
-                        console.log('Log Output:', logOutput);
-                        
-                        let message;
-                        let dialogTitle = 'Archive Job Status';
-                        
-                        if (status.status === 'completed') {
-                            message = \`Archive job started at \${startTime} completed in \${durationMinutes} minutes. ✅ Results written to Google Sheet.\`;
-                            dialogTitle = 'Archive Job Completed';
-                        } else if (status.status === 'running') {
-                            message = \`Archive job started at \${startTime} has been running for \${durationMinutes} minutes. Remaining time estimated at \${remainingMinutes} minutes.\`;
-                            dialogTitle = 'Archive Job Running';
-                        } else if (status.status === 'failed') {
-                            message = \`Archive job started at \${startTime} failed after \${durationMinutes} minutes. ❌ Check the server logs for details.\`;
-                            dialogTitle = 'Archive Job Failed';
-                        } else {
-                            message = \`Archive job started at \${startTime}. Status: \${status.status}\`;
-                        }
-                        
-                        if (status.note) {
-                            message += \`\\n\${status.note}\`;
-                        }
-                        
-                        showMessageDialog(message, dialogTitle, logOutput);
-                        
+
                     } catch (error) {
                         console.error('Error checking Bellingcat status:', error);
                         alert(\`Error checking job status: \${error.message}\`);
