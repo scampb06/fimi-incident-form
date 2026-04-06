@@ -74,7 +74,8 @@ https://example.com/test2</textarea>
     <div id="result"></div>
 
     <script>
-        const API_BASE = 'http://localhost:5239';
+        //const API_BASE = 'http://localhost:5239';
+        const API_BASE = 'https://fimi-incident-form-genai.azurewebsites.net'; // Change if your backend is running on a different URL/port
         let currentJobId = null;
 
         async function startArchiving() {
@@ -203,10 +204,10 @@ https://example.com/test2</textarea>
                 const statusBtn = document.getElementById('statusBtn');
                 if (!statusBtn.disabled) {
                     // Auto-check every 5 seconds if there's an active job
-                    // checkStatus(); // Uncomment to enable auto-refresh
+                    checkStatus(); // Uncomment to enable auto-refresh
                 }
             }
-        }, 5000);
+        }, 15000);
     </script>
 </body>
 </html>
