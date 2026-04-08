@@ -2705,7 +2705,6 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                                     ['Sheet',        sheetUrl  ? \`<a href="\${sheetUrl}" target="_blank" style="color:#0d6efd;">Open Sheet</a>\` : '—'],
                                     ['Logs',         fullLogUrl ? \`<a href="\${fullLogUrl}" target="_blank" style="color:#0d6efd;">View full logs</a>\` : '—'],
                                     ['Error',        d.error     || d.errorMessage || '—'],
-                                    ['Log',          d.log       || d.message      || '—'],
                                 ].map(([k, v]) => \`<tr style="border-bottom:1px solid #dee2e6;">
                                     <th style="padding:8px;text-align:left;white-space:nowrap;color:#555;font-weight:600;width:120px;">\${k}</th>
                                     <td style="padding:8px;">\${v}</td>
