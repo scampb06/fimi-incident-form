@@ -2616,7 +2616,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                     } else {
                         const rows = data.jobs.map(job => {
                             const ss = statusStyle[job.status] || '';
-                            const sheetUrl = \`https://docs.google.com/spreadsheets/d/\${job.spreadsheetId}\`;
+                            const sheetUrl = job.spreadsheetId ? \`https://docs.google.com/spreadsheets/d/\${job.spreadsheetId}\` : null;
                             const statusUrl = \`${urlsBaseUrl}\${job.statusUrl}\`;
                             const logLink = job.logUrl
                                 ? \`<a href="${urlsBaseUrl}\${job.logUrl}" target="_blank" style="color:#0d6efd;font-size:12px;">View Logs</a>\`
@@ -2625,7 +2625,7 @@ function openGoogleSheetsEditingWindow(userProvidedUrl, urlType = 'trusted') {
                                 <td style="padding:8px;white-space:nowrap;">\${fmtTime(job.startTime)}</td>
                                 <td style="padding:8px;"><span style="\${ss}padding:3px 10px;border-radius:12px;font-size:12px;font-weight:bold;white-space:nowrap;">\${job.status}</span></td>
                                 <td style="padding:8px;font-family:monospace;white-space:nowrap;">\${job.duration || '—'}</td>
-                                <td style="padding:8px;"><a href="\${sheetUrl}" target="_blank" style="color:#0d6efd;">View Sheet</a></td>
+                                <td style="padding:8px;">\${sheetUrl ? \`<a href="\${sheetUrl}" target="_blank" style="color:#0d6efd;">View Sheet</a>\` : '—'}</td>
                                 <td style="padding:8px;">\${logLink}</td>
                                 <td style="padding:8px;"><button onclick="viewJobDetails('\${statusUrl}', '\${job.jobId}')" style="padding:3px 10px;background:#6c757d;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;">Details</button></td>
                             </tr>\`;
